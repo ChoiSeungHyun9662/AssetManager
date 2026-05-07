@@ -1,0 +1,21 @@
+# Unity generated folders for the nested project.
+/Asset Manager/[Ll]ibrary/
+/Asset Manager/[Tt]emp/
+/Asset Manager/[Oo]bj/
+/Asset Manager/[Bb]uild/
+/Asset Manager/[Bb]uilds/
+/Asset Manager/[Ll]ogs/
+/Asset Manager/[Uu]ser[Ss]ettings/
+/Asset Manager/[Mm]emoryCaptures/
+
+# Unity and IDE generated project files.
+/Asset Manager/*.csproj
+/Asset Manager/*.sln
+/Asset Manager/*.slnx
+/Asset Manager/*.user
+/Asset Manager/*.pidb
+/Asset Manager/*.booproj
+
+# Common local IDE folders inside the Unity project.
+/Asset Manager/.vs/
+/Asset Manager/.vscode/
