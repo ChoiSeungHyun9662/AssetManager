@@ -1,6 +1,6 @@
 # 00. Unity 프로젝트 생성과 빈 실행 셸
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -50,14 +50,14 @@ MVP 구현을 시작할 수 있도록 Unity 프로젝트를 생성하고, 이후
 
 ## Acceptance criteria
 
-- [ ] Unity 프로젝트가 레포 하위의 `Asset Manager` 폴더로 확정되어 있다.
-- [ ] 프로젝트를 Unity Editor에서 열 수 있다.
-- [ ] Bootstrap Scene과 Main Game Scene이 존재하고 Scene 목록에 등록되어 있다.
-- [ ] Play Mode에서 Bootstrap Scene이 Main Game Scene으로 진입한다.
-- [ ] Main Game Scene에는 이후 MVP UI를 붙일 루트 오브젝트가 있다.
-- [ ] EditMode와 PlayMode 테스트 골격이 각각 실행 가능하다.
-- [ ] Unity 메타 파일은 보존되고, 캐시성 생성물은 git 추적 대상에서 제외된다.
-- [ ] 이 slice만 완료되어도 이후 01번 데이터 부트스트랩 issue를 시작할 수 있다.
+- [x] Unity 프로젝트가 레포 하위의 `Asset Manager` 폴더로 확정되어 있다.
+- [x] 프로젝트를 Unity Editor에서 열 수 있다.
+- [x] Bootstrap Scene과 Main Game Scene이 존재하고 Scene 목록에 등록되어 있다.
+- [x] Play Mode에서 Bootstrap Scene이 Main Game Scene으로 진입한다.
+- [x] Main Game Scene에는 이후 MVP UI를 붙일 루트 오브젝트가 있다.
+- [x] EditMode와 PlayMode 테스트 골격이 각각 실행 가능하다.
+- [x] Unity 메타 파일은 보존되고, 캐시성 생성물은 git 추적 대상에서 제외된다.
+- [x] 이 slice만 완료되어도 이후 01번 데이터 부트스트랩 issue를 시작할 수 있다.
 
 ## Blocked by
 
@@ -72,3 +72,12 @@ None - can start immediately
 This is a prerequisite setup issue added before the original MVP implementation sequence.
 
 Decision: use the existing `Asset Manager` folder as the Unity project root. It currently contains `Assets`, `Packages`, `ProjectSettings`, and Unity editor version `6000.4.5f1`.
+
+TDD result:
+
+- Added EditMode setup tests for creating/registering Bootstrap and MainGame scenes and verifying MainGame roots.
+- Added a PlayMode test for Game Root, UI Root, 1920x1080 Canvas Scaler, and the visible ready status text.
+- Added runtime shell code under `Asset Manager/Assets/_AssetManager/Scripts/Runtime`.
+- Added editor setup commands at `Asset Manager > Setup > Ensure Project Shell` and `Asset Manager > Setup > Verify Project Shell`.
+- Ran `VerifyProjectShell` in Unity batchmode successfully.
+- Ran Unity Test Runner in batchmode without `-quit`: EditMode 2/2 passed, PlayMode 1/1 passed.

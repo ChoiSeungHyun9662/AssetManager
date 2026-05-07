@@ -1,0 +1,22 @@
+{
+  "name": "AssetManager.Tests.EditMode",
+  "rootNamespace": "AssetManager.Tests",
+  "references": [
+    "AssetManager.Runtime",
+    "AssetManager.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "noEngineReferences": false
+}

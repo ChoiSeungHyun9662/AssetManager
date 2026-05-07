@@ -7,6 +7,7 @@
 /Asset Manager/[Ll]ogs/
 /Asset Manager/[Uu]ser[Ss]ettings/
 /Asset Manager/[Mm]emoryCaptures/
+/Asset Manager/*.log
 
 # Unity and IDE generated project files.
 /Asset Manager/*.csproj
@@ -19,3 +20,9 @@
 # Common local IDE folders inside the Unity project.
 /Asset Manager/.vs/
 /Asset Manager/.vscode/
+
+# Local Unity test runner artifacts.
+/EditModeResults.xml
+/PlayModeResults.xml
+/EditModeRun.log
+/PlayModeRun.log
