@@ -56,7 +56,7 @@ namespace AssetManager
         {
             var phase = run.BusinessDay.Phase;
 
-            SetActive(nextBusinessDayButton, run.State == RunState.Playing && phase == BusinessDayPhase.AwaitingAction);
+            SetActive(nextBusinessDayButton, MarketAreaFlow.CanAdvanceToNextBusinessDay(run));
             SetActive(continueScheduleButton, phase == BusinessDayPhase.QuarterSettlement || phase == BusinessDayPhase.Vacation);
 
             SetActive(quarterSettlementPanel, phase == BusinessDayPhase.QuarterSettlement);
@@ -73,6 +73,7 @@ namespace AssetManager
             if (button != null)
             {
                 button.gameObject.SetActive(isActive);
+                button.interactable = isActive;
             }
         }
 

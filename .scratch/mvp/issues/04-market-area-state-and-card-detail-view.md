@@ -1,6 +1,6 @@
 # 04. 시장 영역 상태와 카드 상세보기
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -37,13 +37,13 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 시장 영역은 Market, CardDetail, GainLiquidity 중 하나만 표시한다.
-- [ ] 시장 카드 클릭은 CardDetail 상태로 진입한다.
-- [ ] 예약 카드 클릭을 위한 진입 hook이 준비된다.
-- [ ] CardDetail 닫기는 영업일을 소비하지 않는다.
-- [ ] CardDetail 닫기는 선택 카드와 결제 대기 상태를 정리한다.
-- [ ] CardDetail 상태에서 다음 영업일 버튼은 비활성화된다.
-- [ ] 예약 버튼은 시장 카드 상세보기에서만 표시할 수 있는 조건을 가진다.
+- [x] 시장 영역은 Market, CardDetail, GainLiquidity 중 하나만 표시한다.
+- [x] 시장 카드 클릭은 CardDetail 상태로 진입한다.
+- [x] 예약 카드 클릭을 위한 진입 hook이 준비된다.
+- [x] CardDetail 닫기는 영업일을 소비하지 않는다.
+- [x] CardDetail 닫기는 선택 카드와 결제 대기 상태를 정리한다.
+- [x] CardDetail 상태에서 다음 영업일 버튼은 비활성화된다.
+- [x] 예약 버튼은 시장 카드 상세보기에서만 표시할 수 있는 조건을 가진다.
 
 ## Blocked by
 
@@ -54,3 +54,12 @@ Status: ready-for-agent
 7, 8, 13, 14, 22, 28
 
 ## Comments
+
+- TDD RED confirmed, then resolved: added `MarketAreaFlowTests.MarketCardDetailGatesNextBusinessDayUntilClosed`; initial Unity EditMode batchmode reached compilation and failed because `MarketAreaFlow` did not exist yet.
+- GREEN: added `CardDetailState`, `CardDetailDisplayData`, `PurchasePaymentState`, and `MarketAreaFlow`; market card detail entry records selected card, 매수 출처, display data, and pending payment state; closing clears selected card and pending payment state without consuming a 영업일.
+- GREEN: added `MarketAreaFlow.OpenReservedCardDetail` hook and coverage that reserved-source detail hides Reserve.
+- GREEN: `BusinessDayFlow.AdvanceToNextBusinessDay` now gates through `MarketAreaFlow.CanAdvanceToNextBusinessDay`, so 다음 영업일 is only available in Market state.
+- RED/GREEN UI: added PlayMode coverage for 시장 카드 click -> CardDetail panel -> close -> Market panel; added runtime-created Market panel, clickable market card buttons, CardDetail panel, close button wiring, and Reserve button visibility for market-card detail only.
+- Verification: Unity EditMode batchmode was started once with escalated `Start-Process` and quoted `-ArgumentList`; it did not finish within 10 minutes. No Unity batchmode retry was attempted.
+- Verification: static `dotnet build` passed for `AssetManager.Tests.EditMode.csproj` and `AssetManager.Tests.PlayMode.csproj` after refreshing generated csproj compile includes for local validation.
+- Manual Unity verification passed: market card click opens CardDetail, CardDetail replaces Market, 다음 영업일 is disabled, Reserve is visible, Close returns to Market, remaining 영업일 is unchanged, and 다음 영업일 is enabled again.

@@ -18,6 +18,7 @@ namespace AssetManager
 
         private RunStatusHud runStatusHud;
         private MarketTapeView marketTapeView;
+        private CardDetailView cardDetailView;
         private MarketTapeDevControls marketTapeDevControls;
         private RunProgressControls runProgressControls;
 
@@ -55,6 +56,28 @@ namespace AssetManager
             }
 
             CurrentRun = BusinessDayFlow.AdvanceToNextBusinessDay(CurrentRun);
+            RefreshRunUi();
+        }
+
+        public void OpenMarketCardDetail(AssetCardRuntimeData selectedCard)
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun = MarketAreaFlow.OpenMarketCardDetail(CurrentRun, selectedCard);
+            RefreshRunUi();
+        }
+
+        public void CloseCardDetail()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun = MarketAreaFlow.CloseCardDetail(CurrentRun);
             RefreshRunUi();
         }
 
@@ -103,8 +126,14 @@ namespace AssetManager
         {
             runStatusHud = ProjectShell.EnsureRunStatusHud(uiRoot);
             marketTapeView = ProjectShell.EnsureMarketTapeView(uiRoot);
+            cardDetailView = ProjectShell.EnsureCardDetailView(uiRoot);
             marketTapeDevControls = ProjectShell.EnsureMarketTapeDevControls(uiRoot);
             runProgressControls = ProjectShell.EnsureRunProgressControls(uiRoot);
+
+            marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
+
+            cardDetailView.CloseButton.onClick.RemoveListener(CloseCardDetail);
+            cardDetailView.CloseButton.onClick.AddListener(CloseCardDetail);
 
             runProgressControls.NextBusinessDayButton.onClick.RemoveListener(AdvanceToNextBusinessDay);
             runProgressControls.NextBusinessDayButton.onClick.AddListener(AdvanceToNextBusinessDay);
@@ -123,6 +152,7 @@ namespace AssetManager
         {
             runStatusHud.Show(CurrentRun);
             marketTapeView.Show(CurrentRun);
+            cardDetailView.Show(CurrentRun);
             marketTapeDevControls.Show(CurrentRun);
             runProgressControls.Show(CurrentRun);
         }

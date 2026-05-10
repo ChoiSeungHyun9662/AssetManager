@@ -23,7 +23,8 @@ namespace AssetManager
         public void Show(RunSessionState run)
         {
             var isActive = run.State == RunState.Playing
-                && run.BusinessDay.Phase == BusinessDayPhase.AwaitingAction;
+                && run.BusinessDay.Phase == BusinessDayPhase.AwaitingAction
+                && run.BusinessDay.MarketArea == MarketAreaState.Market;
             SetActive(advanceButton, isActive);
             SetActive(refreshButton, isActive);
         }

@@ -30,7 +30,7 @@ namespace AssetManager
     public enum PurchaseSource
     {
         MarketTape,
-        Reservation
+        Reserved
     }
 
     public enum AssetCardRuntimeState
@@ -550,7 +550,8 @@ namespace AssetManager
             ReservationState reservation,
             OwnedAssetState ownedAssets,
             BusinessDayState businessDay,
-            RedemptionPressureState redemptionPressure)
+            RedemptionPressureState redemptionPressure,
+            CardDetailState cardDetail = null)
         {
             State = state;
             StaticData = staticData;
@@ -563,6 +564,7 @@ namespace AssetManager
             OwnedAssets = ownedAssets;
             BusinessDay = businessDay;
             RedemptionPressure = redemptionPressure;
+            CardDetail = cardDetail ?? CardDetailState.Empty;
         }
 
         public RunState State { get; }
@@ -576,5 +578,6 @@ namespace AssetManager
         public OwnedAssetState OwnedAssets { get; }
         public BusinessDayState BusinessDay { get; }
         public RedemptionPressureState RedemptionPressure { get; }
+        public CardDetailState CardDetail { get; }
     }
 }

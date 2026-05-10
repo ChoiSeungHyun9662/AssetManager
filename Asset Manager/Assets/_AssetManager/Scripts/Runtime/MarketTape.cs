@@ -368,7 +368,8 @@ namespace AssetManager
                 run.Reservation,
                 run.OwnedAssets,
                 run.BusinessDay,
-                run.RedemptionPressure);
+                run.RedemptionPressure,
+                run.CardDetail);
         }
     }
 }

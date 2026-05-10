@@ -11,8 +11,7 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
-            if (run.BusinessDay.Phase != BusinessDayPhase.AwaitingAction
-                || run.Calendar.RemainingBusinessDays <= 0)
+            if (!MarketAreaFlow.CanAdvanceToNextBusinessDay(run))
             {
                 return run;
             }

@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-10
-Covered implementation slices: issues 00-03
+Covered implementation slices: issues 00-04
 
 ## Update Workflow
 
@@ -30,6 +30,7 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **01 - 런 bootstrap and data seed**: introduces static data versus runtime state, starts a new 런 at 1회계년도 1Q, initializes resources and 환매 압력, and shows the status HUD.
 - **02 - calendar and 영업일 loop**: defines the MVP schedule: 10 playable 분기, 44 playable 영업일, 1/2회계년도 4Q 휴가, and final settlement routing after 3회계년도 4Q.
 - **03 - 시장 테이프**: displays 매도 임박, 현재 시장, and 예비 시장; separates 시장 테이프 갱신 from 시장 테이프 진행; prevents visible/owned/reserved/removed card duplication.
+- **04 - 시장 영역 and 카드 상세보기**: adds single 시장 영역 transitions, CardDetail transient state, clickable market cards, a CardDetail replacement panel, close handling, and 다음 영업일 gating.
 
 Current runtime flow:
 
@@ -80,8 +81,11 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `ReservationState` | `Runtime/RunModels.cs` | 예약 구역 capacity and reserved cards. |
 | `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list. |
 | `BusinessDayState` | `Runtime/RunModels.cs` | Current phase and 시장 영역 state. |
+| `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기. |
+| `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Minimal pending payment placeholder created on 카드 상세보기 entry and cleared on close. |
+| `CardDetailState` | `Runtime/CardDetailState.cs` | Transient 카드 상세보기 state: selected card, 매수 출처, display data, pending payment, extra-buy flag, and Reserve visibility condition. |
 | `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 환매 압력. |
-| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI. Most transitions create a new instance. |
+| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including transient 카드 상세보기 state. Most transitions create a new instance. |
 
 ## Enums
 
@@ -106,6 +110,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunCalendarDefinition` | `Runtime/RunCalendar.cs` | Query object for playable quarters, 4Q 휴가, and total playable 영업일. |
 | `RunCalendar` | `Runtime/RunCalendar.cs` | Factory for the MVP calendar: 1/2회계년도 1Q-3Q have 4 영업일; 3회계년도 1Q-4Q have 5 영업일. |
 | `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, enters 분기 마감, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
+| `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for entering/closing 카드 상세보기 and gating 다음 영업일 to Market state only. |
 
 ## Market Rules
 
@@ -123,12 +128,13 @@ Important distinction:
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons to rule services, and refreshes all visible UI. |
+| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons and market card clicks to rule services, and refreshes all visible UI. |
 | `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD text from `RunSessionState`. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
-| `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, and 최종 정산 placeholder UI. |
-| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and visible card summary lines. |
-| `MarketTapeDevControls` | `Runtime/MarketTapeDevControls.cs` | Temporary development buttons for 시장 테이프 진행 and 시장 테이프 갱신. |
+| `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, and 최종 정산 placeholder UI; 다음 영업일 uses MarketArea gating. |
+| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and clickable visible market card summary buttons. |
+| `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, close/buy placeholders, and Reserve button visibility. |
+| `MarketTapeDevControls` | `Runtime/MarketTapeDevControls.cs` | Temporary Market-state-only development buttons for 시장 테이프 진행 and 시장 테이프 갱신. |
 
 ## Verification Map
 
@@ -138,6 +144,7 @@ Important distinction:
 | 런 bootstrap | `RunBootstrapperTests`, `MainGameShellBootstrapTests` |
 | Calendar and 영업일 loop | `RunCalendarTests`, `BusinessDayFlowTests`, `MainGameShellBootstrapTests` |
 | 시장 테이프 rules | `MarketTapeTests`, `BusinessDayFlowTests`, `MainGameShellBootstrapTests` |
+| 시장 영역 and 카드 상세보기 | `MarketAreaFlowTests`, `MainGameShellBootstrapTests` |
 
 ## Notes For Next Cleanup
 
