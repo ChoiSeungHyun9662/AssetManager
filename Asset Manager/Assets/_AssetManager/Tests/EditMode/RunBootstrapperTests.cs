@@ -24,6 +24,9 @@ namespace AssetManager.Tests
 
             var run = RunBootstrapper.CreateNewRun(staticData);
 
+            Assert.That(staticData.MarketConfig.SellImminentSlots, Is.EqualTo(3));
+            Assert.That(staticData.MarketConfig.CurrentMarketSlots, Is.EqualTo(3));
+            Assert.That(staticData.MarketConfig.UpcomingMarketSlots, Is.EqualTo(3));
             Assert.That(run.MarketTape.SellImminentCards, Has.Count.EqualTo(staticData.MarketConfig.SellImminentSlots));
             Assert.That(run.MarketTape.CurrentMarketCards, Has.Count.EqualTo(staticData.MarketConfig.CurrentMarketSlots));
             Assert.That(run.MarketTape.UpcomingMarketCards, Has.Count.EqualTo(staticData.MarketConfig.UpcomingMarketSlots));

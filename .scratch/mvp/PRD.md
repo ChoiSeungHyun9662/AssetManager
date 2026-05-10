@@ -6,7 +6,7 @@ Status: ready-for-agent
 
 ## Problem Statement
 
-플레이어는 제한된 영업일 안에서 자산을 매수하고, 카드를 예약하고, 유동성을 확보하며, 분기 목표 운용 수익을 달성해야 한다. 현재 기획은 시스템별 세부 문서로 충분히 풀려 있지만, 구현을 시작하려면 어떤 범위를 1차 MVP로 묶을지, 어떤 모듈을 우선 분리할지, 어떤 규칙을 테스트로 고정할지 한 문서로 정리되어야 한다.
+플레이어는 제한된 영업일 안에서 자산을 매수하고, 카드를 예약하고, 자원을 확보하며, 분기 목표 운용 수익을 달성해야 한다. 현재 기획은 시스템별 세부 문서로 충분히 풀려 있지만, 구현을 시작하려면 어떤 범위를 1차 MVP로 묶을지, 어떤 모듈을 우선 분리할지, 어떤 규칙을 테스트로 고정할지 한 문서로 정리되어야 한다.
 
 MVP에서 해결해야 하는 핵심 문제는 다음이다.
 
@@ -14,7 +14,7 @@ MVP에서 해결해야 하는 핵심 문제는 다음이다.
 - 시장 테이프가 표시되고, 진행과 갱신과 슬롯 보충이 서로 다르게 동작해야 한다.
 - 플레이어가 시장 카드와 예약 카드를 상세보기에서 검토하고 매수할 수 있어야 한다.
 - 플레이어가 시장 카드를 예약해 딜을 얻고 환매 압력을 감수할 수 있어야 한다.
-- 플레이어가 유동성 확보로 현금과 전문 자원을 얻되, 운용 수익과 조달 현금이 섞이지 않아야 한다.
+- 플레이어가 자원 확보로 현금과 전문 자원을 얻되, 운용 수익과 조달 현금이 섞이지 않아야 한다.
 - 분기 마감에서 운용 수익, 분기 목표, 환매 압력을 판정해야 한다.
 - 환매 압력 10 이상 도달 시 즉시 런 실패가 발생해야 한다.
 - 3회계년도 4Q까지 실패 없이 완료하면 최종 정산을 표시해야 한다.
@@ -23,20 +23,20 @@ MVP에서 해결해야 하는 핵심 문제는 다음이다.
 
 1차 MVP는 "처음부터 끝까지 플레이 가능한 규칙 중심 런"을 구현한다.
 
-플레이어는 새 런을 시작하면 1회계년도 1Q부터 플레이한다. 각 플레이 분기에서는 제한된 영업일 동안 시장 카드 매수, 시장 카드 예약, 유동성 확보, 다음 영업일을 선택한다. 마지막 영업일이 끝나면 분기 마감으로 들어가 분기 운용 수익과 목표 달성률을 판정한다. 목표 미달 또는 예약으로 환매 압력이 누적되고, 환매 압력이 10 이상이면 즉시 실패한다. 1·2회계년도 3Q 이후에는 4Q 휴가 요약 화면을 거쳐 다음 회계년도로 넘어가며, 3회계년도 4Q 이후에는 최종 정산으로 이동한다.
+플레이어는 새 런을 시작하면 1회계년도 1Q부터 플레이한다. 각 플레이 분기에서는 제한된 영업일 동안 시장 카드 매수, 시장 카드 예약, 자원 확보, 다음 영업일을 선택한다. 마지막 영업일이 끝나면 분기 마감으로 들어가 분기 운용 수익과 목표 달성률을 판정한다. 목표 미달 또는 예약으로 환매 압력이 누적되고, 환매 압력이 10 이상이면 즉시 실패한다. 1·2회계년도 3Q 이후에는 4Q 휴가 요약 화면을 거쳐 다음 회계년도로 넘어가며, 3회계년도 4Q 이후에는 최종 정산으로 이동한다.
 
 MVP는 다음 시스템을 포함한다.
 
 - 시간 구조: 3개 회계년도, 10개 플레이 분기, 총 44영업일
-- 영업일 흐름: 영업일 시작 인컴, 플레이어 입력, 행동 확정, 영업일 종료
+- 영업일 흐름: 영업일 시작 운용 수익, 플레이어 입력, 행동 확정, 영업일 종료
 - 시장 영역 3상태: Market, CardDetail, GainLiquidity
 - 시장 테이프: 매도 임박, 현재 시장, 예비 시장
 - 자원 구조: 현금, 리서치, 신용, 원자재, 딜
-- 자산 카드: 운용가치, 인컴, 비용, 태그, 희귀도
+- 자산 카드: 운용가치, 운용 수익, 비용, 태그, 희귀도
 - 카드 상세보기와 매수 결제
 - 칩 조작 최소 UX: 클릭 배치, 회수, 딜 배치, 비용 슬롯 표시
-- 예약 시스템과 딜 칩
-- 유동성 확보
+- 예약 시스템과 딜
+- 자원 확보
 - 추가 매수권
 - 분기 마감과 환매 압력
 - 4Q 휴가
@@ -48,8 +48,8 @@ MVP는 다음 시스템을 포함한다.
 - 새 런을 시작할 수 있다.
 - 1회계년도 1Q부터 3회계년도 4Q까지 진행할 수 있다.
 - 영업일이 행동 확정 시점에만 소비된다.
-- 자산을 매수하고 보유 자산 인컴을 받을 수 있다.
-- 유동성 확보로 자원을 얻을 수 있다.
+- 자산을 매수하고 보유 자산의 영업일 시작 현금을 받을 수 있다.
+- 자원 확보로 자원을 얻을 수 있다.
 - 시장 카드를 예약하고, 딜과 환매 압력을 처리할 수 있다.
 - 예약 카드를 유지하고 나중에 매수할 수 있다.
 - 분기 마감에서 목표 달성률과 환매 압력을 계산한다.
@@ -125,7 +125,7 @@ MVP는 다음 시스템을 포함한다.
 - Implement the first MVP with reservation and deal chips included. They are central to the current gameplay. If scope must be cut again, reservation, deal, extra buy, and advanced chip UX are the candidates for a second MVP, but the preferred MVP includes reservation and deal.
 - Treat additional buy as part of MVP rules, but make its priority dependent on whether the first MVP card pool actually contains a GrantExtraBuyAction-style effect.
 - Keep UI layout and art exactness out of the core MVP. The MVP defines which controls exist, when they are visible/enabled, and what they do.
-- Store balance-sensitive values in data tables: card costs, professional costs, management value, income, tags, rarity, quarter targets, rating thresholds, redemption pressure levels, final comments, and market slot counts.
+- Store balance-sensitive values in data tables: card costs, professional costs, management value, income, tags, rarity, quarter targets, rating thresholds, redemption pressure levels, final comments, and market slot count per zone.
 - Separate static data from runtime state. Static data defines cards, tags, quarters, rating bands, comments, resource config, market config, and redemption pressure config. Runtime state tracks current resources, calendar, performance, market tape, reservation slots, owned assets, card runtime state, business day state, and redemption pressure.
 
 Proposed major modules:
@@ -199,7 +199,8 @@ Core rules to test:
 - Business day: next 영업일 is enabled only in Market state.
 - Business day: last 영업일 ending enters quarter settlement without starting another income step.
 - Market area: Market, CardDetail, and GainLiquidity are mutually exclusive.
-- Market tape: advance removes sell-imminent cards, moves current to sell-imminent, upcoming to current, and refills upcoming.
+- Market tape: all zones use the same slot count per zone. MVP default is 3 cards each for 매도 임박, 현재 시장, and 예비 시장.
+- Market tape: advance removes every card in the 매도 임박 zone, moves every 현재 시장 card to 매도 임박, moves every 예비 시장 card to 현재 시장, and refills every 예비 시장 slot.
 - Market tape: refresh removes current market tape cards and rebuilds all zones.
 - Market tape: fiscal year start refreshes, same-fiscal-year next quarter advances.
 - Market tape: 4Q vacation performs no advance or refresh.
@@ -276,9 +277,9 @@ Suggested test layers:
 MVP smoke scenarios:
 
 1. 새 런 시작 → 1회계년도 1Q 시작 → 다음 영업일로 4일 진행 → 분기 마감 진입.
-2. 시장 카드 클릭 → 카드 상세보기 → 칩 배치 → 매수 확정 → 보유 자산 추가 → 다음 영업일 시작 → 인컴 발생.
-3. 자원통 클릭 → 유동성 확보 → 현금 선택 → 현금 선택 → 현금 +2 → 영업일 종료.
-4. 시장 카드 클릭 → 카드 상세보기 → 예약 → 예약 슬롯 추가 → 딜 +1 → 환매 압력 +1 → 시장 테이프 진행 → 영업일 종료.
+2. 시장 카드 클릭 → 카드 상세보기 → 칩 배치 → 매수 확정 → 보유 자산 추가 → 다음 영업일 시작 → 운용 수익 발생.
+3. 중앙 은행 클릭 → 자원 확보 → 현금 선택 → 현금 선택 → 현금 +2 → 영업일 종료.
+4. 시장 카드 클릭 → 카드 상세보기 → 예약 → 예약 구역 추가 → 딜 +1 → 환매 압력 +1 → 시장 테이프 진행 → 영업일 종료.
 5. 환매 압력 9 → 시장 카드 예약 → 환매 압력 10 → 실패 화면.
 6. 3회계년도 4Q 완료 → 환매 압력 10 미만 → 최종 정산 → 최종 운용가치 / 평가 / 총 운용 수익 표시.
 
@@ -305,6 +306,6 @@ MVP smoke scenarios:
 - 구현 기준: Unity 클라이언트 구현을 염두에 두되, 이 PRD는 구체적인 파일 구조나 UI 좌표를 강제하지 않는다.
 - 핵심 리스크: 운용 수익과 조달 현금이 섞이면 분기 목표와 최종 통계가 무너진다. ResourceLedger와 RunPerformanceState 성격을 초기에 확실히 분리해야 한다.
 - 핵심 리스크: 시장 테이프 진행, 갱신, 슬롯 보충이 섞이면 예약과 매수의 의사결정 비용이 흐려진다. MarketTape module을 독립적으로 먼저 테스트해야 한다.
-- 핵심 리스크: 예약 카드와 보유 자산이 섞이면 운용가치, 인컴, 정산, 최종 평가가 모두 오염된다. 카드 런타임 상태 전환을 명확하게 제한해야 한다.
+- 핵심 리스크: 예약 카드와 보유 자산이 섞이면 운용가치, 운용 수익, 정산, 최종 평가가 모두 오염된다. 카드 런타임 상태 전환을 명확하게 제한해야 한다.
 - 핵심 리스크: 환매 압력 한도 검사가 늦으면 실패해야 할 런이 다음 영업일, 휴가, 또는 최종 정산으로 진행될 수 있다. RedemptionPressure module은 pressure add와 failure check를 한 인터페이스로 묶는 것이 좋다.
 - 초기 구현은 화려함보다 규칙 정확성을 우선한다. 화면은 플레이 가능한 최소 표시와 버튼 상태를 갖추고, 연출과 사운드는 이후 단계에서 보강한다.

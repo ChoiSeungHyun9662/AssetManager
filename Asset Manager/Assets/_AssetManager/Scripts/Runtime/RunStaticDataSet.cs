@@ -216,6 +216,164 @@ namespace AssetManager
                     },
                     3,
                     1,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-campus-housing",
+                    "테스트 캠퍼스 하우징",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Common,
+                    2,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Research, 1)
+                    },
+                    2,
+                    1,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-cold-storage",
+                    "테스트 냉장 창고",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Uncommon,
+                    3,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Commodity, 1)
+                    },
+                    4,
+                    1,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-renewal-lot",
+                    "테스트 재개발 부지",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Common,
+                    1,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Credit, 1)
+                    },
+                    2,
+                    0,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-bridge-loan",
+                    "테스트 브릿지 론",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Common,
+                    2,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Credit, 1)
+                    },
+                    2,
+                    1,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-solar-roof-lease",
+                    "테스트 태양광 지붕 임대",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Uncommon,
+                    3,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Research, 1),
+                        new ProfessionalResourceCost(ResourceType.Commodity, 1)
+                    },
+                    4,
+                    1,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-mall-anchor",
+                    "테스트 몰 앵커",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Common,
+                    2,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Research, 1)
+                    },
+                    3,
+                    0,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-self-storage",
+                    "테스트 셀프 스토리지",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Common,
+                    1,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Commodity, 1)
+                    },
+                    2,
+                    1,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-life-science-suite",
+                    "테스트 연구 시설",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Uncommon,
+                    3,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Research, 1),
+                        new ProfessionalResourceCost(ResourceType.Credit, 1)
+                    },
+                    4,
+                    1,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-transit-retail",
+                    "테스트 역세권 리테일",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Common,
+                    2,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Credit, 1)
+                    },
+                    3,
+                    1,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-industrial-reit",
+                    "테스트 산업 리츠",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Common,
+                    2,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Commodity, 1)
+                    },
+                    3,
+                    1,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-student-housing",
+                    "테스트 학생 하우징",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Common,
+                    1,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Research, 1)
+                    },
+                    2,
+                    0,
+                    new[] { realEstateTag }),
+                new AssetCardData(
+                    "starter-ground-lease",
+                    "테스트 토지 임대권",
+                    "MVP 시장 테이프 확인용 자산 카드",
+                    AssetRarity.Common,
+                    1,
+                    new[]
+                    {
+                        new ProfessionalResourceCost(ResourceType.Credit, 1)
+                    },
+                    1,
+                    1,
                     new[] { realEstateTag })
             };
 
@@ -242,7 +400,7 @@ namespace AssetManager
                 new FinalManagementCommentData("seed-stable", "seed", "stable", "기초 운용 체계가 작동합니다.")
             };
 
-            marketConfig = new MarketConfigData(1, 2, 2);
+            marketConfig = new MarketConfigData(3, 3, 3);
             resourceConfig = new ResourceConfigData(3, 10, 3);
             redemptionPressureConfig = new RedemptionPressureConfigData(0, 10);
         }

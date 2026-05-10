@@ -13,7 +13,7 @@
 - 런타임 상태와 정적 데이터를 구분한다.
 ```
 
-이 문서는 최종 코드 구조를 강제하지 않는다.  
+이 문서는 최종 코드 구조를 강제하지 않는다.
 다만 Unity 구현 시 ScriptableObject, JSON, CSV, Addressables, 자체 데이터 테이블 등 어떤 방식으로 구현하더라도 동일한 필드 의미를 유지해야 한다.
 
 ---
@@ -62,7 +62,7 @@
 - 현재 분기
 - 남은 영업일
 - 시장 테이프 상태
-- 예약 슬롯 상태
+- 예약 구역 상태
 - 보유 자산 목록
 - 현재 환매 압력
 - 현재 분기 운용 수익
@@ -95,7 +95,7 @@ public enum ResourceType
 | Research | 리서치 |
 | Credit | 신용 |
 | Commodity | 원자재 |
-| Deal | 딜 칩 |
+| Deal | 딜 |
 
 ---
 
@@ -152,7 +152,7 @@ public enum PurchaseSource
 | MarketTape | 시장 테이프에서 매수 |
 | Reserved | 예약 카드에서 매수 |
 
-예약 카드 매수도 일반 자산 매수로 판정하지만, 구매 출처는 `Reserved`로 남긴다.
+예약 카드 매수도 일반 자산 매수로 판정하지만, 매수 출처는 `Reserved`로 남긴다.
 
 ---
 
@@ -175,7 +175,7 @@ public enum AssetCardRuntimeState
 |---|---|
 | Deck | 아직 시장에 나오지 않은 카드 |
 | MarketTape | 시장 테이프에 있는 카드 |
-| Reserved | 예약 슬롯에 있는 카드 |
+| Reserved | 예약 구역에 있는 카드 |
 | Owned | 매수 완료된 보유 자산 |
 | Removed | 시장에서 제거된 카드 |
 
@@ -198,7 +198,7 @@ public enum MarketAreaState
 |---|---|
 | Market | 기본 시장 상태 |
 | CardDetail | 카드 상세보기 |
-| GainLiquidity | 유동성 확보 |
+| GainLiquidity | 자원 확보 |
 
 ---
 
@@ -223,8 +223,8 @@ public enum MarketTapeZone
 | Current | 현재 시장 |
 | Upcoming | 예비 시장 |
 
-`Upcoming`은 예비 시장을 뜻한다.  
-예약 슬롯과 혼동하지 않기 위해 `ReserveMarket` 같은 명칭은 피하는 것이 좋다.
+`Upcoming`은 예비 시장을 뜻한다.
+예약 구역과 혼동하지 않기 위해 `ReserveMarket` 같은 명칭은 피하는 것이 좋다.
 
 ---
 
@@ -313,7 +313,7 @@ public class AssetCardData
 | CashCost | 기본 현금 비용 |
 | ProfessionalCost | 전문 자원 비용 |
 | ManagementValue | 운용가치 |
-| IncomeCash | 영업일 시작 인컴 |
+| IncomeCash | 영업일 시작 운용 수익 |
 | AssetClassTagIds | 자산군 태그 ID 목록 |
 | TagIds | 일반 태그 ID 목록 |
 
@@ -514,7 +514,7 @@ High
 min_redemption_pressure: 6
 ```
 
-이 기준은 최종 운용 코멘트 산정에 사용한다.  
+이 기준은 최종 운용 코멘트 산정에 사용한다.
 기준값은 테이블 조정형이다.
 
 ---
@@ -681,7 +681,7 @@ public class RunPerformanceState
 }
 ```
 
-유동성 확보 현금은 여기에 포함하지 않는다.
+조달 현금은 여기에 포함하지 않는다.
 
 ---
 
@@ -733,7 +733,7 @@ public class AssetCardRuntimeData
 | PurchaseSource | 매수 출처 |
 | MarketTapeZone | 시장 테이프 구역 |
 | MarketSlotIndex | 시장 슬롯 인덱스 |
-| ReservedSlotIndex | 예약 슬롯 인덱스 |
+| ReservedSlotIndex | 예약 구역 인덱스 |
 | AcquiredOrder | 매수 순서 |
 
 ---
@@ -770,7 +770,7 @@ public class MarketTapeState
 
 ## 5.8 ReservedAssetSlot
 
-예약 슬롯이다.
+예약 구역이다.
 
 ```csharp
 public class ReservedAssetSlot
@@ -784,7 +784,7 @@ public class ReservedAssetSlot
 
 ## 5.9 ReservationState
 
-예약 슬롯 전체 상태이다.
+예약 구역 전체 상태이다.
 
 ```csharp
 public class ReservationState
@@ -793,7 +793,7 @@ public class ReservationState
 }
 ```
 
-예약 슬롯 수:
+예약 구역 수:
 
 ```text
 3개
@@ -910,7 +910,7 @@ public class PurchaseContext
 
 ## 5.15 LiquidityActionState
 
-유동성 확보 진행 상태이다.
+자원 확보 진행 상태이다.
 
 ```csharp
 public class LiquidityActionState
@@ -1068,7 +1068,7 @@ MaxRedemptionPressure = 10
 - 카드별 현금 비용
 - 카드별 전문 자원 비용
 - 카드별 운용가치
-- 카드별 인컴
+- 카드별 운용 수익
 - 카드별 태그
 - 카드별 희귀도
 - 분기 목표 운용 수익
@@ -1097,7 +1097,7 @@ MaxRedemptionPressure = 10
 - BusinessDayState
 ```
 
-현재 열려 있는 카드 상세보기나 유동성 확보 중간 상태를 저장할지 여부는 별도 저장 정책에서 결정한다.  
+현재 열려 있는 카드 상세보기나 자원 확보 중간 상태를 저장할지 여부는 별도 저장 정책에서 결정한다.
 MVP에서는 영업일 입력 대기 상태에서만 저장을 허용하는 방식이 단순하다.
 
 ---
@@ -1139,9 +1139,9 @@ public int MinManagementValue;
 - 밸런스 수치는 테이블 조정형으로 둔다.
 - 카드 운용가치 필드명은 ManagementValue로 통일한다.
 - AUM이라는 명칭은 사용하지 않는다.
-- 유동성 확보 현금은 운용 수익 상태에 누적하지 않는다.
+- 조달 현금은 운용 수익 상태에 누적하지 않는다.
 - 예약 카드와 보유 자산을 명확히 구분한다.
-- 시장 테이프와 예약 슬롯은 별도 상태로 관리한다.
+- 시장 테이프와 예약 구역은 별도 상태로 관리한다.
 - 환매 압력 한도는 10이지만 ConfigData로 관리할 수 있다.
 - 최종 평가는 FinalRatingTable에서 판정한다.
 - 운용 코멘트는 FinalRatingGrade × RedemptionPressureLevel로 판정한다.

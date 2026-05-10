@@ -14,7 +14,7 @@ MVP 성공 기준이 Unity 엔진 안에서 모두 구현되었는지 확인할 
 
 - RunCalendar, ResourceLedger, MarketTape, PurchasePayment, LiquidityAction, RedemptionPressure, QuarterSettlement, FinalSettlement의 핵심 순수 규칙 테스트를 만든다.
 - MarketAreaState와 BusinessDayFlow의 상태 전환 테스트를 만든다.
-- 기본 진행, 자산 매수, 유동성 확보, 예약, 환매 압력 실패, 최종 정산 smoke scenario를 자동 또는 반자동 테스트로 고정한다.
+- 기본 진행, 자산 매수, 자원 확보, 예약, 환매 압력 실패, 최종 정산 smoke scenario를 자동 또는 반자동 테스트로 고정한다.
 - 테스트 데이터는 밸런스가 아니라 규칙 검증에 필요한 최소 fixture로 둔다.
 - 실패 시 어떤 규칙이 깨졌는지 알 수 있는 테스트 이름을 사용한다.
 
@@ -31,7 +31,7 @@ MVP 성공 기준이 Unity 엔진 안에서 모두 구현되었는지 확인할 
 - 자동 테스트 또는 반자동 테스트로 핵심 deep module 규칙이 검증된다.
 - Play Mode에서 기본 진행 smoke scenario가 성공한다.
 - Play Mode에서 시장 카드 매수 smoke scenario가 성공한다.
-- Play Mode에서 유동성 확보 smoke scenario가 성공한다.
+- Play Mode에서 자원 확보 smoke scenario가 성공한다.
 - Play Mode에서 예약과 환매 압력 smoke scenario가 성공한다.
 - Play Mode에서 환매 압력 10 실패 smoke scenario가 성공한다.
 - Play Mode에서 3회계년도 4Q 이후 최종 정산 smoke scenario가 성공한다.
@@ -41,7 +41,7 @@ MVP 성공 기준이 Unity 엔진 안에서 모두 구현되었는지 확인할 
 - [ ] PRD의 MVP smoke scenario 6개가 Unity에서 검증 가능하다.
 - [ ] 핵심 규칙 모듈의 자동 테스트 또는 명시적 회귀 테스트가 있다.
 - [ ] Play Mode QA 체크리스트가 이슈 또는 문서로 남는다.
-- [ ] 모든 주요 UI 입력은 Scene에서 실제 버튼/카드/자원통 조작으로 확인된다.
+- [ ] 모든 주요 UI 입력은 Scene에서 실제 버튼/카드/중앙 은행 조작으로 확인된다.
 - [ ] 완료 기준은 코드 존재가 아니라 Unity 실행 결과로 판정한다.
 - [ ] 누락된 에디터 연결이나 데이터 연결이 있으면 QA에서 잡을 수 있다.
 - [ ] 최종 상태에서 새 런부터 실패 또는 최종 정산까지 한 흐름이 플레이 가능하다.
@@ -56,4 +56,3 @@ MVP 성공 기준이 Unity 엔진 안에서 모두 구현되었는지 확인할 
 1, 2, 3, 6, 9, 10, 11, 15, 16, 32, 40, 49, 51, 52, 53, 54, 55, 58
 
 ## Comments
-

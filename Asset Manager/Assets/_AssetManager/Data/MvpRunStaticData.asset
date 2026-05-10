@@ -186,6 +186,178 @@ MonoBehaviour:
     - id: real-estate
       displayName: "\uBD80\uB3D9\uC0B0"
       tagType: 0
+  - id: starter-campus-housing
+    displayName: 테스트 캠퍼스 하우징
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    managementValue: 2
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-cold-storage
+    displayName: 테스트 냉장 창고
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 1
+    cashCost: 3
+    professionalCosts:
+    - resourceType: 3
+      amount: 1
+    managementValue: 4
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-renewal-lot
+    displayName: 테스트 재개발 부지
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 1
+    professionalCosts:
+    - resourceType: 2
+      amount: 1
+    managementValue: 2
+    income: 0
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-bridge-loan
+    displayName: 테스트 브릿지 론
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 2
+      amount: 1
+    managementValue: 2
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-solar-roof-lease
+    displayName: 테스트 태양광 지붕 임대
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 1
+    cashCost: 3
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    - resourceType: 3
+      amount: 1
+    managementValue: 4
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-mall-anchor
+    displayName: 테스트 몰 앵커
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    managementValue: 3
+    income: 0
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-self-storage
+    displayName: 테스트 셀프 스토리지
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 1
+    professionalCosts:
+    - resourceType: 3
+      amount: 1
+    managementValue: 2
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-life-science-suite
+    displayName: 테스트 연구 시설
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 1
+    cashCost: 3
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    - resourceType: 2
+      amount: 1
+    managementValue: 4
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-transit-retail
+    displayName: 테스트 역세권 리테일
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 2
+      amount: 1
+    managementValue: 3
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-industrial-reit
+    displayName: 테스트 산업 리츠
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 3
+      amount: 1
+    managementValue: 3
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-student-housing
+    displayName: 테스트 학생 하우징
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 1
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    managementValue: 2
+    income: 0
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-ground-lease
+    displayName: 테스트 토지 임대권
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 1
+    professionalCosts:
+    - resourceType: 2
+      amount: 1
+    managementValue: 1
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
   quarters:
   - fiscalYear: 1
     quarter: 1
@@ -218,9 +390,9 @@ MonoBehaviour:
     pressureLevelId: stable
     comment: "\uAE30\uCD08 \uC6B4\uC6A9 \uCCB4\uACC4\uAC00 \uC791\uB3D9\uD569\uB2C8\uB2E4."
   marketConfig:
-    sellImminentSlots: 1
-    currentMarketSlots: 2
-    upcomingMarketSlots: 2
+    sellImminentSlots: 3
+    currentMarketSlots: 3
+    upcomingMarketSlots: 3
   resourceConfig:
     startingCash: 3
     professionalResourceCap: 10

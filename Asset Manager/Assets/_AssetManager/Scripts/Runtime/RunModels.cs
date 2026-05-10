@@ -321,13 +321,13 @@ namespace AssetManager
     public sealed class MarketConfigData
     {
         [SerializeField]
-        private int sellImminentSlots = 1;
+        private int sellImminentSlots = 3;
 
         [SerializeField]
-        private int currentMarketSlots = 2;
+        private int currentMarketSlots = 3;
 
         [SerializeField]
-        private int upcomingMarketSlots = 2;
+        private int upcomingMarketSlots = 3;
 
         public MarketConfigData()
         {

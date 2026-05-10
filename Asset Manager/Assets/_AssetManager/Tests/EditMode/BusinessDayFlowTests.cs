@@ -53,16 +53,19 @@ namespace AssetManager.Tests
         public void ContinueAfterQuarterSettlementAdvancesMarketTapeInSameFiscalYear()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            var oldSellImminentCardId = run.MarketTape.SellImminentCards[0].Card.Id;
-            var oldCurrentFirstCardId = run.MarketTape.CurrentMarketCards[0].Card.Id;
+            var oldSellImminentCardIds = CollectZoneCardIds(run.MarketTape.SellImminentCards);
+            var oldCurrentMarketCardIds = CollectZoneCardIds(run.MarketTape.CurrentMarketCards);
             run = CompleteCurrentQuarter(run);
 
             run = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
 
             Assert.That(run.Calendar.FiscalYear, Is.EqualTo(1));
             Assert.That(run.Calendar.Quarter, Is.EqualTo(2));
-            Assert.That(run.MarketTape.SellImminentCards[0].Card.Id, Is.EqualTo(oldCurrentFirstCardId));
-            Assert.That(FindCard(run.AssetCards, oldSellImminentCardId).State, Is.EqualTo(AssetCardRuntimeState.Removed));
+            AssertZoneMatches(run.MarketTape.SellImminentCards, oldCurrentMarketCardIds);
+            foreach (var cardId in oldSellImminentCardIds)
+            {
+                Assert.That(FindCard(run.AssetCards, cardId).State, Is.EqualTo(AssetCardRuntimeState.Removed));
+            }
         }
 
         [Test]
@@ -250,6 +253,29 @@ namespace AssetManager.Tests
             {
                 Assert.That(actual[i].Card.Id, Is.EqualTo(expected[i].Card.Id));
             }
+        }
+
+        private static void AssertZoneMatches(
+            System.Collections.Generic.IReadOnlyList<AssetCardRuntimeData> actual,
+            System.Collections.Generic.IReadOnlyList<string> expectedCardIds)
+        {
+            Assert.That(actual, Has.Count.EqualTo(expectedCardIds.Count));
+            for (var i = 0; i < expectedCardIds.Count; i++)
+            {
+                Assert.That(actual[i].Card.Id, Is.EqualTo(expectedCardIds[i]));
+            }
+        }
+
+        private static System.Collections.Generic.List<string> CollectZoneCardIds(
+            System.Collections.Generic.IReadOnlyList<AssetCardRuntimeData> cards)
+        {
+            var cardIds = new System.Collections.Generic.List<string>();
+            foreach (var card in cards)
+            {
+                cardIds.Add(card.Card.Id);
+            }
+
+            return cardIds;
         }
 
         private static void AddCardIds(

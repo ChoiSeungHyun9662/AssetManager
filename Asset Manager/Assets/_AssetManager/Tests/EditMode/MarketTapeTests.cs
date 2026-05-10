@@ -28,21 +28,20 @@ namespace AssetManager.Tests
         public void AdvanceRemovesSellImminentAndRefillsUpcomingMarket()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            var oldSellImminentCardId = run.MarketTape.SellImminentCards[0].Card.Id;
-            var oldCurrentFirstCardId = run.MarketTape.CurrentMarketCards[0].Card.Id;
-            var oldCurrentSecondCardId = run.MarketTape.CurrentMarketCards[1].Card.Id;
-            var oldUpcomingFirstCardId = run.MarketTape.UpcomingMarketCards[0].Card.Id;
-            var oldUpcomingSecondCardId = run.MarketTape.UpcomingMarketCards[1].Card.Id;
+            var oldSellImminentCardIds = CollectCardIds(run.MarketTape.SellImminentCards);
+            var oldCurrentMarketCardIds = CollectCardIds(run.MarketTape.CurrentMarketCards);
+            var oldUpcomingMarketCardIds = CollectCardIds(run.MarketTape.UpcomingMarketCards);
 
             var advancedRun = MarketTape.Advance(run);
 
-            Assert.That(advancedRun.MarketTape.SellImminentCards[0].Card.Id, Is.EqualTo(oldCurrentFirstCardId));
-            Assert.That(advancedRun.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(oldCurrentSecondCardId));
-            Assert.That(advancedRun.MarketTape.CurrentMarketCards[1].Card.Id, Is.EqualTo(oldUpcomingFirstCardId));
-            Assert.That(advancedRun.MarketTape.UpcomingMarketCards[0].Card.Id, Is.EqualTo(oldUpcomingSecondCardId));
+            AssertZoneMatches(advancedRun.MarketTape.SellImminentCards, oldCurrentMarketCardIds);
+            AssertZoneMatches(advancedRun.MarketTape.CurrentMarketCards, oldUpcomingMarketCardIds);
             Assert.That(advancedRun.MarketTape.UpcomingMarketCards, Has.Count.EqualTo(run.StaticData.MarketConfig.UpcomingMarketSlots));
             Assert.That(CollectVisibleCardIds(advancedRun.MarketTape), Is.Unique);
-            Assert.That(FindCard(advancedRun.AssetCards, oldSellImminentCardId).State, Is.EqualTo(AssetCardRuntimeState.Removed));
+            foreach (var cardId in oldSellImminentCardIds)
+            {
+                Assert.That(FindCard(advancedRun.AssetCards, cardId).State, Is.EqualTo(AssetCardRuntimeState.Removed));
+            }
         }
 
         [Test]
@@ -119,6 +118,26 @@ namespace AssetManager.Tests
 
             Assert.Fail("Expected to find card " + cardId + ".");
             return null;
+        }
+
+        private static List<string> CollectCardIds(IReadOnlyList<AssetCardRuntimeData> cards)
+        {
+            var cardIds = new List<string>();
+            foreach (var card in cards)
+            {
+                cardIds.Add(card.Card.Id);
+            }
+
+            return cardIds;
+        }
+
+        private static void AssertZoneMatches(IReadOnlyList<AssetCardRuntimeData> actualCards, IReadOnlyList<string> expectedCardIds)
+        {
+            Assert.That(actualCards, Has.Count.EqualTo(expectedCardIds.Count));
+            for (var i = 0; i < expectedCardIds.Count; i++)
+            {
+                Assert.That(actualCards[i].Card.Id, Is.EqualTo(expectedCardIds[i]));
+            }
         }
     }
 }

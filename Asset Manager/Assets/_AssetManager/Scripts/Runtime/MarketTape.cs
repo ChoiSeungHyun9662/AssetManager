@@ -104,23 +104,18 @@ namespace AssetManager
                 return Refresh(marketConfig, cardPool, null, ownedAssets, reservation);
             }
 
-            var visibleCards = new List<AssetCardRuntimeData>();
-            AddCards(visibleCards, currentTape.CurrentMarketCards);
-            AddCards(visibleCards, currentTape.UpcomingMarketCards);
+            var sellImminent = new List<AssetCardRuntimeData>(currentTape.CurrentMarketCards);
+            var currentMarket = new List<AssetCardRuntimeData>(currentTape.UpcomingMarketCards);
+            var upcomingMarket = new List<AssetCardRuntimeData>();
 
-            var totalSlots = marketConfig.SellImminentSlots
-                + marketConfig.CurrentMarketSlots
-                + marketConfig.UpcomingMarketSlots;
-            var excludedCardIds = CollectVisibleCardIds(new MarketTapeState(
-                Array.Empty<AssetCardRuntimeData>(),
-                currentTape.CurrentMarketCards,
-                currentTape.UpcomingMarketCards));
+            var advancedTape = new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
+            var excludedCardIds = CollectVisibleCardIds(advancedTape);
             AddCardIds(excludedCardIds, currentTape.SellImminentCards);
 
             var candidates = CreateCandidates(cardPool, excludedCardIds, ownedAssets, reservation);
-            FillVisibleCards(visibleCards, candidates, totalSlots);
+            FillVisibleCards(upcomingMarket, candidates, marketConfig.UpcomingMarketSlots);
 
-            return BuildTapeFromVisibleCards(marketConfig, visibleCards);
+            return new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
         }
 
         public static MarketTapeState RefillSlot(
