@@ -93,3 +93,7 @@ This repo uses the default mattpocock/skills triage label vocabulary. See `docs/
 ### Domain docs
 
 This repo uses a single-context domain docs layout. See `docs/agents/domain.md`.
+
+### Class inventory
+
+Implemented production classes are tracked in `docs/agents/class-inventory.md`. When adding, removing, renaming, moving, or substantially changing the responsibility of a class, struct, enum, or serialized data shape under `Asset Manager/Assets/_AssetManager/Scripts`, update that document in the same turn.
