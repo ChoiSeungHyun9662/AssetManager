@@ -1,0 +1,230 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b2218f97b2e4372a31c3eeb9a89a59d, type: 3}
+  m_Name: MvpRunStaticData
+  m_EditorClassIdentifier: AssetManager.Runtime::AssetManager.RunStaticDataSet
+  assetCards:
+  - id: starter-office-reit
+    displayName: "\uD14C\uC2A4\uD2B8 \uC624\uD53C\uC2A4 \uB9AC\uCE20"
+    description: "MVP \uBD80\uD2B8\uC2A4\uD2B8\uB7A9 \uD655\uC778\uC6A9 \uC790\uC0B0
+      \uCE74\uB4DC"
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    managementValue: 3
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-logistics-center
+    displayName: 테스트 물류 센터
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 2
+      amount: 1
+    managementValue: 2
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-retail-strip
+    displayName: 테스트 리테일 스트립
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 1
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    managementValue: 2
+    income: 0
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-data-center
+    displayName: 테스트 데이터 센터
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 1
+    cashCost: 3
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    - resourceType: 2
+      amount: 1
+    managementValue: 4
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-warehouse-loan
+    displayName: 테스트 창고 대출
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 1
+    professionalCosts:
+    - resourceType: 3
+      amount: 1
+    managementValue: 1
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-suburban-office
+    displayName: 테스트 교외 오피스
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 2
+      amount: 1
+    managementValue: 2
+    income: 0
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-urban-mixed-use
+    displayName: 테스트 복합 상가
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 1
+    cashCost: 3
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    managementValue: 3
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-hotel-note
+    displayName: 테스트 호텔 노트
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 1
+    professionalCosts:
+    - resourceType: 2
+      amount: 1
+    managementValue: 1
+    income: 0
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-industrial-yard
+    displayName: 테스트 산업 부지
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 3
+      amount: 1
+    managementValue: 3
+    income: 0
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-senior-housing
+    displayName: 테스트 시니어 하우징
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 1
+    cashCost: 3
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    - resourceType: 3
+      amount: 1
+    managementValue: 4
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-parking-rights
+    displayName: 테스트 주차 권리
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 1
+    professionalCosts:
+    - resourceType: 1
+      amount: 1
+    managementValue: 1
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  - id: starter-medical-office
+    displayName: 테스트 메디컬 오피스
+    description: MVP 시장 테이프 확인용 자산 카드
+    rarity: 0
+    cashCost: 2
+    professionalCosts:
+    - resourceType: 2
+      amount: 1
+    managementValue: 3
+    income: 1
+    tags:
+    - id: real-estate
+      displayName: "\uBD80\uB3D9\uC0B0"
+      tagType: 0
+  quarters:
+  - fiscalYear: 1
+    quarter: 1
+    businessDays: 4
+    earnedCashGoal: 3
+  finalRatings:
+  - ratingId: seed
+    displayName: Seed
+    minimumManagementValue: 0
+  redemptionPressureLevels:
+  - levelId: stable
+    displayName: Stable
+    minimumPressure: 0
+    maximumPressure: 3
+  - levelId: watch
+    displayName: Watch
+    minimumPressure: 4
+    maximumPressure: 6
+  - levelId: critical
+    displayName: Critical
+    minimumPressure: 7
+    maximumPressure: 9
+  - levelId: failed
+    displayName: Failed
+    minimumPressure: 10
+    maximumPressure: 10
+  finalManagementComments:
+  - commentId: seed-stable
+    ratingId: seed
+    pressureLevelId: stable
+    comment: "\uAE30\uCD08 \uC6B4\uC6A9 \uCCB4\uACC4\uAC00 \uC791\uB3D9\uD569\uB2C8\uB2E4."
+  marketConfig:
+    sellImminentSlots: 1
+    currentMarketSlots: 2
+    upcomingMarketSlots: 2
+  resourceConfig:
+    startingCash: 3
+    professionalResourceCap: 10
+    maxDeal: 3
+  redemptionPressureConfig:
+    startingPressure: 0
+    maxPressure: 10

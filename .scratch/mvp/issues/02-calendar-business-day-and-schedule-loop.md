@@ -1,6 +1,6 @@
 # 02. 영업일·분기·회계년도 진행 루프
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -36,13 +36,13 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 1회계년도와 2회계년도 플레이 분기는 각 4영업일이다.
-- [ ] 3회계년도 플레이 분기는 각 5영업일이다.
-- [ ] 1·2회계년도 4Q는 플레이하지 않고 휴가로 간다.
-- [ ] 3회계년도 4Q는 플레이한다.
-- [ ] 다음 영업일 버튼은 영업일을 정확히 1만 소비한다.
-- [ ] 마지막 영업일 종료 후 다음 영업일 인컴 흐름으로 가지 않고 분기 마감 상태로 간다.
-- [ ] 전체 구조가 10개 플레이 분기, 44영업일로 검증된다.
+- [x] 1회계년도와 2회계년도 플레이 분기는 각 4영업일이다.
+- [x] 3회계년도 플레이 분기는 각 5영업일이다.
+- [x] 1·2회계년도 4Q는 플레이하지 않고 휴가로 간다.
+- [x] 3회계년도 4Q는 플레이한다.
+- [x] 다음 영업일 버튼은 영업일을 정확히 1만 소비한다.
+- [x] 마지막 영업일 종료 후 다음 영업일 인컴 흐름으로 가지 않고 분기 마감 상태로 간다.
+- [x] 전체 구조가 10개 플레이 분기, 44영업일로 검증된다.
 
 ## Blocked by
 
@@ -54,3 +54,24 @@ Status: ready-for-agent
 
 ## Comments
 
+2026-05-10 TDD progress:
+
+- RED/GREEN: added `BusinessDayFlowTests.AdvanceToNextBusinessDayConsumesExactlyOneBusinessDay`; implemented `BusinessDayFlow.AdvanceToNextBusinessDay`.
+- RED/GREEN: added last 영업일 coverage; `AdvanceToNextBusinessDay` now enters `BusinessDayPhase.QuarterSettlement` at 0 remaining 영업일.
+- RED/GREEN: added `RunCalendarTests` for 10 playable quarters, 44 total 영업일, 1·2회계년도 4Q vacation, and 3회계년도 4Q playable rules; implemented `RunCalendar`.
+- RED/GREEN: added quarter settlement routing to next playable 분기, 4Q 휴가, 휴가 계속, and 3회계년도 4Q final settlement.
+- RED/GREEN: added a guard so `AdvanceToNextBusinessDay` does not consume below 0 after 분기 마감.
+- RED/GREEN: added PlayMode coverage for the 다음 영업일 button updating `RunSessionState` and top HUD, and for 분기 마감 placeholder display.
+- GREEN: added runtime-created 다음 영업일 button, 계속 button, 분기 마감/4Q 휴가/최종 정산 placeholder panels, and connected them through `MainGameShellBootstrap`.
+- Verification: escalated Unity EditMode batchmode passed, 13/13 tests.
+- Verification: escalated Unity PlayMode batchmode passed, 4/4 tests.
+- Verification: `rg "AUM|aum|턴|스테이지|Turn|Stage" Asset Manager/Assets/_AssetManager` returned no matches.
+
+Manual Unity checklist:
+
+- Open `Assets/_AssetManager/Scenes/MainGame.unity`.
+- Enter Play Mode and confirm the top status area starts at `1회계년도 1Q`, `남은 4영업일`.
+- Click `다음 영업일` 4 times and confirm the 분기 마감 placeholder shows `1회계년도 1Q`.
+- Click `계속` through 1회계년도 3Q 마감 and confirm the 4Q 휴가 placeholder appears.
+- Click `계속` from 4Q 휴가 and confirm `2회계년도 1Q`, `남은 4영업일`.
+- Continue through 3회계년도 4Q and confirm the 최종 정산 placeholder appears.

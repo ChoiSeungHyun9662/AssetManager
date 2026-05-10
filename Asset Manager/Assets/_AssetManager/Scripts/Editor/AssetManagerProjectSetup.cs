@@ -15,8 +15,10 @@ namespace AssetManager.Editor
         public static void EnsureProjectShell()
         {
             EnsureFolderPath("Assets/_AssetManager/Scenes");
+            EnsureFolderPath(ProjectShell.DataRootPath);
+            var staticData = EnsureMvpRunStaticData();
             EnsureBootstrapScene();
-            EnsureMainGameScene();
+            EnsureMainGameScene(staticData);
             EnsureBuildScenes();
 
             AssetDatabase.SaveAssets();
@@ -28,16 +30,27 @@ namespace AssetManager.Editor
         {
             RequireAsset<SceneAsset>(ProjectShell.BootstrapScenePath);
             RequireAsset<SceneAsset>(ProjectShell.MainGameScenePath);
+            var staticData = RequireAsset<RunStaticDataSet>(ProjectShell.MvpRunStaticDataPath);
+            if (!staticData.HasRequiredMvpData)
+            {
+                throw new InvalidOperationException("MVP run static data is missing required bootstrap data.");
+            }
+
             RequireBuildScene(ProjectShell.BootstrapScenePath);
             RequireBuildScene(ProjectShell.MainGameScenePath);
 
-            var bootstrap = EditorSceneManager.OpenScene(ProjectShell.BootstrapScenePath);
-            var bootstrapRunner = RequireRootObject(bootstrap, "Bootstrap Runner");
+            var bootstrapScene = EditorSceneManager.OpenScene(ProjectShell.BootstrapScenePath);
+            var bootstrapRunner = RequireRootObject(bootstrapScene, "Bootstrap Runner");
             RequireComponent<BootstrapSceneLoader>(bootstrapRunner);
 
             var mainGame = EditorSceneManager.OpenScene(ProjectShell.MainGameScenePath);
             var shell = RequireRootObject(mainGame, "Main Game Shell");
-            RequireComponent<MainGameShellBootstrap>(shell);
+            var mainGameBootstrap = RequireComponent<MainGameShellBootstrap>(shell);
+            if (mainGameBootstrap.StaticData != staticData)
+            {
+                throw new InvalidOperationException("Main Game Shell is not connected to the MVP RunStaticDataSet asset.");
+            }
+
             RequireRootObject(mainGame, ProjectShell.GameRootName);
 
             var uiRoot = RequireRootObject(mainGame, ProjectShell.UiRootName);
@@ -66,6 +79,12 @@ namespace AssetManager.Editor
                 throw new InvalidOperationException("Ready status text does not match the expected label.");
             }
 
+            var runStatus = uiRoot.transform.Find(ProjectShell.RunStatusTextName);
+            if (runStatus == null)
+            {
+                throw new InvalidOperationException("UI Root is missing the run status text.");
+            }
+
             Debug.Log("Asset Manager project shell verification passed.");
         }
 
@@ -83,20 +102,44 @@ namespace AssetManager.Editor
             EditorSceneManager.SaveScene(scene, ProjectShell.BootstrapScenePath);
         }
 
-        private static void EnsureMainGameScene()
+        private static void EnsureMainGameScene(RunStaticDataSet staticData)
         {
             var scene = OpenOrCreateScene(ProjectShell.MainGameScenePath, NewSceneSetup.DefaultGameObjects);
             SceneManager.SetActiveScene(scene);
 
             var shell = EnsureRootObject(scene, "Main Game Shell");
-            if (shell.GetComponent<MainGameShellBootstrap>() == null)
+            var bootstrap = shell.GetComponent<MainGameShellBootstrap>();
+            if (bootstrap == null)
             {
-                shell.AddComponent<MainGameShellBootstrap>();
+                bootstrap = shell.AddComponent<MainGameShellBootstrap>();
             }
+
+            bootstrap.StaticData = staticData;
+            EditorUtility.SetDirty(bootstrap);
 
             ProjectShell.EnsureMainGameRoots();
 
             EditorSceneManager.SaveScene(scene, ProjectShell.MainGameScenePath);
+        }
+
+        private static RunStaticDataSet EnsureMvpRunStaticData()
+        {
+            var staticData = AssetDatabase.LoadAssetAtPath<RunStaticDataSet>(ProjectShell.MvpRunStaticDataPath);
+            if (staticData == null)
+            {
+                staticData = ScriptableObject.CreateInstance<RunStaticDataSet>();
+                staticData.ResetToMvpDefaults();
+                AssetDatabase.CreateAsset(staticData, ProjectShell.MvpRunStaticDataPath);
+                return staticData;
+            }
+
+            if (!staticData.HasRequiredMvpData)
+            {
+                staticData.ResetToMvpDefaults();
+                EditorUtility.SetDirty(staticData);
+            }
+
+            return staticData;
         }
 
         private static Scene OpenOrCreateScene(string path, NewSceneSetup setup)

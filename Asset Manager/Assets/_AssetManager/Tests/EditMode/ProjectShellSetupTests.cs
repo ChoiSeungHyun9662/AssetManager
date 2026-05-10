@@ -35,5 +35,27 @@ namespace AssetManager.Tests
             Assert.That(scene.GetRootGameObjects().Any(root => root.name == ProjectShell.GameRootName), Is.True);
             Assert.That(scene.GetRootGameObjects().Any(root => root.name == ProjectShell.UiRootName), Is.True);
         }
+
+        [Test]
+        public void EnsureProjectShellCreatesMvpRunDataAndConnectsMainGameBootstrap()
+        {
+            AssetManagerProjectSetup.EnsureProjectShell();
+
+            var staticData = AssetDatabase.LoadAssetAtPath<RunStaticDataSet>(ProjectShell.MvpRunStaticDataPath);
+            Assert.That(staticData, Is.Not.Null);
+            Assert.That(staticData.HasRequiredMvpData, Is.True);
+            Assert.That(staticData.AssetCards, Has.Count.GreaterThanOrEqualTo(1));
+            Assert.That(staticData.Quarters, Has.Count.GreaterThanOrEqualTo(1));
+            Assert.That(staticData.FinalRatings, Has.Count.GreaterThanOrEqualTo(1));
+            Assert.That(staticData.ResourceConfig, Is.Not.Null);
+            Assert.That(staticData.RedemptionPressureConfig, Is.Not.Null);
+
+            var scene = EditorSceneManager.OpenScene(ProjectShell.MainGameScenePath);
+            var shell = scene.GetRootGameObjects().Single(root => root.name == "Main Game Shell");
+            var bootstrap = shell.GetComponent<MainGameShellBootstrap>();
+
+            Assert.That(bootstrap, Is.Not.Null);
+            Assert.That(bootstrap.StaticData, Is.SameAs(staticData));
+        }
     }
 }

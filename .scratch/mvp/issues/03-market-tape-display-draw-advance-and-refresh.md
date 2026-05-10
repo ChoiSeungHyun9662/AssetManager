@@ -1,6 +1,6 @@
 # 03. 시장 테이프 표시와 카드 드로우
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -38,13 +38,13 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 시장 테이프는 매도 임박, 현재 시장, 예비 시장을 표시한다.
-- [ ] 각 구역 슬롯 수는 데이터로 조정 가능하다.
-- [ ] 시장 테이프 진행과 시장 테이프 갱신은 서로 다른 함수 또는 명확히 구분된 흐름으로 구현된다.
-- [ ] 회계년도 시작에는 갱신이 실행된다.
-- [ ] 같은 회계년도 내 다음 분기 시작에는 진행이 실행된다.
-- [ ] 4Q 휴가 자체에서는 시장 테이프 처리가 발생하지 않는다.
-- [ ] 새 카드 보충 후보에서 보유, 예약, 제거, 현재 표시 카드를 제외한다.
+- [x] 시장 테이프는 매도 임박, 현재 시장, 예비 시장을 표시한다.
+- [x] 각 구역 슬롯 수는 데이터로 조정 가능하다.
+- [x] 시장 테이프 진행과 시장 테이프 갱신은 서로 다른 함수 또는 명확히 구분된 흐름으로 구현된다.
+- [x] 회계년도 시작에는 갱신이 실행된다.
+- [x] 같은 회계년도 내 다음 분기 시작에는 진행이 실행된다.
+- [x] 4Q 휴가 자체에서는 시장 테이프 처리가 발생하지 않는다.
+- [x] 새 카드 보충 후보에서 보유, 예약, 제거, 현재 표시 카드를 제외한다.
 
 ## Blocked by
 
@@ -57,3 +57,27 @@ Status: ready-for-agent
 
 ## Comments
 
+2026-05-10 TDD progress:
+
+- RED/GREEN: added `MarketTapeTests.RefreshFillsConfiguredSlotsWithoutShowingDuplicateCards`; implemented `MarketTape.Refresh` public interface and deterministic MVP draw order.
+- RED/GREEN: added `RunBootstrapperTests.CreateNewRunRefreshesMarketTape`; connected 새 런 시작 to 회계년도 시작 시장 테이프 갱신.
+- RED/GREEN: added `MarketTapeTests.AdvanceRemovesSellImminentAndRefillsUpcomingMarket`; implemented `MarketTape.Advance` separately from `Refresh`.
+- Note: with default 1/2/2 slot counts, 진행 is a slot-queue advance: remove 매도 임박 slots, shift remaining visible cards forward while preserving configured zone sizes, then refill 예비 시장 empty slots.
+- RED/GREEN: added schedule boundary tests for same 회계년도 next 분기 진행, 4Q 휴가 no-op, and next 회계년도 1Q 갱신.
+- RED/GREEN: added candidate exclusion coverage for 보유 자산, 예약 카드, 제거된 카드, and currently visible 시장 테이프 cards.
+- GREEN: added runtime-created 시장 테이프 UI panels for 매도 임박/현재 시장/예비 시장 and temporary card text showing card name, 현금 cost, 운용가치, 인컴.
+- GREEN: added development buttons for 시장 테이프 진행 and 시장 테이프 갱신.
+- GREEN: expanded MVP default card data to 12 simple test cards, enough for initial display, same-year advance, and the first fiscal-year refresh acceptance path.
+- Verification: escalated Unity EditMode batchmode passed, 20/20 tests.
+- Verification: escalated Unity PlayMode batchmode passed, 6/6 tests.
+- Verification: `rg "AUM|턴|스테이지" Asset Manager/Assets/_AssetManager/Scripts Asset Manager/Assets/_AssetManager/Tests` returned no matches.
+
+Manual Unity checklist:
+
+- Open `Assets/_AssetManager/Scenes/MainGame.unity`.
+- Enter Play Mode and confirm the market area shows `매도 임박`, `현재 시장`, and `예비 시장`.
+- Confirm each visible card line includes name, `현금`, `운용가치`, and `인컴`.
+- Click `시장 테이프 진행` and confirm the previous 매도 임박 card disappears, visible cards shift forward, and 예비 시장 is refilled without duplicate visible cards.
+- Click `시장 테이프 갱신` and confirm all zones refill without duplicate visible cards.
+- Progress through 1회계년도 3Q 마감 into 4Q 휴가 and confirm the market tape does not change during the vacation transition.
+- Click `계속` from 4Q 휴가 and confirm 2회계년도 1Q starts with a refreshed market tape.

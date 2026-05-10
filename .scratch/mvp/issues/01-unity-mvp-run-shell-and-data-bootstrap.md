@@ -1,6 +1,6 @@
 # 01. Unity MVP 런 셸과 데이터 부트스트랩
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -36,13 +36,13 @@ Unity 에디터에서 MVP 런을 시작할 수 있는 최소 Scene과 데이터 
 
 ## Acceptance criteria
 
-- [ ] Play Mode에서 새 런을 시작할 수 있다.
-- [ ] 새 런은 1회계년도 1Q, 4영업일, RunState.Playing으로 초기화된다.
-- [ ] 기본 자원과 환매 압력 값이 상단 상태 영역에 표시된다.
-- [ ] 최소 1개 이상의 테스트용 AssetCardData가 로드된다.
-- [ ] 최소 QuarterData, FinalRatingData, ResourceConfigData, RedemptionPressureConfigData가 에디터 데이터로 존재한다.
-- [ ] 코드와 데이터에서 AUM 명칭을 사용하지 않는다.
-- [ ] 이 slice만 완료되어도 Unity Scene을 열고 실행 상태를 눈으로 확인할 수 있다.
+- [x] Play Mode에서 새 런을 시작할 수 있다.
+- [x] 새 런은 1회계년도 1Q, 4영업일, RunState.Playing으로 초기화된다.
+- [x] 기본 자원과 환매 압력 값이 상단 상태 영역에 표시된다.
+- [x] 최소 1개 이상의 테스트용 AssetCardData가 로드된다.
+- [x] 최소 QuarterData, FinalRatingData, ResourceConfigData, RedemptionPressureConfigData가 에디터 데이터로 존재한다.
+- [x] 코드와 데이터에서 AUM 명칭을 사용하지 않는다.
+- [x] 이 slice만 완료되어도 Unity Scene을 열고 실행 상태를 눈으로 확인할 수 있다.
 
 ## Blocked by
 
@@ -53,3 +53,36 @@ Unity 에디터에서 MVP 런을 시작할 수 있는 최소 Scene과 데이터 
 1, 2, 56, 57, 58
 
 ## Comments
+
+2026-05-10 TDD progress:
+
+- RED: added `RunBootstrapperTests.CreateNewRunStartsAtFirstFiscalYearFirstQuarter` for 새 런 초기 상태.
+- GREEN: added runtime enums, static data shapes, runtime state shapes, `RunStaticDataSet`, and `RunBootstrapper.CreateNewRun`.
+- RED: added PlayMode coverage for `MainGameShellBootstrap` starting a run and showing initial status text.
+- GREEN: added run status HUD formatting and connected `MainGameShellBootstrap` to create/show the initial run.
+- RED: added EditMode coverage for `EnsureProjectShell` creating MVP run data and connecting it to Main Game Shell.
+- GREEN: updated editor setup to create `Assets/_AssetManager/Data/MvpRunStaticData.asset` and connect it to `MainGameShellBootstrap`.
+- Verification: Unity batchmode/test runner could not complete because Unity Editor crashed before running tests with unknown software exception `0x80000003`.
+- Verification fallback: Unity-bundled C# compiler checks passed for Runtime, Editor, EditMode tests, and PlayMode tests.
+- Verification fallback: `rg "AUM|aum" Asset Manager/Assets/_AssetManager` returned no matches.
+
+Manual Unity checklist after the batchmode crash is resolved:
+
+- Open the `Asset Manager` Unity project.
+- Run `Asset Manager > Setup > Ensure Project Shell`.
+- Run `Asset Manager > Setup > Verify Project Shell`.
+- Run Unity Test Runner EditMode and PlayMode tests.
+- Open `Assets/_AssetManager/Scenes/MainGame.unity`, enter Play Mode, and confirm the top status area shows `1회계년도 1Q`, `남은 4영업일`, `현금 3`, `딜 0/3`, and `환매 압력 0/10`.
+
+2026-05-10 manual Unity verification:
+
+- User completed the manual Unity checklist.
+- Marked all acceptance criteria complete and closed the issue as `done`.
+
+2026-05-10 Unity batchmode diagnosis:
+
+- Root cause: `0x80000003` reproduced when Unity was launched from the default Codex sandbox context, even with only `-batchmode -quit` and no project-specific test code.
+- Fix/workaround: run Unity batchmode commands outside the sandbox/escalated execution context.
+- EditMode batchmode verification passed outside the sandbox: 4/4 tests passed.
+- PlayMode batchmode verification passed outside the sandbox: 2/2 tests passed.
+- Note: do not pass `-runSynchronously` to PlayMode test runs; it hung in the PlayMode prebuild path. Use `-runSynchronously` for EditMode only.
