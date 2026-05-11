@@ -24,6 +24,14 @@ Unity.exe -batchmode -quit
 
 Run Unity batchmode commands outside the sandbox / escalated execution context.
 
+Canonical wrapper:
+
+```text
+scripts/Run-UnityBatchmode.ps1 -Mode EditMode
+scripts/Run-UnityBatchmode.ps1 -Mode PlayMode
+scripts/Run-UnityBatchmode.ps1 -Mode QuitOnly
+```
+
 EditMode tests:
 
 ```text
@@ -40,10 +48,11 @@ Do not pass `-runSynchronously` to PlayMode test runs. In this project/environme
 
 When wrapping Unity with PowerShell `Start-Process`, pass the Unity arguments as one quoted string. `-ArgumentList` arrays can split the `Asset Manager` project path on the space before Unity receives it.
 
-Known verification from 2026-05-10:
+Known verification from 2026-05-11:
 
-- Escalated EditMode batchmode run: 20/20 passed.
-- Escalated PlayMode batchmode run without `-runSynchronously`: 6/6 passed.
+- Escalated wrapper `QuitOnly` batchmode run exited with return code 0.
+- Escalated wrapper EditMode batchmode run: 25/25 passed.
+- Escalated wrapper PlayMode batchmode run without `-runSynchronously`: 9/9 passed.
 
 ## Updating This File
 

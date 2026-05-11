@@ -64,6 +64,15 @@ namespace AssetManager
         public const string CardDetailCloseButtonName = "Card Detail Close Button";
         public const string CardDetailBuyButtonName = "Card Detail Buy Button";
         public const string CardDetailReserveButtonName = "Card Detail Reserve Button";
+        public const string ResourceHudPanelName = "Resource Hud Panel";
+        public const string ResourceHudTextName = "Resource Hud Text";
+        public const string ResourceMessageTextName = "Resource Message Text";
+        public const string ResourceDevFundingCashButtonName = "Resource Dev Funding Cash Button";
+        public const string ResourceDevEarnedCashButtonName = "Resource Dev Earned Cash Button";
+        public const string ResourceDevResearchButtonName = "Resource Dev Research Button";
+        public const string ResourceDevCreditButtonName = "Resource Dev Credit Button";
+        public const string ResourceDevCommodityButtonName = "Resource Dev Commodity Button";
+        public const string ResourceDevDealButtonName = "Resource Dev Deal Button";
 
         public static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
@@ -97,9 +106,11 @@ namespace AssetManager
 
             EnsureReadyStatusText(uiRoot.transform);
             EnsureRunStatusHud(uiRoot.transform);
+            EnsureResourceHud(uiRoot.transform);
             EnsureMarketTapeView(uiRoot.transform);
             EnsureCardDetailView(uiRoot.transform);
             EnsureMarketTapeDevControls(uiRoot.transform);
+            EnsureResourceDevControls(uiRoot.transform);
             EnsureRunProgressControls(uiRoot.transform);
             EnsureEventSystem();
 
@@ -221,6 +232,43 @@ namespace AssetManager
                 finalSettlement.Text);
 
             return controls;
+        }
+
+        public static ResourceHud EnsureResourceHud(Transform uiRoot)
+        {
+            var panel = EnsurePanel(
+                uiRoot,
+                ResourceHudPanelName,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(32f, -84f),
+                new Vector2(820f, 92f),
+                new Color(0.06f, 0.08f, 0.10f, 0.92f));
+
+            var resourceText = EnsurePanelText(
+                panel.transform,
+                ResourceHudTextName,
+                new Vector2(18f, -12f),
+                new Vector2(784f, 36f),
+                20,
+                TextAnchor.MiddleLeft);
+            var messageText = EnsurePanelText(
+                panel.transform,
+                ResourceMessageTextName,
+                new Vector2(18f, -52f),
+                new Vector2(784f, 30f),
+                17,
+                TextAnchor.MiddleLeft);
+
+            var hud = uiRoot.GetComponent<ResourceHud>();
+            if (hud == null)
+            {
+                hud = uiRoot.gameObject.AddComponent<ResourceHud>();
+            }
+
+            hud.Bind(panel, resourceText, messageText);
+            return hud;
         }
 
         public static MarketTapeView EnsureMarketTapeView(Transform uiRoot)
@@ -410,6 +458,79 @@ namespace AssetManager
             }
 
             controls.Bind(advanceButton, refreshButton);
+            return controls;
+        }
+
+        public static ResourceDevControls EnsureResourceDevControls(Transform uiRoot)
+        {
+            var fundingCashButton = EnsureButton(
+                uiRoot,
+                ResourceDevFundingCashButtonName,
+                "조달 현금 +1",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-176f, -296f),
+                new Vector2(240f, 42f));
+            var earnedCashButton = EnsureButton(
+                uiRoot,
+                ResourceDevEarnedCashButtonName,
+                "운용 수익 +1",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-176f, -346f),
+                new Vector2(240f, 42f));
+            var researchButton = EnsureButton(
+                uiRoot,
+                ResourceDevResearchButtonName,
+                "리서치 +1",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-176f, -396f),
+                new Vector2(240f, 42f));
+            var creditButton = EnsureButton(
+                uiRoot,
+                ResourceDevCreditButtonName,
+                "신용 +1",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-176f, -446f),
+                new Vector2(240f, 42f));
+            var commodityButton = EnsureButton(
+                uiRoot,
+                ResourceDevCommodityButtonName,
+                "원자재 +1",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-176f, -496f),
+                new Vector2(240f, 42f));
+            var dealButton = EnsureButton(
+                uiRoot,
+                ResourceDevDealButtonName,
+                "딜 +1",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-176f, -546f),
+                new Vector2(240f, 42f));
+
+            var controls = uiRoot.GetComponent<ResourceDevControls>();
+            if (controls == null)
+            {
+                controls = uiRoot.gameObject.AddComponent<ResourceDevControls>();
+            }
+
+            controls.Bind(
+                fundingCashButton,
+                earnedCashButton,
+                researchButton,
+                creditButton,
+                commodityButton,
+                dealButton);
             return controls;
         }
 

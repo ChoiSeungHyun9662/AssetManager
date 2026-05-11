@@ -60,6 +60,14 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+### TDD transparency
+
+When using TDD, make the work reviewable without requiring the user to read implementation details:
+- State assumptions, non-goals, and behavior-level success criteria before coding.
+- Report each RED/GREEN/REFACTOR cycle in terms of behavior tested, minimal change made, and verification result.
+- For Unity work, include the manual scene/flow/interaction checked, or say that manual testing was not run and why.
+- Finish with a compact verification receipt: behavior changed, tests run, Unity manual checks, files touched, and remaining risks.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
@@ -93,6 +101,12 @@ This repo uses the default mattpocock/skills triage label vocabulary. See `docs/
 ### Domain docs
 
 This repo uses a single-context domain docs layout. See `docs/agents/domain.md`.
+
+### Unity batchmode
+
+Use `scripts/Run-UnityBatchmode.ps1` for Unity batchmode runs. In Codex, run it outside the default sandbox / with escalated execution; the default sandbox can terminate Unity before it writes a log with unknown software exception `0x80000003`.
+
+The Unity project path contains a space (`Asset Manager`). If manually wrapping Unity with PowerShell `Start-Process`, pass the Unity arguments as one quoted string, not an `-ArgumentList` array. Use `-runSynchronously` for EditMode only; do not pass it to PlayMode.
 
 ### Class inventory
 

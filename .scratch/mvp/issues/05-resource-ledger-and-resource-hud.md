@@ -1,6 +1,6 @@
 # 05. 자원 원장과 보유 자원 UI
 
-Status: ready-for-agent
+Status: implemented-needs-editor-check
 
 ## Parent
 
@@ -38,13 +38,13 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 현금, 리서치, 신용, 원자재, 딜이 런타임 상태로 관리된다.
-- [ ] 조달 현금은 운용 수익에 포함하지 않는 경로로 추가된다.
-- [ ] 보유 자산의 영업일 시작 현금과 분기 마감 정산 수익을 위한 운용 수익 추가 경로가 있다.
-- [ ] 전문 자원 합계 한도 10이 적용된다.
-- [ ] 딜 한도 3이 적용된다.
-- [ ] 전문 자원 한도 초과는 신규 획득분에서만 폐기된다.
-- [ ] 자원 상태가 Unity 화면에 표시된다.
+- [x] 현금, 리서치, 신용, 원자재, 딜이 런타임 상태로 관리된다.
+- [x] 조달 현금은 운용 수익에 포함하지 않는 경로로 추가된다.
+- [x] 보유 자산의 영업일 시작 현금과 분기 마감 정산 수익을 위한 운용 수익 추가 경로가 있다.
+- [x] 전문 자원 합계 한도 10이 적용된다.
+- [x] 딜 한도 3이 적용된다.
+- [x] 전문 자원 한도 초과는 신규 획득분에서만 폐기된다.
+- [x] 자원 상태가 Unity 화면에 표시된다.
 
 ## Blocked by
 
@@ -55,3 +55,25 @@ Status: ready-for-agent
 40, 42, 43, 44, 45, 56, 57, 58
 
 ## Comments
+
+2026-05-11 TDD progress:
+
+- RED: added `ResourceLedgerTests.FundingCashOnlyIncreasesCashAndEarnedCashIncreasesPerformanceCounters`; Unity EditMode batchmode reached compilation and failed because `ResourceLedger` did not exist yet.
+- GREEN: added `ResourceLedger.AddFundingCash` and `ResourceLedger.AddEarnedCash`; `RunPerformanceState` now exposes `CurrentQuarterEarnedCash`, `CurrentFiscalYearEarnedCash`, and `TotalEarnedCash`.
+- RED/GREEN: added professional resource cap coverage; `AddProfessionalResource` caps 리서치 + 신용 + 원자재 at 10, preserves existing holdings, discards only newly gained overflow, and returns a short message.
+- RED/GREEN: added 딜 cap coverage; `AddDeal` caps 딜 at 3, excludes 딜 from 전문 자원 한도, and returns `딜 최대 보유: 추가 딜 폐기` when needed.
+- RED/GREEN UI: added PlayMode coverage for development resource buttons and 보유 자원 HUD; added runtime-created `ResourceHud` and `ResourceDevControls` with buttons for 조달 현금, 운용 수익, 리서치, 신용, 원자재, and 딜.
+- Verification: escalated Unity EditMode batchmode was started once with `Start-Process` and quoted single-string Unity arguments. It timed out after 10 minutes; no automatic Unity retry was attempted.
+- Verification: Unity log captured the intended RED compile failure before implementation: `ResourceLedger` did not exist.
+- Verification: manual static compile using Unity's Roslyn response files passed for `AssetManager.Runtime`, `AssetManager.Tests.EditMode`, and `AssetManager.Tests.PlayMode` after adding the new runtime files to the compile check and replacing the runtime reference with the static-check build.
+- Batchmode result files: no XML test result was produced because the Unity run timed out before normal completion.
+
+Manual Unity checklist:
+
+- Open `Assets/_AssetManager/Scenes/MainGame.unity`.
+- Enter Play Mode and confirm the 보유 자원 HUD shows `현금`, `리서치`, `신용`, `원자재`, `전문 자원 0/10`, and `딜 0/3`.
+- Click `조달 현금 +1` and confirm 현금 increases while 분기/회계년도/총 운용 수익 counters are unchanged in the runtime inspector or debugger.
+- Click `운용 수익 +1` and confirm 현금, 현재 분기 운용 수익, 현재 회계년도 운용 수익, and 총 운용 수익 all increase by 1.
+- Click `리서치 +1` 11 times and confirm 리서치 stops at 10, 전문 자원 stays 10/10, and the message shows `자원칩 최대 보유: 리서치 +1 폐기`.
+- Click `딜 +1` 4 times and confirm 딜 stops at 3/3 and the message shows `딜 최대 보유: 추가 딜 폐기`.
+- Confirm the resource development buttons are visible only while the run is playing in the Market state.

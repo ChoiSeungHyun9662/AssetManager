@@ -15,6 +15,20 @@ description: Test-driven development with red-green-refactor loop. Use when user
 
 See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
 
+## Transparency Contract
+
+TDD work must be understandable to a project owner who may not be comfortable reviewing implementation details. Do not rely on "trust me, the code changed" as the user's review surface.
+
+For every non-trivial TDD task, expose the work in behavior-first terms:
+
+- State assumptions before coding, including what is intentionally out of scope.
+- Name the user-visible or system-visible behaviors being protected by tests.
+- For each RED/GREEN cycle, summarize the failing behavior, the minimal change made, and the passing check.
+- When Unity manual testing is relevant, describe the exact scene, flow, or interaction tested.
+- Call out any unverified behavior, residual risk, or test gap instead of implying complete coverage.
+
+The user should be able to review the behavior list, automated checks, Unity manual checks, and remaining risks without needing to read the code.
+
 ## Anti-Pattern: Horizontal Slices
 
 **DO NOT write all tests first, then all implementation.** This is "horizontal slicing" - treating RED as "write all tests" and GREEN as "write all code."
@@ -50,9 +64,11 @@ Before writing any code:
 
 - [ ] Confirm with user what interface changes are needed
 - [ ] Confirm with user which behaviors to test (prioritize)
+- [ ] State assumptions, non-goals, and the manual Unity verification target if applicable
 - [ ] Identify opportunities for [deep modules](deep-modules.md) (small interface, deep implementation)
 - [ ] Design interfaces for [testability](interface-design.md)
 - [ ] List the behaviors to test (not implementation steps)
+- [ ] Define the final "verification receipt": tests run, Unity checks performed, and known gaps
 - [ ] Get user approval on the plan
 
 Ask: "What should the public interface look like? Which behaviors are most important to test?"
@@ -85,6 +101,7 @@ Rules:
 - Only enough code to pass current test
 - Don't anticipate future tests
 - Keep tests focused on observable behavior
+- Keep the user-facing progress log behavior-based: RED behavior, GREEN change, verification result
 
 ### 4. Refactor
 
@@ -106,4 +123,17 @@ After all tests pass, look for [refactor candidates](refactoring.md):
 [ ] Test would survive internal refactor
 [ ] Code is minimal for this test
 [ ] No speculative features added
+[ ] User-facing progress explains behavior and verification, not private implementation trivia
 ```
+
+## Completion Report
+
+End each TDD task with a compact verification receipt:
+
+- Behavior changed: what the system now does from a user's or caller's perspective.
+- Automated tests: which EditMode, PlayMode, or other test suites ran and whether they passed.
+- Unity manual checks: which scene/flow/interactions were exercised, or "not run" with a reason.
+- Files touched: only the relevant files and why they changed.
+- Remaining risk: anything not covered, flaky, environment-dependent, or deferred.
+
+This report is part of the workflow, not optional polish.

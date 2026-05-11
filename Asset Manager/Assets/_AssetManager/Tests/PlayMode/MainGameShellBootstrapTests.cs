@@ -67,6 +67,90 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapResourceDevButtonsUpdateResourceHud()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapResourceHudTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var initialCash = bootstrap.CurrentRun.Resources.Cash;
+            var resourceText = FindUiObject(ProjectShell.ResourceHudTextName).GetComponent<Text>();
+
+            Assert.That(resourceText.text, Does.Contain("전문 자원 0/10"));
+            Assert.That(resourceText.text, Does.Contain("딜 0/3"));
+
+            FindUiObject(ProjectShell.ResourceDevFundingCashButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(initialCash + 1));
+            Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(0));
+            Assert.That(FindUiObject(ProjectShell.ResourceHudTextName).GetComponent<Text>().text, Does.Contain($"현금 {initialCash + 1}"));
+
+            FindUiObject(ProjectShell.ResourceDevEarnedCashButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(initialCash + 2));
+            Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.Performance.CurrentFiscalYearEarnedCash, Is.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.Performance.TotalEarnedCash, Is.EqualTo(1));
+            Assert.That(FindUiObject(ProjectShell.ResourceHudTextName).GetComponent<Text>().text, Does.Contain($"현금 {initialCash + 2}"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapResourceHudShowsCapMessages()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapResourceMessageTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var researchButton = FindUiObject(ProjectShell.ResourceDevResearchButtonName).GetComponent<Button>();
+            for (var i = 0; i < 11; i++)
+            {
+                researchButton.onClick.Invoke();
+            }
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(10));
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("자원칩 최대 보유: 리서치 +1 폐기"));
+
+            var dealButton = FindUiObject(ProjectShell.ResourceDevDealButtonName).GetComponent<Button>();
+            for (var i = 0; i < 4; i++)
+            {
+                dealButton.onClick.Invoke();
+            }
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(3));
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("딜 최대 보유: 추가 딜 폐기"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapShowsInitialMarketTape()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapMarketTapeTests");

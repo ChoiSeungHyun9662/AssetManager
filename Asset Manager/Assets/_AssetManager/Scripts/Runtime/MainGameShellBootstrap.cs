@@ -17,10 +17,13 @@ namespace AssetManager
         public RunSessionState CurrentRun { get; private set; }
 
         private RunStatusHud runStatusHud;
+        private ResourceHud resourceHud;
         private MarketTapeView marketTapeView;
         private CardDetailView cardDetailView;
         private MarketTapeDevControls marketTapeDevControls;
+        private ResourceDevControls resourceDevControls;
         private RunProgressControls runProgressControls;
+        private string resourceFeedbackMessage = string.Empty;
 
         private void Awake()
         {
@@ -44,6 +47,7 @@ namespace AssetManager
             }
 
             CurrentRun = RunBootstrapper.CreateNewRun(data);
+            resourceFeedbackMessage = string.Empty;
             BindRunUi(uiRoot);
             RefreshRunUi();
         }
@@ -79,6 +83,55 @@ namespace AssetManager
 
             CurrentRun = MarketAreaFlow.CloseCardDetail(CurrentRun);
             RefreshRunUi();
+        }
+
+        public void AddFundingCashForDevelopment()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun = ResourceLedger.AddFundingCash(CurrentRun, 1);
+            resourceFeedbackMessage = string.Empty;
+            RefreshRunUi();
+        }
+
+        public void AddEarnedCashForDevelopment()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun = ResourceLedger.AddEarnedCash(CurrentRun, 1);
+            resourceFeedbackMessage = string.Empty;
+            RefreshRunUi();
+        }
+
+        public void AddResearchForDevelopment()
+        {
+            AddProfessionalResourceForDevelopment(ResourceType.Research);
+        }
+
+        public void AddCreditForDevelopment()
+        {
+            AddProfessionalResourceForDevelopment(ResourceType.Credit);
+        }
+
+        public void AddCommodityForDevelopment()
+        {
+            AddProfessionalResourceForDevelopment(ResourceType.Commodity);
+        }
+
+        public void AddDealForDevelopment()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            ApplyResourceResult(ResourceLedger.AddDeal(CurrentRun, 1));
         }
 
         public void ContinueSchedule()
@@ -125,9 +178,11 @@ namespace AssetManager
         private void BindRunUi(Transform uiRoot)
         {
             runStatusHud = ProjectShell.EnsureRunStatusHud(uiRoot);
+            resourceHud = ProjectShell.EnsureResourceHud(uiRoot);
             marketTapeView = ProjectShell.EnsureMarketTapeView(uiRoot);
             cardDetailView = ProjectShell.EnsureCardDetailView(uiRoot);
             marketTapeDevControls = ProjectShell.EnsureMarketTapeDevControls(uiRoot);
+            resourceDevControls = ProjectShell.EnsureResourceDevControls(uiRoot);
             runProgressControls = ProjectShell.EnsureRunProgressControls(uiRoot);
 
             marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
@@ -146,15 +201,52 @@ namespace AssetManager
 
             marketTapeDevControls.RefreshButton.onClick.RemoveListener(RefreshMarketTape);
             marketTapeDevControls.RefreshButton.onClick.AddListener(RefreshMarketTape);
+
+            resourceDevControls.FundingCashButton.onClick.RemoveListener(AddFundingCashForDevelopment);
+            resourceDevControls.FundingCashButton.onClick.AddListener(AddFundingCashForDevelopment);
+
+            resourceDevControls.EarnedCashButton.onClick.RemoveListener(AddEarnedCashForDevelopment);
+            resourceDevControls.EarnedCashButton.onClick.AddListener(AddEarnedCashForDevelopment);
+
+            resourceDevControls.ResearchButton.onClick.RemoveListener(AddResearchForDevelopment);
+            resourceDevControls.ResearchButton.onClick.AddListener(AddResearchForDevelopment);
+
+            resourceDevControls.CreditButton.onClick.RemoveListener(AddCreditForDevelopment);
+            resourceDevControls.CreditButton.onClick.AddListener(AddCreditForDevelopment);
+
+            resourceDevControls.CommodityButton.onClick.RemoveListener(AddCommodityForDevelopment);
+            resourceDevControls.CommodityButton.onClick.AddListener(AddCommodityForDevelopment);
+
+            resourceDevControls.DealButton.onClick.RemoveListener(AddDealForDevelopment);
+            resourceDevControls.DealButton.onClick.AddListener(AddDealForDevelopment);
         }
 
         private void RefreshRunUi()
         {
             runStatusHud.Show(CurrentRun);
+            resourceHud.Show(CurrentRun, resourceFeedbackMessage);
             marketTapeView.Show(CurrentRun);
             cardDetailView.Show(CurrentRun);
             marketTapeDevControls.Show(CurrentRun);
+            resourceDevControls.Show(CurrentRun);
             runProgressControls.Show(CurrentRun);
+        }
+
+        private void AddProfessionalResourceForDevelopment(ResourceType resourceType)
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            ApplyResourceResult(ResourceLedger.AddProfessionalResource(CurrentRun, resourceType, 1));
+        }
+
+        private void ApplyResourceResult(ResourceLedgerResult result)
+        {
+            CurrentRun = result.Run;
+            resourceFeedbackMessage = result.Message;
+            RefreshRunUi();
         }
     }
 }

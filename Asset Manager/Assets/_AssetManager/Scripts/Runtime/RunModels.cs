@@ -451,12 +451,26 @@ namespace AssetManager
     public sealed class RunPerformanceState
     {
         public RunPerformanceState(int earnedCash, int fundingCash)
+            : this(earnedCash, earnedCash, earnedCash, fundingCash)
         {
-            EarnedCash = earnedCash;
+        }
+
+        public RunPerformanceState(
+            int currentQuarterEarnedCash,
+            int currentFiscalYearEarnedCash,
+            int totalEarnedCash,
+            int fundingCash)
+        {
+            CurrentQuarterEarnedCash = currentQuarterEarnedCash;
+            CurrentFiscalYearEarnedCash = currentFiscalYearEarnedCash;
+            TotalEarnedCash = totalEarnedCash;
             FundingCash = fundingCash;
         }
 
-        public int EarnedCash { get; }
+        public int CurrentQuarterEarnedCash { get; }
+        public int CurrentFiscalYearEarnedCash { get; }
+        public int TotalEarnedCash { get; }
+        public int EarnedCash => TotalEarnedCash;
         public int FundingCash { get; }
     }
 
