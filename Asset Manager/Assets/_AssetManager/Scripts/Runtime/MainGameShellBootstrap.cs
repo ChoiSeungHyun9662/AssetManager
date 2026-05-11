@@ -18,6 +18,7 @@ namespace AssetManager
 
         private RunStatusHud runStatusHud;
         private ResourceHud resourceHud;
+        private PortfolioSummaryView portfolioSummaryView;
         private MarketTapeView marketTapeView;
         private CardDetailView cardDetailView;
         private MarketTapeDevControls marketTapeDevControls;
@@ -229,6 +230,7 @@ namespace AssetManager
         {
             runStatusHud = ProjectShell.EnsureRunStatusHud(uiRoot);
             resourceHud = ProjectShell.EnsureResourceHud(uiRoot);
+            portfolioSummaryView = ProjectShell.EnsurePortfolioSummaryView(uiRoot);
             marketTapeView = ProjectShell.EnsureMarketTapeView(uiRoot);
             cardDetailView = ProjectShell.EnsureCardDetailView(uiRoot);
             marketTapeDevControls = ProjectShell.EnsureMarketTapeDevControls(uiRoot);
@@ -292,6 +294,7 @@ namespace AssetManager
         {
             runStatusHud.Show(CurrentRun);
             resourceHud.Show(CurrentRun, resourceFeedbackMessage);
+            portfolioSummaryView.Show(CurrentRun);
             marketTapeView.Show(CurrentRun);
             cardDetailView.Show(CurrentRun);
             marketTapeDevControls.Show(CurrentRun);

@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-11
-Covered implementation slices: issues 00-06
+Covered implementation slices: issues 00-07
 
 ## Update Workflow
 
@@ -33,6 +33,7 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **04 - 시장 영역 and 카드 상세보기**: adds single 시장 영역 transitions, CardDetail transient state, clickable market cards, a CardDetail replacement panel, close handling, and 다음 영업일 gating.
 - **05 - 자원 원장 and 보유 자원 UI**: adds ResourceLedger as the public 자원 rule service, separates 조달 현금 from 운용 수익 counters, applies 전문 자원 and 딜 한도, and displays 보유 자원 with short cap messages.
 - **06 - 자산 매수 and 비용 슬롯 결제**: adds PurchasePayment as the public 자산 매수 rule service, creates 비용 슬롯 from 전문 자원 costs, supports 전문 자원/딜 tentative placement and recovery, confirms 시장 카드 purchases, advances only the purchased 시장 테이프 column, and consumes a 영업일.
+- **07 - 보유 자산 income and 포트폴리오 summary**: connects OwnedAssetState calculations, AcquiredOrder on owned cards, business-day-start 운용 수익 through ResourceLedger, and a portfolio summary UI for 보유 자산 수, 현재 운용가치, and 분기 운용 수익.
 
 Current runtime flow:
 
@@ -78,10 +79,10 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `ResourceState` | `Runtime/RunModels.cs` | Current 현금, 리서치, 신용, 원자재, 딜, plus 전문 자원 total lookup. |
 | `RunCalendarState` | `Runtime/RunModels.cs` | Current 회계년도, 분기, and remaining 영업일. |
 | `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 운용 수익 counters. |
-| `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one 자산 카드 and whether it is available, reserved, owned, or removed. |
+| `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one 자산 카드 and whether it is available, reserved, owned, or removed; owned cards can carry 매수 출처 and AcquiredOrder. |
 | `MarketTapeState` | `Runtime/RunModels.cs` | Current visible market tape cards by zone. |
 | `ReservationState` | `Runtime/RunModels.cs` | 예약 구역 capacity and reserved cards. |
-| `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list. |
+| `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list plus Owned-only 보유 자산 수, 현재 운용가치, and 영업일 시작 운용 수익 totals. |
 | `BusinessDayState` | `Runtime/RunModels.cs` | Current phase and 시장 영역 state. |
 | `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기. |
 | `PaymentSlotState` | `Runtime/CardDetailState.cs` | One 비용 슬롯 in 카드 상세보기: required 전문 자원 and optional placed 전문 자원 or 딜. |
@@ -112,7 +113,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunCalendarQuarter` | `Runtime/RunCalendar.cs` | One playable calendar row with 회계년도, 분기, and 영업일 count. |
 | `RunCalendarDefinition` | `Runtime/RunCalendar.cs` | Query object for playable quarters, 4Q 휴가, and total playable 영업일. |
 | `RunCalendar` | `Runtime/RunCalendar.cs` | Factory for the MVP calendar: 1/2회계년도 1Q-3Q have 4 영업일; 3회계년도 1Q-4Q have 5 영업일. |
-| `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, enters 분기 마감, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
+| `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, applies 보유 자산 영업일 시작 운용 수익 through ResourceLedger, enters 분기 마감, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
 | `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for entering/closing 카드 상세보기 and gating 다음 영업일 to Market state only. |
 | `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 운용 수익, capped 전문 자원, and capped 딜. |
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
@@ -140,6 +141,7 @@ Important distinction:
 | `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD text from `RunSessionState`. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays 보유 자원, 전문 자원 total/cap, 딜 total/cap, and the current short resource message. |
+| `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary: 보유 자산 수, 현재 운용가치, 이번 분기 운용 수익, and a short ordered 보유 자산 list. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, and 최종 정산 placeholder UI; 다음 영업일 uses MarketArea gating. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and clickable visible market card summary buttons. |
 | `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, 비용 슬롯 state, final cash cost, chip placement/recovery buttons, buy availability, and Reserve button visibility. |
@@ -157,6 +159,7 @@ Important distinction:
 | 시장 영역 and 카드 상세보기 | `MarketAreaFlowTests`, `MainGameShellBootstrapTests` |
 | 자원 원장 and 보유 자원 UI | `ResourceLedgerTests`, `MainGameShellBootstrapTests` |
 | 자산 매수 and 비용 슬롯 결제 | `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
+| 보유 자산 income and 포트폴리오 UI | `OwnedAssetStateTests`, `BusinessDayFlowTests`, `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 
 ## Notes For Next Cleanup
 

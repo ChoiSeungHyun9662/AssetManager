@@ -1,6 +1,6 @@
 # 07. 보유 자산의 영업일 시작 현금과 운용 수익 기록
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -37,13 +37,13 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 매수 완료된 카드는 Owned 상태가 된다.
-- [ ] 보유 자산 수와 현재 운용가치를 계산해 표시한다.
-- [ ] 보유 자산의 영업일 시작 현금은 영업일 시작 시 발생한다.
-- [ ] 매수 당일에는 새 보유 자산의 영업일 시작 현금이 즉시 발생하지 않는다.
-- [ ] 보유 자산의 영업일 시작 현금은 운용 수익으로 기록된다.
-- [ ] 예약 카드와 시장 카드는 운용가치와 운용 수익 계산에서 제외된다.
-- [ ] 보유 자산은 시장에 다시 등장하지 않는다.
+- [x] 매수 완료된 카드는 Owned 상태가 된다.
+- [x] 보유 자산 수와 현재 운용가치를 계산해 표시한다.
+- [x] 보유 자산의 영업일 시작 현금은 영업일 시작 시 발생한다.
+- [x] 매수 당일에는 새 보유 자산의 영업일 시작 현금이 즉시 발생하지 않는다.
+- [x] 보유 자산의 영업일 시작 현금은 운용 수익으로 기록된다.
+- [x] 예약 카드와 시장 카드는 운용가치와 운용 수익 계산에서 제외된다.
+- [x] 보유 자산은 시장에 다시 등장하지 않는다.
 
 ## Blocked by
 
@@ -54,3 +54,7 @@ Status: ready-for-agent
 6, 23, 24, 25, 44, 45, 54, 55
 
 ## Comments
+
+- 2026-05-11: Implemented with TDD-shaped changes. Added `OwnedAssetStateTests` for Owned-only 보유 자산 수, 현재 운용가치, and 영업일 시작 운용 수익 calculations; connected `BusinessDayFlow.ConsumeBusinessDay` to apply 보유 자산 income through `ResourceLedger.AddEarnedCash`; updated market purchase confirmation to assign `AcquiredOrder`, consume the 영업일 through `BusinessDayFlow`, and apply next-business-day income; added `PortfolioSummaryView` UI for 보유 자산 수, 현재 운용가치, 분기 운용 수익, and ordered owned card summaries.
+- 2026-05-11: Unity EditMode/PlayMode batchmode verification was not run because the required escalated execution request was rejected by the app due account usage limit. `git diff --check` passed with only existing line-ending normalization warnings. Manual Unity/editor verification is still needed before moving this issue to `done`.
+- 2026-05-11: Unity EditMode 에서 수동으로 작동 확인 완료. 이 이슈의 상태를 `done`으로 수정함.

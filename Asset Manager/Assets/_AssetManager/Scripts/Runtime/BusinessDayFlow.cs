@@ -16,12 +16,22 @@ namespace AssetManager
                 return run;
             }
 
+            return ConsumeBusinessDay(run);
+        }
+
+        public static RunSessionState ConsumeBusinessDay(RunSessionState run)
+        {
+            if (run == null)
+            {
+                throw new ArgumentNullException(nameof(run));
+            }
+
             var remainingBusinessDays = run.Calendar.RemainingBusinessDays - 1;
             var nextPhase = remainingBusinessDays == 0
                 ? BusinessDayPhase.QuarterSettlement
                 : BusinessDayPhase.AwaitingAction;
 
-            return new RunSessionState(
+            var nextRun = new RunSessionState(
                 run.State,
                 run.StaticData,
                 new RunCalendarState(
@@ -36,6 +46,10 @@ namespace AssetManager
                 run.OwnedAssets,
                 new BusinessDayState(nextPhase, MarketAreaState.Market),
                 run.RedemptionPressure);
+
+            return nextPhase == BusinessDayPhase.AwaitingAction
+                ? ResourceLedger.AddEarnedCash(nextRun, nextRun.OwnedAssets.BusinessDayStartIncome)
+                : nextRun;
         }
 
         public static RunSessionState ContinueAfterQuarterSettlement(RunSessionState run)

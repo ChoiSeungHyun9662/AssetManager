@@ -99,7 +99,8 @@ namespace AssetManager
             var ownedCard = new AssetCardRuntimeData(
                 selectedCard.Card,
                 AssetCardRuntimeState.Owned,
-                purchaseSource);
+                purchaseSource,
+                run.OwnedAssets.Count + 1);
             var assetCards = MarkCardOwned(run.AssetCards, ownedCard);
             var ownedAssets = AddOwnedCard(run.OwnedAssets, ownedCard);
             var marketTape = run.MarketTape;
@@ -339,18 +340,10 @@ namespace AssetManager
             MarketTapeState marketTape,
             OwnedAssetState ownedAssets)
         {
-            var remainingBusinessDays = run.Calendar.RemainingBusinessDays - 1;
-            var nextPhase = remainingBusinessDays == 0
-                ? BusinessDayPhase.QuarterSettlement
-                : BusinessDayPhase.AwaitingAction;
-
-            return new RunSessionState(
+            var committedRun = new RunSessionState(
                 run.State,
                 run.StaticData,
-                new RunCalendarState(
-                    run.Calendar.FiscalYear,
-                    run.Calendar.Quarter,
-                    remainingBusinessDays),
+                run.Calendar,
                 new ResourceState(
                     run.Resources.Cash - payment.FinalCashCost,
                     run.Resources.Research - CountPlaced(payment, ResourceType.Research),
@@ -362,9 +355,11 @@ namespace AssetManager
                 marketTape,
                 run.Reservation,
                 ownedAssets,
-                new BusinessDayState(nextPhase, MarketAreaState.Market),
+                run.BusinessDay,
                 run.RedemptionPressure,
                 CardDetailState.Empty);
+
+            return BusinessDayFlow.ConsumeBusinessDay(committedRun);
         }
     }
 

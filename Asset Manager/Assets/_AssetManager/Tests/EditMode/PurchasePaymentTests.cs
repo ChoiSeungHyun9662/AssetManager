@@ -106,13 +106,14 @@ namespace AssetManager.Tests
             var result = PurchasePayment.ConfirmPurchase(run);
 
             Assert.That(result.Succeeded, Is.True);
-            Assert.That(result.Run.Resources.Cash, Is.EqualTo(0));
+            Assert.That(result.Run.Resources.Cash, Is.EqualTo(selectedCard.Card.Income));
             Assert.That(result.Run.Resources.Research, Is.EqualTo(0));
             Assert.That(result.Run.Resources.Credit, Is.EqualTo(0));
             Assert.That(result.Run.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
             Assert.That(result.Run.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
             Assert.That(result.Run.OwnedAssets.OwnedCards[0].State, Is.EqualTo(AssetCardRuntimeState.Owned));
             Assert.That(result.Run.OwnedAssets.OwnedCards[0].PurchaseSource, Is.EqualTo(PurchaseSource.MarketTape));
+            Assert.That(result.Run.OwnedAssets.OwnedCards[0].AcquiredOrder, Is.EqualTo(1));
             Assert.That(FindCard(result.Run.AssetCards, selectedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Owned));
             Assert.That(result.Run.MarketTape.SellImminentCards, Has.Count.EqualTo(previousSellImminentIds.Count));
             AssertZoneMatches(result.Run.MarketTape.SellImminentCards, previousSellImminentIds);
@@ -127,6 +128,29 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays - 1));
             Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(result.Run.CardDetail.SelectedCard, Is.Null);
+        }
+
+        [Test]
+        public void MarketCardPurchaseAppliesOwnedAssetIncomeAtNextBusinessDayStart()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 1).Run;
+            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+            var cashBeforePurchase = run.Resources.Cash;
+            run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
+            run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
+            run = PurchasePayment.PlaceChip(run, ResourceType.Credit).Run;
+
+            var result = PurchasePayment.ConfirmPurchase(run);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(
+                result.Run.Resources.Cash,
+                Is.EqualTo(cashBeforePurchase - selectedCard.Card.CashCost + selectedCard.Card.Income));
+            Assert.That(result.Run.Performance.CurrentQuarterEarnedCash, Is.EqualTo(selectedCard.Card.Income));
+            Assert.That(result.Run.Performance.CurrentFiscalYearEarnedCash, Is.EqualTo(selectedCard.Card.Income));
+            Assert.That(result.Run.Performance.TotalEarnedCash, Is.EqualTo(selectedCard.Card.Income));
         }
 
         private static AssetCardRuntimeData FindCard(System.Collections.Generic.IEnumerable<AssetCardRuntimeData> cards, string cardId)

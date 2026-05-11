@@ -74,6 +74,9 @@ namespace AssetManager
         public const string ResourceHudPanelName = "Resource Hud Panel";
         public const string ResourceHudTextName = "Resource Hud Text";
         public const string ResourceMessageTextName = "Resource Message Text";
+        public const string PortfolioSummaryPanelName = "Portfolio Summary Panel";
+        public const string PortfolioSummaryTextName = "Portfolio Summary Text";
+        public const string PortfolioOwnedCardsTextName = "Portfolio Owned Cards Text";
         public const string ResourceDevFundingCashButtonName = "Resource Dev Funding Cash Button";
         public const string ResourceDevEarnedCashButtonName = "Resource Dev Earned Cash Button";
         public const string ResourceDevResearchButtonName = "Resource Dev Research Button";
@@ -114,6 +117,7 @@ namespace AssetManager
             EnsureReadyStatusText(uiRoot.transform);
             EnsureRunStatusHud(uiRoot.transform);
             EnsureResourceHud(uiRoot.transform);
+            EnsurePortfolioSummaryView(uiRoot.transform);
             EnsureMarketTapeView(uiRoot.transform);
             EnsureCardDetailView(uiRoot.transform);
             EnsureMarketTapeDevControls(uiRoot.transform);
@@ -276,6 +280,43 @@ namespace AssetManager
 
             hud.Bind(panel, resourceText, messageText);
             return hud;
+        }
+
+        public static PortfolioSummaryView EnsurePortfolioSummaryView(Transform uiRoot)
+        {
+            var panel = EnsurePanel(
+                uiRoot,
+                PortfolioSummaryPanelName,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(32f, -736f),
+                new Vector2(820f, 156f),
+                new Color(0.06f, 0.08f, 0.10f, 0.92f));
+
+            var summaryText = EnsurePanelText(
+                panel.transform,
+                PortfolioSummaryTextName,
+                new Vector2(18f, -14f),
+                new Vector2(784f, 34f),
+                20,
+                TextAnchor.MiddleLeft);
+            var ownedCardsText = EnsurePanelText(
+                panel.transform,
+                PortfolioOwnedCardsTextName,
+                new Vector2(18f, -54f),
+                new Vector2(784f, 84f),
+                17,
+                TextAnchor.UpperLeft);
+
+            var view = uiRoot.GetComponent<PortfolioSummaryView>();
+            if (view == null)
+            {
+                view = uiRoot.gameObject.AddComponent<PortfolioSummaryView>();
+            }
+
+            view.Bind(panel, summaryText, ownedCardsText);
+            return view;
         }
 
         public static MarketTapeView EnsureMarketTapeView(Transform uiRoot)

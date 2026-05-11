@@ -477,15 +477,26 @@ namespace AssetManager
     public sealed class AssetCardRuntimeData
     {
         public AssetCardRuntimeData(AssetCardData card, AssetCardRuntimeState state, PurchaseSource? purchaseSource)
+            : this(card, state, purchaseSource, null)
+        {
+        }
+
+        public AssetCardRuntimeData(
+            AssetCardData card,
+            AssetCardRuntimeState state,
+            PurchaseSource? purchaseSource,
+            int? acquiredOrder)
         {
             Card = card;
             State = state;
             PurchaseSource = purchaseSource;
+            AcquiredOrder = acquiredOrder;
         }
 
         public AssetCardData Card { get; }
         public AssetCardRuntimeState State { get; }
         public PurchaseSource? PurchaseSource { get; }
+        public int? AcquiredOrder { get; }
     }
 
     public sealed class MarketTapeState
@@ -525,6 +536,56 @@ namespace AssetManager
         }
 
         public IReadOnlyList<AssetCardRuntimeData> OwnedCards { get; }
+        public int Count
+        {
+            get
+            {
+                var count = 0;
+                foreach (var card in OwnedCards)
+                {
+                    if (card.State == AssetCardRuntimeState.Owned)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
+
+        public int CurrentManagementValue
+        {
+            get
+            {
+                var total = 0;
+                foreach (var card in OwnedCards)
+                {
+                    if (card.State == AssetCardRuntimeState.Owned)
+                    {
+                        total += card.Card.ManagementValue;
+                    }
+                }
+
+                return total;
+            }
+        }
+
+        public int BusinessDayStartIncome
+        {
+            get
+            {
+                var total = 0;
+                foreach (var card in OwnedCards)
+                {
+                    if (card.State == AssetCardRuntimeState.Owned)
+                    {
+                        total += card.Card.Income;
+                    }
+                }
+
+                return total;
+            }
+        }
     }
 
     public sealed class BusinessDayState

@@ -310,7 +310,7 @@ namespace AssetManager.Tests
 
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
-            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(0));
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(selectedCard.Card.Income));
             Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(0));
             Assert.That(bootstrap.CurrentRun.Resources.Credit, Is.EqualTo(0));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
@@ -318,6 +318,16 @@ namespace AssetManager.Tests
             Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(previousUpcomingMarketFirstCardId));
             Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[1].Card.Id, Is.EqualTo(previousCurrentMarketSecondCardId));
             Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.PortfolioSummaryTextName).GetComponent<Text>().text, Does.Contain("보유 자산 1"));
+            Assert.That(
+                FindUiObject(ProjectShell.PortfolioSummaryTextName).GetComponent<Text>().text,
+                Does.Contain("현재 운용가치 " + selectedCard.Card.ManagementValue));
+            Assert.That(
+                FindUiObject(ProjectShell.PortfolioSummaryTextName).GetComponent<Text>().text,
+                Does.Contain("분기 운용 수익 " + selectedCard.Card.Income));
+            Assert.That(
+                FindUiObject(ProjectShell.PortfolioOwnedCardsTextName).GetComponent<Text>().text,
+                Does.Contain(selectedCard.Card.DisplayName));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }

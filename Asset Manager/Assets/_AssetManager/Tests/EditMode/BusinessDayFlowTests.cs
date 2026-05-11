@@ -20,6 +20,24 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void AdvanceToNextBusinessDayAppliesOwnedAssetIncomeAsEarnedCash()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            var ownedCard = new AssetCardRuntimeData(
+                run.AssetCards[0].Card,
+                AssetCardRuntimeState.Owned,
+                PurchaseSource.MarketTape);
+            run = WithOwnedAssets(run, new OwnedAssetState(new[] { ownedCard }));
+
+            var nextRun = BusinessDayFlow.AdvanceToNextBusinessDay(run);
+
+            Assert.That(nextRun.Resources.Cash, Is.EqualTo(run.Resources.Cash + ownedCard.Card.Income));
+            Assert.That(nextRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(ownedCard.Card.Income));
+            Assert.That(nextRun.Performance.CurrentFiscalYearEarnedCash, Is.EqualTo(ownedCard.Card.Income));
+            Assert.That(nextRun.Performance.TotalEarnedCash, Is.EqualTo(ownedCard.Card.Income));
+        }
+
+        [Test]
         public void AdvanceToNextBusinessDayEntersQuarterSettlementAfterLastBusinessDay()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
@@ -212,6 +230,23 @@ namespace AssetManager.Tests
 
             Assert.Fail("Could not reach the requested playable quarter.");
             return run;
+        }
+
+        private static RunSessionState WithOwnedAssets(RunSessionState run, OwnedAssetState ownedAssets)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                ownedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail);
         }
 
         private static AssetCardRuntimeData FindCard(System.Collections.Generic.IEnumerable<AssetCardRuntimeData> cards, string cardId)
