@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-11
-Covered implementation slices: issues 00-05
+Covered implementation slices: issues 00-06
 
 ## Update Workflow
 
@@ -32,6 +32,7 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **03 - 시장 테이프**: displays 매도 임박, 현재 시장, and 예비 시장; separates 시장 테이프 갱신 from 시장 테이프 진행; prevents visible/owned/reserved/removed card duplication.
 - **04 - 시장 영역 and 카드 상세보기**: adds single 시장 영역 transitions, CardDetail transient state, clickable market cards, a CardDetail replacement panel, close handling, and 다음 영업일 gating.
 - **05 - 자원 원장 and 보유 자원 UI**: adds ResourceLedger as the public 자원 rule service, separates 조달 현금 from 운용 수익 counters, applies 전문 자원 and 딜 한도, and displays 보유 자원 with short cap messages.
+- **06 - 자산 매수 and 비용 슬롯 결제**: adds PurchasePayment as the public 자산 매수 rule service, creates 비용 슬롯 from 전문 자원 costs, supports 전문 자원/딜 tentative placement and recovery, confirms 시장 카드 purchases, advances only the purchased 시장 테이프 column, and consumes a 영업일.
 
 Current runtime flow:
 
@@ -83,7 +84,8 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list. |
 | `BusinessDayState` | `Runtime/RunModels.cs` | Current phase and 시장 영역 state. |
 | `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기. |
-| `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Minimal pending payment placeholder created on 카드 상세보기 entry and cleared on close. |
+| `PaymentSlotState` | `Runtime/CardDetailState.cs` | One 비용 슬롯 in 카드 상세보기: required 전문 자원 and optional placed 전문 자원 or 딜. |
+| `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Pending 자산 매수 payment in 카드 상세보기: card id, base cash cost, 비용 슬롯 list, and 딜-discounted final cash cost. |
 | `CardDetailState` | `Runtime/CardDetailState.cs` | Transient 카드 상세보기 state: selected card, 매수 출처, display data, pending payment, extra-buy flag, and Reserve visibility condition. |
 | `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 환매 압력. |
 | `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including transient 카드 상세보기 state. Most transitions create a new instance. |
@@ -114,18 +116,21 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for entering/closing 카드 상세보기 and gating 다음 영업일 to Market state only. |
 | `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 운용 수익, capped 전문 자원, and capped 딜. |
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
+| `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, 자산 매수 validation, 시장 카드 ownership transition, purchased-column advance, and 영업일 consumption. |
+| `PurchasePaymentResult` | `Runtime/PurchasePayment.cs` | Return data for 결제 and 자산 매수 operations, including success and short feedback message. |
 
 ## Market Rules
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `MarketTape` | `Runtime/MarketTape.cs` | Pure rule service for 시장 테이프 갱신, 시장 테이프 진행, 슬롯 보충, duplicate prevention, and removed-card marking. |
+| `MarketTape` | `Runtime/MarketTape.cs` | Pure rule service for 시장 테이프 갱신, 시장 테이프 진행, 슬롯 보충, single-column advance after purchase/reservation, duplicate prevention, and removed-card marking. |
 
 Important distinction:
 
 - `Refresh` rebuilds the whole 시장 테이프 and marks previously visible available cards as removed.
 - `Advance` removes 매도 임박 cards, moves 현재 시장 to 매도 임박, moves 예비 시장 to 현재 시장, then refills 예비 시장.
 - `RefillSlot` fills only one zone up to its configured slot count.
+- `AdvanceSlotAt` advances only one vertical market column after purchase/reservation: the selected cell is filled by the card behind it, and the 예비 시장 cell receives a new card.
 
 ## UI And Presentation
 
@@ -137,7 +142,7 @@ Important distinction:
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays 보유 자원, 전문 자원 total/cap, 딜 total/cap, and the current short resource message. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, and 최종 정산 placeholder UI; 다음 영업일 uses MarketArea gating. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and clickable visible market card summary buttons. |
-| `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, close/buy placeholders, and Reserve button visibility. |
+| `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, 비용 슬롯 state, final cash cost, chip placement/recovery buttons, buy availability, and Reserve button visibility. |
 | `MarketTapeDevControls` | `Runtime/MarketTapeDevControls.cs` | Temporary Market-state-only development buttons for 시장 테이프 진행 and 시장 테이프 갱신. |
 | `ResourceDevControls` | `Runtime/ResourceDevControls.cs` | Temporary Market-state-only development buttons for adding 조달 현금, 운용 수익, 전문 자원, and 딜 through `ResourceLedger`. |
 
@@ -151,6 +156,7 @@ Important distinction:
 | 시장 테이프 rules | `MarketTapeTests`, `BusinessDayFlowTests`, `MainGameShellBootstrapTests` |
 | 시장 영역 and 카드 상세보기 | `MarketAreaFlowTests`, `MainGameShellBootstrapTests` |
 | 자원 원장 and 보유 자원 UI | `ResourceLedgerTests`, `MainGameShellBootstrapTests` |
+| 자산 매수 and 비용 슬롯 결제 | `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 
 ## Notes For Next Cleanup
 

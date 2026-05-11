@@ -246,6 +246,83 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapCardDetailPaymentPlacesRecoversAndConfirmsMarketPurchase()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapCardDetailPaymentTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            FindUiObject(ProjectShell.ResourceDevResearchButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.ResourceDevCreditButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            var selectedCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0];
+            var previousCash = bootstrap.CurrentRun.Resources.Cash;
+            var previousCurrentMarketSecondCardId = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[1].Card.Id;
+            var previousUpcomingMarketFirstCardId = bootstrap.CurrentRun.MarketTape.UpcomingMarketCards[0].Card.Id;
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+
+            yield return null;
+
+            var buyButton = FindUiObject(ProjectShell.CardDetailBuyButtonName).GetComponent<Button>();
+            Assert.That(buyButton.interactable, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("리서치: 비어 있음"));
+
+            FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(1));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("리서치: 리서치"));
+
+            FindUiObject(ProjectShell.CardDetailPaymentSlotButtonPrefix + "1").GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(1));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("리서치: 비어 있음"));
+
+            FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.CardDetailPlaceCreditButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(previousCash));
+            Assert.That(FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).GetComponent<Text>().text, Does.Contain("최종 현금 3"));
+            Assert.That(buyButton.interactable, Is.True);
+
+            buyButton.onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(0));
+            Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(0));
+            Assert.That(bootstrap.CurrentRun.Resources.Credit, Is.EqualTo(0));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(previousUpcomingMarketFirstCardId));
+            Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[1].Card.Id, Is.EqualTo(previousCurrentMarketSecondCardId));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.False);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapMarketTapeAdvanceButtonAdvancesTapeAndUi()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapMarketTapeAdvanceTests");

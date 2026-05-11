@@ -159,6 +159,98 @@ namespace AssetManager
             return new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
         }
 
+        public static MarketTapeState AdvanceSlotAt(
+            MarketConfigData marketConfig,
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketTapeState currentTape,
+            OwnedAssetState ownedAssets,
+            ReservationState reservation,
+            MarketTapeZone zone,
+            int slotIndex)
+        {
+            if (marketConfig == null)
+            {
+                throw new ArgumentNullException(nameof(marketConfig));
+            }
+
+            if (cardPool == null)
+            {
+                throw new ArgumentNullException(nameof(cardPool));
+            }
+
+            if (currentTape == null)
+            {
+                return Refresh(marketConfig, cardPool, null, ownedAssets, reservation);
+            }
+
+            var sellImminent = new List<AssetCardRuntimeData>(currentTape.SellImminentCards);
+            var currentMarket = new List<AssetCardRuntimeData>(currentTape.CurrentMarketCards);
+            var upcomingMarket = new List<AssetCardRuntimeData>(currentTape.UpcomingMarketCards);
+
+            if (!CanAdvanceColumn(sellImminent, currentMarket, upcomingMarket, zone, slotIndex))
+            {
+                return currentTape;
+            }
+
+            switch (zone)
+            {
+                case MarketTapeZone.SellImminent:
+                    sellImminent[slotIndex] = currentMarket[slotIndex];
+                    currentMarket[slotIndex] = upcomingMarket[slotIndex];
+                    break;
+                case MarketTapeZone.CurrentMarket:
+                    currentMarket[slotIndex] = upcomingMarket[slotIndex];
+                    break;
+                case MarketTapeZone.UpcomingMarket:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(zone), zone, null);
+            }
+
+            var shiftedTape = new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
+            var excludedCardIds = CollectVisibleCardIds(shiftedTape);
+            var candidates = CreateCandidates(cardPool, excludedCardIds, ownedAssets, reservation);
+
+            if (candidates.Count > 0)
+            {
+                upcomingMarket[slotIndex] = candidates[0];
+            }
+            else
+            {
+                upcomingMarket.RemoveAt(slotIndex);
+            }
+
+            return new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
+        }
+
+        private static bool CanAdvanceColumn(
+            IReadOnlyList<AssetCardRuntimeData> sellImminent,
+            IReadOnlyList<AssetCardRuntimeData> currentMarket,
+            IReadOnlyList<AssetCardRuntimeData> upcomingMarket,
+            MarketTapeZone zone,
+            int slotIndex)
+        {
+            if (slotIndex < 0)
+            {
+                return false;
+            }
+
+            switch (zone)
+            {
+                case MarketTapeZone.SellImminent:
+                    return slotIndex < sellImminent.Count
+                        && slotIndex < currentMarket.Count
+                        && slotIndex < upcomingMarket.Count;
+                case MarketTapeZone.CurrentMarket:
+                    return slotIndex < currentMarket.Count
+                        && slotIndex < upcomingMarket.Count;
+                case MarketTapeZone.UpcomingMarket:
+                    return slotIndex < upcomingMarket.Count;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(zone), zone, null);
+            }
+        }
+
         private static List<AssetCardRuntimeData> DrawCards(
             IReadOnlyList<AssetCardRuntimeData> candidates,
             HashSet<string> visibleCardIds,

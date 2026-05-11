@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace AssetManager
@@ -28,18 +29,69 @@ namespace AssetManager
         public IReadOnlyList<TagData> Tags { get; }
     }
 
+    public sealed class PaymentSlotState
+    {
+        public PaymentSlotState(ResourceType requiredResourceType, ResourceType? placedResourceType)
+        {
+            RequiredResourceType = requiredResourceType;
+            PlacedResourceType = placedResourceType;
+        }
+
+        public ResourceType RequiredResourceType { get; }
+        public ResourceType? PlacedResourceType { get; }
+        public bool IsFilled => PlacedResourceType.HasValue;
+    }
+
     public sealed class PurchasePaymentState
     {
         public PurchasePaymentState(AssetCardData card)
+            : this(card.Id, card.CashCost, CreateEmptySlots(card.ProfessionalCosts))
         {
-            CardId = card.Id;
-            CashCost = card.CashCost;
-            ProfessionalCosts = new List<ProfessionalResourceCost>(card.ProfessionalCosts).AsReadOnly();
+        }
+
+        public PurchasePaymentState(string cardId, int cashCost, IEnumerable<PaymentSlotState> slots)
+        {
+            CardId = cardId;
+            CashCost = cashCost;
+            Slots = new List<PaymentSlotState>(slots).AsReadOnly();
         }
 
         public string CardId { get; }
         public int CashCost { get; }
-        public IReadOnlyList<ProfessionalResourceCost> ProfessionalCosts { get; }
+        public IReadOnlyList<PaymentSlotState> Slots { get; }
+        public int FinalCashCost => Math.Max(0, CashCost - PlacedDealCount);
+
+        private int PlacedDealCount
+        {
+            get
+            {
+                var count = 0;
+                foreach (var slot in Slots)
+                {
+                    if (slot.PlacedResourceType == ResourceType.Deal)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
+
+        private static IReadOnlyList<PaymentSlotState> CreateEmptySlots(
+            IEnumerable<ProfessionalResourceCost> professionalCosts)
+        {
+            var slots = new List<PaymentSlotState>();
+            foreach (var cost in professionalCosts)
+            {
+                for (var i = 0; i < cost.Amount; i++)
+                {
+                    slots.Add(new PaymentSlotState(cost.ResourceType, null));
+                }
+            }
+
+            return slots;
+        }
     }
 
     public sealed class CardDetailState

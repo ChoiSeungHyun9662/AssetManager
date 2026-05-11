@@ -1,6 +1,6 @@
 # 06. 시장 카드 매수와 최소 칩 결제
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -19,7 +19,7 @@ Status: ready-for-agent
 - 딜 1개마다 기본 현금 비용을 1 낮추고 최종 현금 비용은 0 미만으로 내려가지 않게 한다.
 - 매수 가능 조건은 선택 카드 유효성, 매수 출처 유효성, 모든 전문 슬롯 충족, 최종 현금 비용 지불 가능, 현재 행동 상태를 기준으로 판정한다.
 - 매수 확정 시 전문 자원, 딜, 현금을 소비하고 카드를 Owned 상태로 바꾼다.
-- 시장 카드 매수 후 구매한 시장 슬롯만 새 카드로 보충하고 시장 테이프를 진행하지 않는다.
+- 시장 카드 매수 후 구매한 세로줄만 시장 테이프 진행처럼 처리하고 전체 시장 테이프를 진행하지 않는다.
 - 매수 후 매수 출처를 MarketTape로 기록한다.
 - 매수 확정 후 추가 매수권이 없으면 영업일을 종료한다.
 
@@ -37,20 +37,20 @@ Status: ready-for-agent
 - Play Mode에서 시장 카드 상세보기로 들어가 칩을 배치하고 회수할 수 있다.
 - 칩 배치만으로는 보유 자원이 줄지 않는다.
 - 매수 확정 시 보유 자원이 줄고 카드가 보유 자산으로 이동한다.
-- 시장 카드 매수 후 산 자리만 새 카드로 보충된다.
+- 시장 카드 매수 후 산 세로줄만 시장 테이프 진행처럼 당겨진다.
 - 시장 테이프 진행은 발생하지 않는다.
 - 결제 조건이 부족하면 매수 버튼이 비활성화되거나 클릭해도 상태가 바뀌지 않는다.
 
 ## Acceptance criteria
 
-- [ ] 전문 자원 비용 슬롯이 카드 비용에서 생성된다.
-- [ ] 전문 자원 칩과 딜을 슬롯에 배치하고 회수할 수 있다.
-- [ ] 딜은 어떤 전문 자원 슬롯에도 배치 가능하다.
-- [ ] 딜 수만큼 기본 현금 비용이 감소한다.
-- [ ] 매수 확정 전에는 자원이 소비되지 않는다.
-- [ ] 검증 실패 시 자원, 카드, 시장 상태가 변경되지 않는다.
-- [ ] 시장 카드 매수는 산 자리만 보충하고 시장 테이프를 진행하지 않는다.
-- [ ] 매수 확정은 영업일을 소비한다.
+- [x] 전문 자원 비용 슬롯이 카드 비용에서 생성된다.
+- [x] 전문 자원 칩과 딜을 슬롯에 배치하고 회수할 수 있다.
+- [x] 딜은 어떤 전문 자원 슬롯에도 배치 가능하다.
+- [x] 딜 수만큼 기본 현금 비용이 감소한다.
+- [x] 매수 확정 전에는 자원이 소비되지 않는다.
+- [x] 검증 실패 시 자원, 카드, 시장 상태가 변경되지 않는다.
+- [x] 시장 카드 매수는 산 세로줄만 시장 테이프 진행처럼 처리하고 전체 시장 테이프를 진행하지 않는다.
+- [x] 매수 확정은 영업일을 소비한다.
 
 ## Blocked by
 
@@ -63,3 +63,6 @@ Status: ready-for-agent
 9, 16, 22, 26, 27, 28, 29, 30, 31
 
 ## Comments
+
+- 2026-05-11: Implemented with TDD. Added `PurchasePayment` rule service, `PaymentSlotState`, pending payment slot state, 전문 자원/딜 tentative placement and recovery, validation failure no-op behavior, 시장 카드 매수 confirmation, 영업일 consumption, and CardDetail UI controls for payment slots/final cash/buy availability. Verified with Unity EditMode 30/30 and PlayMode 10/10 via `scripts/Run-UnityBatchmode.ps1`.
+- 2026-05-11: Updated purchase market-tape rule after clarification. 매수 확정 no longer refills the same position directly; it advances only the purchased vertical market column, e.g. `매도 임박 A / 현재 시장 B / 예비 시장 C` with B purchased becomes `A / C / 새 카드`. Verified with Unity EditMode 30/30 and PlayMode 10/10.

@@ -85,6 +85,56 @@ namespace AssetManager
             RefreshRunUi();
         }
 
+        public void ConfirmPurchase()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            ApplyPaymentResult(PurchasePayment.ConfirmPurchase(CurrentRun));
+        }
+
+        public void PlaceResearchPaymentChip()
+        {
+            PlacePaymentChip(ResourceType.Research);
+        }
+
+        public void PlaceCreditPaymentChip()
+        {
+            PlacePaymentChip(ResourceType.Credit);
+        }
+
+        public void PlaceCommodityPaymentChip()
+        {
+            PlacePaymentChip(ResourceType.Commodity);
+        }
+
+        public void PlaceDealPaymentChip()
+        {
+            PlacePaymentChip(ResourceType.Deal);
+        }
+
+        public void RemovePaymentSlot1()
+        {
+            RemovePaymentSlot(0);
+        }
+
+        public void RemovePaymentSlot2()
+        {
+            RemovePaymentSlot(1);
+        }
+
+        public void RemovePaymentSlot3()
+        {
+            RemovePaymentSlot(2);
+        }
+
+        public void RemovePaymentSlot4()
+        {
+            RemovePaymentSlot(3);
+        }
+
         public void AddFundingCashForDevelopment()
         {
             if (CurrentRun == null)
@@ -190,6 +240,23 @@ namespace AssetManager
             cardDetailView.CloseButton.onClick.RemoveListener(CloseCardDetail);
             cardDetailView.CloseButton.onClick.AddListener(CloseCardDetail);
 
+            cardDetailView.BuyButton.onClick.RemoveListener(ConfirmPurchase);
+            cardDetailView.BuyButton.onClick.AddListener(ConfirmPurchase);
+
+            cardDetailView.PlaceResearchButton.onClick.RemoveListener(PlaceResearchPaymentChip);
+            cardDetailView.PlaceResearchButton.onClick.AddListener(PlaceResearchPaymentChip);
+
+            cardDetailView.PlaceCreditButton.onClick.RemoveListener(PlaceCreditPaymentChip);
+            cardDetailView.PlaceCreditButton.onClick.AddListener(PlaceCreditPaymentChip);
+
+            cardDetailView.PlaceCommodityButton.onClick.RemoveListener(PlaceCommodityPaymentChip);
+            cardDetailView.PlaceCommodityButton.onClick.AddListener(PlaceCommodityPaymentChip);
+
+            cardDetailView.PlaceDealButton.onClick.RemoveListener(PlaceDealPaymentChip);
+            cardDetailView.PlaceDealButton.onClick.AddListener(PlaceDealPaymentChip);
+
+            BindPaymentSlotButtons();
+
             runProgressControls.NextBusinessDayButton.onClick.RemoveListener(AdvanceToNextBusinessDay);
             runProgressControls.NextBusinessDayButton.onClick.AddListener(AdvanceToNextBusinessDay);
 
@@ -247,6 +314,53 @@ namespace AssetManager
             CurrentRun = result.Run;
             resourceFeedbackMessage = result.Message;
             RefreshRunUi();
+        }
+
+        private void PlacePaymentChip(ResourceType resourceType)
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            ApplyPaymentResult(PurchasePayment.PlaceChip(CurrentRun, resourceType));
+        }
+
+        private void RemovePaymentSlot(int slotIndex)
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            ApplyPaymentResult(PurchasePayment.RemoveChip(CurrentRun, slotIndex));
+        }
+
+        private void ApplyPaymentResult(PurchasePaymentResult result)
+        {
+            CurrentRun = result.Run;
+            resourceFeedbackMessage = result.Message;
+            RefreshRunUi();
+        }
+
+        private void BindPaymentSlotButtons()
+        {
+            BindPaymentSlotButton(0, RemovePaymentSlot1);
+            BindPaymentSlotButton(1, RemovePaymentSlot2);
+            BindPaymentSlotButton(2, RemovePaymentSlot3);
+            BindPaymentSlotButton(3, RemovePaymentSlot4);
+        }
+
+        private void BindPaymentSlotButton(int index, UnityEngine.Events.UnityAction action)
+        {
+            if (index >= cardDetailView.PaymentSlotButtons.Count)
+            {
+                return;
+            }
+
+            var button = cardDetailView.PaymentSlotButtons[index];
+            button.onClick.RemoveListener(action);
+            button.onClick.AddListener(action);
         }
     }
 }

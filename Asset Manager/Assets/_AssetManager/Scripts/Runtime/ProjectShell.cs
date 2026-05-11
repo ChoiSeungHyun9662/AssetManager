@@ -61,6 +61,13 @@ namespace AssetManager
         public const string CardDetailIncomeTextName = "Card Detail Income Text";
         public const string CardDetailTagsTextName = "Card Detail Tags Text";
         public const string CardDetailRarityTextName = "Card Detail Rarity Text";
+        public const string CardDetailPaymentSlotsTextName = "Card Detail Payment Slots Text";
+        public const string CardDetailFinalCashCostTextName = "Card Detail Final Cash Cost Text";
+        public const string CardDetailPaymentSlotButtonPrefix = "Card Detail Payment Slot Button ";
+        public const string CardDetailPlaceResearchButtonName = "Card Detail Place Research Button";
+        public const string CardDetailPlaceCreditButtonName = "Card Detail Place Credit Button";
+        public const string CardDetailPlaceCommodityButtonName = "Card Detail Place Commodity Button";
+        public const string CardDetailPlaceDealButtonName = "Card Detail Place Deal Button";
         public const string CardDetailCloseButtonName = "Card Detail Close Button";
         public const string CardDetailBuyButtonName = "Card Detail Buy Button";
         public const string CardDetailReserveButtonName = "Card Detail Reserve Button";
@@ -328,7 +335,7 @@ namespace AssetManager
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0f, -220f),
-                new Vector2(1280f, 300f),
+                new Vector2(1280f, 360f),
                 new Color(0.07f, 0.09f, 0.11f, 0.96f));
 
             var nameText = EnsurePanelText(
@@ -380,6 +387,57 @@ namespace AssetManager
                 new Vector2(260f, 36f),
                 18,
                 TextAnchor.MiddleLeft);
+            var paymentSlotsText = EnsurePanelText(
+                panel.transform,
+                CardDetailPaymentSlotsTextName,
+                new Vector2(584f, -220f),
+                new Vector2(520f, 32f),
+                16,
+                TextAnchor.MiddleLeft);
+            var finalCashCostText = EnsurePanelText(
+                panel.transform,
+                CardDetailFinalCashCostTextName,
+                new Vector2(584f, -254f),
+                new Vector2(260f, 32f),
+                18,
+                TextAnchor.MiddleLeft);
+            var paymentSlotButtons = EnsureCardDetailPaymentSlotButtons(panel.transform);
+            var placeResearchButton = EnsureButton(
+                panel.transform,
+                CardDetailPlaceResearchButtonName,
+                "리서치",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-492f, -112f),
+                new Vector2(112f, 40f));
+            var placeCreditButton = EnsureButton(
+                panel.transform,
+                CardDetailPlaceCreditButtonName,
+                "신용",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-372f, -112f),
+                new Vector2(112f, 40f));
+            var placeCommodityButton = EnsureButton(
+                panel.transform,
+                CardDetailPlaceCommodityButtonName,
+                "원자재",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-252f, -112f),
+                new Vector2(112f, 40f));
+            var placeDealButton = EnsureButton(
+                panel.transform,
+                CardDetailPlaceDealButtonName,
+                "딜",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-132f, -112f),
+                new Vector2(112f, 40f));
 
             var closeButton = EnsureButton(
                 panel.transform,
@@ -424,6 +482,13 @@ namespace AssetManager
                 incomeText,
                 tagsText,
                 rarityText,
+                paymentSlotsText,
+                finalCashCostText,
+                paymentSlotButtons,
+                placeResearchButton,
+                placeCreditButton,
+                placeCommodityButton,
+                placeDealButton,
                 closeButton,
                 buyButton,
                 reserveButton);
@@ -600,6 +665,29 @@ namespace AssetManager
                 var text = button.GetComponentInChildren<Text>();
                 text.alignment = TextAnchor.MiddleLeft;
                 text.fontSize = 16;
+                buttons.Add(button);
+            }
+
+            return buttons;
+        }
+
+        private static IReadOnlyList<Button> EnsureCardDetailPaymentSlotButtons(Transform panel)
+        {
+            var buttons = new List<Button>();
+            for (var i = 0; i < 4; i++)
+            {
+                var button = EnsureButton(
+                    panel,
+                    CardDetailPaymentSlotButtonPrefix + (i + 1),
+                    string.Empty,
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(24f + (i * 132f), -254f),
+                    new Vector2(124f, 36f));
+
+                var text = button.GetComponentInChildren<Text>();
+                text.fontSize = 15;
                 buttons.Add(button);
             }
 
