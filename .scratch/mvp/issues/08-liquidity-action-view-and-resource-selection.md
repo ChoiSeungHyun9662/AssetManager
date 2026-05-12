@@ -1,6 +1,6 @@
 # 08. 자원 확보 액션
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -43,14 +43,14 @@ Market 상태에서 중앙 은행을 클릭해 GainLiquidity 상태로 전환하
 
 ## Acceptance criteria
 
-- [ ] 자원 확보는 중앙 은행 클릭으로 진입한다.
-- [ ] GainLiquidity는 시장 영역을 대체한다.
-- [ ] 첫 자원 획득 전 닫기는 영업일을 소비하지 않는다.
-- [ ] 첫 자원 획득 후 닫기는 불가능하다.
-- [ ] 같은 자원 2개 또는 서로 다른 자원 3개로 완료된다.
-- [ ] 딜은 선택할 수 없다.
-- [ ] 전문 자원 한도 10에 따라 버튼 상태가 갱신된다.
-- [ ] 조달 현금은 운용 수익에 포함하지 않는다.
+- [x] 자원 확보는 중앙 은행 클릭으로 진입한다.
+- [x] GainLiquidity는 시장 영역을 대체한다.
+- [x] 첫 자원 획득 전 닫기는 영업일을 소비하지 않는다.
+- [x] 첫 자원 획득 후 닫기는 불가능하다.
+- [x] 같은 자원 2개 또는 서로 다른 자원 3개로 완료된다.
+- [x] 딜은 선택할 수 없다.
+- [x] 전문 자원 한도 10에 따라 버튼 상태가 갱신된다.
+- [x] 조달 현금은 운용 수익에 포함하지 않는다.
 
 ## Blocked by
 
@@ -62,3 +62,5 @@ Market 상태에서 중앙 은행을 클릭해 GainLiquidity 상태로 전환하
 11, 40, 41, 42, 43, 44
 
 ## Comments
+
+- 2026-05-12: TDD로 `LiquidityActionTests`와 `MainGameShellBootstrapTests`를 추가해 issue08 범위를 검증했다. Unity batchmode EditMode 39개, PlayMode 11개가 통과했다.

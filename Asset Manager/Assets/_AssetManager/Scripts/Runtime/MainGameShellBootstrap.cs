@@ -20,6 +20,7 @@ namespace AssetManager
         private ResourceHud resourceHud;
         private PortfolioSummaryView portfolioSummaryView;
         private MarketTapeView marketTapeView;
+        private LiquidityActionView liquidityActionView;
         private CardDetailView cardDetailView;
         private MarketTapeDevControls marketTapeDevControls;
         private ResourceDevControls resourceDevControls;
@@ -84,6 +85,50 @@ namespace AssetManager
 
             CurrentRun = MarketAreaFlow.CloseCardDetail(CurrentRun);
             RefreshRunUi();
+        }
+
+        public void EnterLiquidityAction()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun = LiquidityAction.Enter(CurrentRun);
+            resourceFeedbackMessage = string.Empty;
+            RefreshRunUi();
+        }
+
+        public void CloseLiquidityAction()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun = LiquidityAction.Close(CurrentRun);
+            resourceFeedbackMessage = string.Empty;
+            RefreshRunUi();
+        }
+
+        public void SelectLiquidityCash()
+        {
+            SelectLiquidityResource(ResourceType.Cash);
+        }
+
+        public void SelectLiquidityResearch()
+        {
+            SelectLiquidityResource(ResourceType.Research);
+        }
+
+        public void SelectLiquidityCredit()
+        {
+            SelectLiquidityResource(ResourceType.Credit);
+        }
+
+        public void SelectLiquidityCommodity()
+        {
+            SelectLiquidityResource(ResourceType.Commodity);
         }
 
         public void ConfirmPurchase()
@@ -232,12 +277,31 @@ namespace AssetManager
             resourceHud = ProjectShell.EnsureResourceHud(uiRoot);
             portfolioSummaryView = ProjectShell.EnsurePortfolioSummaryView(uiRoot);
             marketTapeView = ProjectShell.EnsureMarketTapeView(uiRoot);
+            liquidityActionView = ProjectShell.EnsureLiquidityActionView(uiRoot);
             cardDetailView = ProjectShell.EnsureCardDetailView(uiRoot);
             marketTapeDevControls = ProjectShell.EnsureMarketTapeDevControls(uiRoot);
             resourceDevControls = ProjectShell.EnsureResourceDevControls(uiRoot);
             runProgressControls = ProjectShell.EnsureRunProgressControls(uiRoot);
 
             marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
+
+            liquidityActionView.CentralBankButton.onClick.RemoveListener(EnterLiquidityAction);
+            liquidityActionView.CentralBankButton.onClick.AddListener(EnterLiquidityAction);
+
+            liquidityActionView.CloseButton.onClick.RemoveListener(CloseLiquidityAction);
+            liquidityActionView.CloseButton.onClick.AddListener(CloseLiquidityAction);
+
+            liquidityActionView.CashButton.onClick.RemoveListener(SelectLiquidityCash);
+            liquidityActionView.CashButton.onClick.AddListener(SelectLiquidityCash);
+
+            liquidityActionView.ResearchButton.onClick.RemoveListener(SelectLiquidityResearch);
+            liquidityActionView.ResearchButton.onClick.AddListener(SelectLiquidityResearch);
+
+            liquidityActionView.CreditButton.onClick.RemoveListener(SelectLiquidityCredit);
+            liquidityActionView.CreditButton.onClick.AddListener(SelectLiquidityCredit);
+
+            liquidityActionView.CommodityButton.onClick.RemoveListener(SelectLiquidityCommodity);
+            liquidityActionView.CommodityButton.onClick.AddListener(SelectLiquidityCommodity);
 
             cardDetailView.CloseButton.onClick.RemoveListener(CloseCardDetail);
             cardDetailView.CloseButton.onClick.AddListener(CloseCardDetail);
@@ -296,6 +360,7 @@ namespace AssetManager
             resourceHud.Show(CurrentRun, resourceFeedbackMessage);
             portfolioSummaryView.Show(CurrentRun);
             marketTapeView.Show(CurrentRun);
+            liquidityActionView.Show(CurrentRun, resourceFeedbackMessage);
             cardDetailView.Show(CurrentRun);
             marketTapeDevControls.Show(CurrentRun);
             resourceDevControls.Show(CurrentRun);
@@ -313,6 +378,23 @@ namespace AssetManager
         }
 
         private void ApplyResourceResult(ResourceLedgerResult result)
+        {
+            CurrentRun = result.Run;
+            resourceFeedbackMessage = result.Message;
+            RefreshRunUi();
+        }
+
+        private void SelectLiquidityResource(ResourceType resourceType)
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            ApplyLiquidityActionResult(LiquidityAction.Select(CurrentRun, resourceType));
+        }
+
+        private void ApplyLiquidityActionResult(LiquidityActionResult result)
         {
             CurrentRun = result.Run;
             resourceFeedbackMessage = result.Message;

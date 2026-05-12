@@ -600,6 +600,19 @@ namespace AssetManager
         public MarketAreaState MarketArea { get; }
     }
 
+    public sealed class LiquidityActionState
+    {
+        public static readonly LiquidityActionState Empty = new LiquidityActionState(Array.Empty<ResourceType>());
+
+        public LiquidityActionState(IEnumerable<ResourceType> selectedResources)
+        {
+            SelectedResources = new List<ResourceType>(selectedResources).AsReadOnly();
+        }
+
+        public IReadOnlyList<ResourceType> SelectedResources { get; }
+        public bool HasGainedAnyResource => SelectedResources.Count > 0;
+    }
+
     public sealed class RedemptionPressureState
     {
         public RedemptionPressureState(int currentPressure, int maxPressure)
@@ -626,7 +639,8 @@ namespace AssetManager
             OwnedAssetState ownedAssets,
             BusinessDayState businessDay,
             RedemptionPressureState redemptionPressure,
-            CardDetailState cardDetail = null)
+            CardDetailState cardDetail = null,
+            LiquidityActionState liquidityAction = null)
         {
             State = state;
             StaticData = staticData;
@@ -640,6 +654,7 @@ namespace AssetManager
             BusinessDay = businessDay;
             RedemptionPressure = redemptionPressure;
             CardDetail = cardDetail ?? CardDetailState.Empty;
+            LiquidityAction = liquidityAction ?? LiquidityActionState.Empty;
         }
 
         public RunState State { get; }
@@ -654,5 +669,6 @@ namespace AssetManager
         public BusinessDayState BusinessDay { get; }
         public RedemptionPressureState RedemptionPressure { get; }
         public CardDetailState CardDetail { get; }
+        public LiquidityActionState LiquidityAction { get; }
     }
 }

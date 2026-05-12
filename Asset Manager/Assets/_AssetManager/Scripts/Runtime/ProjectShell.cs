@@ -53,6 +53,15 @@ namespace AssetManager
         public const string MarketTapeUpcomingMarketCardButtonPrefix = "Market Tape Upcoming Market Card Button ";
         public const string MarketTapeAdvanceButtonName = "Market Tape Advance Button";
         public const string MarketTapeRefreshButtonName = "Market Tape Refresh Button";
+        public const string CentralBankButtonName = "Central Bank Button";
+        public const string LiquidityActionPanelName = "Liquidity Action Panel";
+        public const string LiquidityActionSelectionTextName = "Liquidity Action Selection Text";
+        public const string LiquidityActionMessageTextName = "Liquidity Action Message Text";
+        public const string LiquidityActionCloseButtonName = "Liquidity Action Close Button";
+        public const string LiquidityActionCashButtonName = "Liquidity Action Cash Button";
+        public const string LiquidityActionResearchButtonName = "Liquidity Action Research Button";
+        public const string LiquidityActionCreditButtonName = "Liquidity Action Credit Button";
+        public const string LiquidityActionCommodityButtonName = "Liquidity Action Commodity Button";
         public const string CardDetailPanelName = "Card Detail Panel";
         public const string CardDetailNameTextName = "Card Detail Name Text";
         public const string CardDetailDescriptionTextName = "Card Detail Description Text";
@@ -119,6 +128,7 @@ namespace AssetManager
             EnsureResourceHud(uiRoot.transform);
             EnsurePortfolioSummaryView(uiRoot.transform);
             EnsureMarketTapeView(uiRoot.transform);
+            EnsureLiquidityActionView(uiRoot.transform);
             EnsureCardDetailView(uiRoot.transform);
             EnsureMarketTapeDevControls(uiRoot.transform);
             EnsureResourceDevControls(uiRoot.transform);
@@ -533,6 +543,109 @@ namespace AssetManager
                 closeButton,
                 buyButton,
                 reserveButton);
+            panel.SetActive(false);
+            return view;
+        }
+
+        public static LiquidityActionView EnsureLiquidityActionView(Transform uiRoot)
+        {
+            var marketPanel = EnsureMarketPanel(uiRoot);
+            var centralBankButton = EnsureButton(
+                marketPanel.transform,
+                CentralBankButtonName,
+                "중앙 은행",
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -520f),
+                new Vector2(240f, 52f));
+
+            var panel = EnsurePanel(
+                uiRoot,
+                LiquidityActionPanelName,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -220f),
+                new Vector2(960f, 300f),
+                new Color(0.07f, 0.09f, 0.11f, 0.96f));
+
+            var selectionText = EnsurePanelText(
+                panel.transform,
+                LiquidityActionSelectionTextName,
+                new Vector2(24f, -24f),
+                new Vector2(640f, 44f),
+                24,
+                TextAnchor.MiddleLeft);
+            var messageText = EnsurePanelText(
+                panel.transform,
+                LiquidityActionMessageTextName,
+                new Vector2(24f, -76f),
+                new Vector2(640f, 36f),
+                18,
+                TextAnchor.MiddleLeft);
+            var cashButton = EnsureButton(
+                panel.transform,
+                LiquidityActionCashButtonName,
+                "현금",
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(24f, -140f),
+                new Vector2(144f, 48f));
+            var researchButton = EnsureButton(
+                panel.transform,
+                LiquidityActionResearchButtonName,
+                "리서치",
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(184f, -140f),
+                new Vector2(144f, 48f));
+            var creditButton = EnsureButton(
+                panel.transform,
+                LiquidityActionCreditButtonName,
+                "신용",
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(344f, -140f),
+                new Vector2(144f, 48f));
+            var commodityButton = EnsureButton(
+                panel.transform,
+                LiquidityActionCommodityButtonName,
+                "원자재",
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(504f, -140f),
+                new Vector2(144f, 48f));
+            var closeButton = EnsureButton(
+                panel.transform,
+                LiquidityActionCloseButtonName,
+                "닫기",
+                new Vector2(1f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(-112f, 32f),
+                new Vector2(144f, 48f));
+
+            var view = uiRoot.GetComponent<LiquidityActionView>();
+            if (view == null)
+            {
+                view = uiRoot.gameObject.AddComponent<LiquidityActionView>();
+            }
+
+            view.Bind(
+                centralBankButton,
+                panel,
+                selectionText,
+                messageText,
+                closeButton,
+                cashButton,
+                researchButton,
+                creditButton,
+                commodityButton);
             panel.SetActive(false);
             return view;
         }

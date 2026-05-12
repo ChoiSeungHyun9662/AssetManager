@@ -333,6 +333,85 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapLiquidityActionButtonsDriveGainLiquidity()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapLiquidityActionTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
+            var startingCash = bootstrap.CurrentRun.Resources.Cash;
+            var marketPanel = FindUiObject(ProjectShell.MarketAreaMarketPanelName);
+            var liquidityPanel = FindUiObject(ProjectShell.LiquidityActionPanelName);
+            var centralBankButton = FindUiObject(ProjectShell.CentralBankButtonName).GetComponent<Button>();
+            var closeButton = FindUiObject(ProjectShell.LiquidityActionCloseButtonName).GetComponent<Button>();
+            var cashButton = FindUiObject(ProjectShell.LiquidityActionCashButtonName).GetComponent<Button>();
+            var researchButton = FindUiObject(ProjectShell.LiquidityActionResearchButtonName).GetComponent<Button>();
+            var nextBusinessDayButton = FindUiObject(ProjectShell.NextBusinessDayButtonName).GetComponent<Button>();
+
+            Assert.That(marketPanel.activeSelf, Is.True);
+            Assert.That(liquidityPanel.activeSelf, Is.False);
+            Assert.That(centralBankButton.interactable, Is.True);
+            Assert.That(nextBusinessDayButton.interactable, Is.True);
+
+            centralBankButton.onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.GainLiquidity));
+            Assert.That(marketPanel.activeSelf, Is.False);
+            Assert.That(liquidityPanel.activeSelf, Is.True);
+            Assert.That(closeButton.interactable, Is.True);
+            Assert.That(cashButton.interactable, Is.True);
+            Assert.That(researchButton.interactable, Is.True);
+            Assert.That(nextBusinessDayButton.interactable, Is.False);
+
+            closeButton.onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
+            Assert.That(liquidityPanel.activeSelf, Is.False);
+            Assert.That(nextBusinessDayButton.interactable, Is.True);
+
+            centralBankButton.onClick.Invoke();
+
+            yield return null;
+
+            cashButton.onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.GainLiquidity));
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(startingCash + 1));
+            Assert.That(closeButton.interactable, Is.False);
+            Assert.That(nextBusinessDayButton.interactable, Is.False);
+
+            cashButton.onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays - 1));
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(startingCash + 2));
+            Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(0));
+            Assert.That(liquidityPanel.activeSelf, Is.False);
+            Assert.That(nextBusinessDayButton.interactable, Is.True);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapMarketTapeAdvanceButtonAdvancesTapeAndUi()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapMarketTapeAdvanceTests");
