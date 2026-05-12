@@ -88,6 +88,24 @@ namespace AssetManager.Tests
             Assert.That(refreshedCardIds.Contains(removedCard.Card.Id), Is.False);
         }
 
+        [Test]
+        public void AdvanceAndRefreshLeaveReservationUnchanged()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = ReserveFirstCurrentMarketCard(run);
+            var reservedCardId = run.Reservation.ReservedCards[0].Card.Id;
+
+            var advancedRun = MarketTape.Advance(run);
+
+            Assert.That(advancedRun.Reservation.ReservedCards, Has.Count.EqualTo(1));
+            Assert.That(advancedRun.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+
+            var refreshedRun = MarketTape.Refresh(advancedRun);
+
+            Assert.That(refreshedRun.Reservation.ReservedCards, Has.Count.EqualTo(1));
+            Assert.That(refreshedRun.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+        }
+
         private static IEnumerable<string> CollectVisibleCardIds(MarketTapeState tape)
         {
             foreach (var card in tape.SellImminentCards)
@@ -104,6 +122,12 @@ namespace AssetManager.Tests
             {
                 yield return card.Card.Id;
             }
+        }
+
+        private static RunSessionState ReserveFirstCurrentMarketCard(RunSessionState run)
+        {
+            var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, run.MarketTape.CurrentMarketCards[0]);
+            return ReservationAction.ConfirmReservation(detailRun).Run;
         }
 
         private static AssetCardRuntimeData FindCard(IEnumerable<AssetCardRuntimeData> cards, string cardId)

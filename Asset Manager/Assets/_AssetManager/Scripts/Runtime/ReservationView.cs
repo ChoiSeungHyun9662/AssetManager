@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +16,8 @@ namespace AssetManager
         [SerializeField]
         private List<Button> reservedCardButtons = new List<Button>();
 
+        private Action<AssetCardRuntimeData> onReservedCardSelected;
+
         public GameObject Panel => panel;
         public IReadOnlyList<Button> ReservedCardButtons => reservedCardButtons;
 
@@ -23,6 +26,11 @@ namespace AssetManager
             panel = reservationPanel;
             titleText = title;
             reservedCardButtons = new List<Button>(cardButtons);
+        }
+
+        public void SetReservedCardSelectedHandler(Action<AssetCardRuntimeData> handler)
+        {
+            onReservedCardSelected = handler;
         }
 
         public void Show(RunSessionState run)
@@ -40,7 +48,14 @@ namespace AssetManager
 
                 var hasCard = i < run.Reservation.ReservedCards.Count;
                 button.interactable = hasCard;
+                button.onClick.RemoveAllListeners();
                 SetButtonText(button, hasCard ? FormatCard(run.Reservation.ReservedCards[i]) : "비어 있음");
+
+                if (hasCard)
+                {
+                    var card = run.Reservation.ReservedCards[i];
+                    button.onClick.AddListener(() => onReservedCardSelected?.Invoke(card));
+                }
             }
         }
 

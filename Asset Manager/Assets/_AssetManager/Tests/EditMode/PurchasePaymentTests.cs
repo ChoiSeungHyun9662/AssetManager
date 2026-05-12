@@ -153,6 +153,41 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Performance.TotalEarnedCash, Is.EqualTo(selectedCard.Card.Income));
         }
 
+        [Test]
+        public void ReservedCardPurchaseOwnsCardClearsPurchasedReservationAndLeavesMarketTapeUnchanged()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 1).Run;
+            var marketCard = run.MarketTape.CurrentMarketCards[0];
+            run = MarketAreaFlow.OpenMarketCardDetail(run, marketCard);
+            run = ReservationAction.ConfirmReservation(run).Run;
+            var reservedCard = run.Reservation.ReservedCards[0];
+            run = MarketAreaFlow.OpenMarketCardDetail(run, run.MarketTape.CurrentMarketCards[0]);
+            run = ReservationAction.ConfirmReservation(run).Run;
+            var otherReservedCard = run.Reservation.ReservedCards[1];
+            var previousSellImminentIds = CollectCardIds(run.MarketTape.SellImminentCards);
+            var previousCurrentMarketIds = CollectCardIds(run.MarketTape.CurrentMarketCards);
+            var previousUpcomingMarketIds = CollectCardIds(run.MarketTape.UpcomingMarketCards);
+            run = MarketAreaFlow.OpenReservedCardDetail(run, reservedCard);
+            run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
+            run = PurchasePayment.PlaceChip(run, ResourceType.Credit).Run;
+
+            var result = PurchasePayment.ConfirmPurchase(run);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.Run.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
+            Assert.That(result.Run.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(reservedCard.Card.Id));
+            Assert.That(result.Run.OwnedAssets.OwnedCards[0].PurchaseSource, Is.EqualTo(PurchaseSource.Reserved));
+            Assert.That(FindCard(result.Run.AssetCards, reservedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Owned));
+            Assert.That(result.Run.Reservation.ReservedCards, Has.Count.EqualTo(1));
+            Assert.That(result.Run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(otherReservedCard.Card.Id));
+            AssertZoneMatches(result.Run.MarketTape.SellImminentCards, previousSellImminentIds);
+            AssertZoneMatches(result.Run.MarketTape.CurrentMarketCards, previousCurrentMarketIds);
+            AssertZoneMatches(result.Run.MarketTape.UpcomingMarketCards, previousUpcomingMarketIds);
+            Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays - 1));
+        }
+
         private static AssetCardRuntimeData FindCard(System.Collections.Generic.IEnumerable<AssetCardRuntimeData> cards, string cardId)
         {
             foreach (var card in cards)

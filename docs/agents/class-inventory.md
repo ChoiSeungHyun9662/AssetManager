@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-12
-Covered implementation slices: issues 00-09
+Covered implementation slices: issues 00-10
 
 ## Update Workflow
 
@@ -36,6 +36,7 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **07 - 보유 자산 income and 포트폴리오 summary**: connects OwnedAssetState calculations, AcquiredOrder on owned cards, business-day-start 운용 수익 through ResourceLedger, and a portfolio summary UI for 보유 자산 수, 현재 운용가치, and 분기 운용 수익.
 - **08 - 자원 확보 action**: adds LiquidityAction as the public 자원 확보 rule service, opens GainLiquidity from the 중앙 은행, applies 조달 현금 and 전문 자원 choices, completes on two matching or three different basic resources, blocks 딜 and professional-resource cap overflow, and connects the GainLiquidity UI.
 - **09 - 예약 action**: adds ReservationAction as the public 예약 rule service, moves 시장 카드 into the 예약 구역, grants 딜, increases 환매 압력, advances only the reserved market-tape column, and connects the 예약 구역 UI.
+- **10 - 예약 카드 유지 and 매수**: keeps 예약 카드 across calendar and 시장 테이프 transitions, opens 예약 카드 상세보기 from the 예약 구역, buys reserved cards through PurchasePayment with `Reserved` source, clears only the purchased reservation slot, and leaves 시장 테이프 unchanged.
 
 Current runtime flow:
 
@@ -122,7 +123,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
 | `LiquidityAction` | `Runtime/LiquidityAction.cs` | Public rule service for 자원 확보 entry, close eligibility, selected resource sequence validation, funding-cash/professional-resource gain, auto-ending, and 영업일 consumption. |
 | `LiquidityActionResult` | `Runtime/LiquidityAction.cs` | Return data for 자원 확보 selections, including the updated run and short feedback message. |
-| `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, 자산 매수 validation, 시장 카드 ownership transition, purchased-column advance, and 영업일 consumption. |
+| `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, 자산 매수 validation, 시장/예약 카드 ownership transition, purchased-column advance for 시장 카드 only, reservation cleanup for 예약 카드, and 영업일 consumption. |
 | `PurchasePaymentResult` | `Runtime/PurchasePayment.cs` | Return data for 결제 and 자산 매수 operations, including success and short feedback message. |
 | `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for 예약 validation, 예약 카드 transition, 예약 구역 capacity, 딜 reward, 환매 압력 increase/failure check, reserved-column market-tape advance, and 영업일 consumption. |
 | `ReservationActionResult` | `Runtime/ReservationAction.cs` | Return data for 예약 operations, including success and short feedback message. |
@@ -144,14 +145,14 @@ Important distinction:
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons and market card clicks to rule services, and refreshes all visible UI including GainLiquidity. |
+| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus market/reserved card clicks to rule services, and refreshes all visible UI including GainLiquidity. |
 | `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD text from `RunSessionState`. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays 보유 자원, 전문 자원 total/cap, 딜 total/cap, and the current short resource message. |
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary: 보유 자산 수, 현재 운용가치, 이번 분기 운용 수익, and a short ordered 보유 자산 list. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 placeholder UI; 다음 영업일 uses MarketArea gating. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and clickable visible market card summary buttons. |
-| `ReservationView` | `Runtime/ReservationView.cs` | Renders the 예약 구역 count and three reserved-card summary slots in the 시장 area. |
+| `ReservationView` | `Runtime/ReservationView.cs` | Renders the 예약 구역 count and three reserved-card summary slots in the 시장 area, with clickable occupied slots for 예약 카드 상세보기. |
 | `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Shows 중앙 은행 entry, GainLiquidity resource buttons, selected resource text, close gating, and cap feedback through `LiquidityAction`. |
 | `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, 비용 슬롯 state, final cash cost, chip placement/recovery buttons, buy availability, and 예약 button visibility/availability. |
 | `MarketTapeDevControls` | `Runtime/MarketTapeDevControls.cs` | Temporary Market-state-only development buttons for 시장 테이프 진행 and 시장 테이프 갱신. |
@@ -170,7 +171,7 @@ Important distinction:
 | 자산 매수 and 비용 슬롯 결제 | `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 | 보유 자산 income and 포트폴리오 UI | `OwnedAssetStateTests`, `BusinessDayFlowTests`, `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 | 자원 확보 action and GainLiquidity UI | `LiquidityActionTests`, `MainGameShellBootstrapTests` |
-| 예약 action and 예약 구역 UI | `ReservationActionTests`, `MainGameShellBootstrapTests` |
+| 예약 action, 예약 구역 UI, and 예약 카드 매수 | `ReservationActionTests`, `PurchasePaymentTests`, `BusinessDayFlowTests`, `MarketTapeTests`, `MainGameShellBootstrapTests` |
 
 ## Notes For Next Cleanup
 

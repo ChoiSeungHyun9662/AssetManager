@@ -390,6 +390,83 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapReservedCardClickShowsDetailAndPurchaseClearsReservationOnly()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapReservedPurchaseTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            FindUiObject(ProjectShell.ResourceDevResearchButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.ResourceDevCreditButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            var selectedCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0];
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+
+            yield return null;
+
+            FindUiObject(ProjectShell.CardDetailReserveButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            var previousRemainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
+            var previousSellImminentIds = CollectCardIds(bootstrap.CurrentRun.MarketTape.SellImminentCards);
+            var previousCurrentMarketIds = CollectCardIds(bootstrap.CurrentRun.MarketTape.CurrentMarketCards);
+            var previousUpcomingMarketIds = CollectCardIds(bootstrap.CurrentRun.MarketTape.UpcomingMarketCards);
+
+            FindUiObject(ProjectShell.ReservationCardButtonPrefix + "1")
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
+            Assert.That(bootstrap.CurrentRun.CardDetail.SelectedCard.Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(bootstrap.CurrentRun.CardDetail.PurchaseSource, Is.EqualTo(PurchaseSource.Reserved));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.True);
+            Assert.That(FindUiObject(ProjectShell.CardDetailReserveButtonName).activeSelf, Is.False);
+
+            FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.CardDetailPlaceCreditButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            FindUiObject(ProjectShell.CardDetailBuyButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(previousRemainingBusinessDays - 1));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].PurchaseSource, Is.EqualTo(PurchaseSource.Reserved));
+            Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Is.Empty);
+            AssertZoneMatches(bootstrap.CurrentRun.MarketTape.SellImminentCards, previousSellImminentIds);
+            AssertZoneMatches(bootstrap.CurrentRun.MarketTape.CurrentMarketCards, previousCurrentMarketIds);
+            AssertZoneMatches(bootstrap.CurrentRun.MarketTape.UpcomingMarketCards, previousUpcomingMarketIds);
+            Assert.That(FindUiObject(ProjectShell.ReservationTitleTextName).GetComponent<Text>().text, Does.Contain("0/3"));
+            Assert.That(
+                FindUiObject(ProjectShell.ReservationCardButtonPrefix + "1").GetComponentInChildren<Text>().text,
+                Is.EqualTo("비어 있음"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapFullReservationAreaDisablesReserveAndPreservesBusinessDay()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapFullReservationTests");
@@ -703,6 +780,29 @@ namespace AssetManager.Tests
             typeof(MainGameShellBootstrap)
                 .GetProperty(nameof(MainGameShellBootstrap.CurrentRun), BindingFlags.Instance | BindingFlags.Public)
                 .SetValue(bootstrap, run);
+        }
+
+        private static System.Collections.Generic.List<string> CollectCardIds(
+            System.Collections.Generic.IReadOnlyList<AssetCardRuntimeData> cards)
+        {
+            var cardIds = new System.Collections.Generic.List<string>();
+            foreach (var card in cards)
+            {
+                cardIds.Add(card.Card.Id);
+            }
+
+            return cardIds;
+        }
+
+        private static void AssertZoneMatches(
+            System.Collections.Generic.IReadOnlyList<AssetCardRuntimeData> actualCards,
+            System.Collections.Generic.IReadOnlyList<string> expectedCardIds)
+        {
+            Assert.That(actualCards, Has.Count.EqualTo(expectedCardIds.Count));
+            for (var i = 0; i < expectedCardIds.Count; i++)
+            {
+                Assert.That(actualCards[i].Card.Id, Is.EqualTo(expectedCardIds[i]));
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 # 10. 예약 카드 유지와 예약 카드 매수
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -38,14 +38,14 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 예약 카드는 분기와 회계년도 전환 후에도 유지된다.
-- [ ] 시장 테이프 진행과 갱신은 예약 구역에 영향을 주지 않는다.
-- [ ] 예약 카드 클릭은 CardDetail 상태로 진입한다.
-- [ ] 예약 카드 상세보기에서는 예약 버튼을 숨긴다.
-- [ ] 예약 카드 매수는 일반 자산 매수로 판정된다.
-- [ ] 예약 카드 매수의 PurchaseSource는 Reserved로 기록된다.
-- [ ] 예약 카드 매수 후 해당 예약 구역만 비워진다.
-- [ ] 예약 카드 매수는 시장 테이프를 진행시키지 않는다.
+- [x] 예약 카드는 분기와 회계년도 전환 후에도 유지된다.
+- [x] 시장 테이프 진행과 갱신은 예약 구역에 영향을 주지 않는다.
+- [x] 예약 카드 클릭은 CardDetail 상태로 진입한다.
+- [x] 예약 카드 상세보기에서는 예약 버튼을 숨긴다.
+- [x] 예약 카드 매수는 일반 자산 매수로 판정된다.
+- [x] 예약 카드 매수의 PurchaseSource는 Reserved로 기록된다.
+- [x] 예약 카드 매수 후 해당 예약 구역만 비워진다.
+- [x] 예약 카드 매수는 시장 테이프를 진행시키지 않는다.
 
 ## Blocked by
 
@@ -56,3 +56,8 @@ Status: ready-for-agent
 20, 23, 24, 25, 38, 39
 
 ## Comments
+
+- 2026-05-12: Implemented with TDD.
+  - EditMode: `editmode-20260512-233954-results.xml` passed 46/46.
+  - PlayMode: `playmode-20260512-234026-results.xml` passed 15/15.
+  - Manual Unity scene check not run separately; PlayMode covers reservation click, card detail, hidden reserve button, purchase, reservation UI refresh, and unchanged market tape.

@@ -104,6 +104,7 @@ namespace AssetManager
             var assetCards = MarkCardOwned(run.AssetCards, ownedCard);
             var ownedAssets = AddOwnedCard(run.OwnedAssets, ownedCard);
             var marketTape = run.MarketTape;
+            var reservation = run.Reservation;
 
             if (purchaseSource == PurchaseSource.MarketTape)
             {
@@ -118,9 +119,13 @@ namespace AssetManager
                     zone,
                     slotIndex);
             }
+            else if (purchaseSource == PurchaseSource.Reserved)
+            {
+                reservation = RemoveReservedCard(run.Reservation, selectedCard.Card.Id);
+            }
 
             return new PurchasePaymentResult(
-                WithConfirmedPurchase(run, payment, assetCards, marketTape, ownedAssets),
+                WithConfirmedPurchase(run, payment, assetCards, marketTape, reservation, ownedAssets),
                 true,
                 string.Empty);
         }
@@ -170,13 +175,14 @@ namespace AssetManager
                 return "매수할 수 없습니다.";
             }
 
-            if (run.CardDetail.PurchaseSource != PurchaseSource.MarketTape)
+            if (run.CardDetail.PurchaseSource == PurchaseSource.MarketTape
+                && !FindMarketTapeZone(run.MarketTape, run.CardDetail.SelectedCard.Card.Id).HasValue)
             {
                 return "매수 출처를 찾을 수 없습니다.";
             }
 
-            if (run.CardDetail.PurchaseSource == PurchaseSource.MarketTape
-                && !FindMarketTapeZone(run.MarketTape, run.CardDetail.SelectedCard.Card.Id).HasValue)
+            if (run.CardDetail.PurchaseSource == PurchaseSource.Reserved
+                && !ContainsCard(run.Reservation.ReservedCards, run.CardDetail.SelectedCard.Card.Id))
             {
                 return "매수 출처를 찾을 수 없습니다.";
             }
@@ -271,6 +277,20 @@ namespace AssetManager
             return new OwnedAssetState(ownedCards);
         }
 
+        private static ReservationState RemoveReservedCard(ReservationState reservation, string cardId)
+        {
+            var reservedCards = new List<AssetCardRuntimeData>();
+            foreach (var card in reservation.ReservedCards)
+            {
+                if (card.Card.Id != cardId)
+                {
+                    reservedCards.Add(card);
+                }
+            }
+
+            return new ReservationState(reservation.Capacity, reservedCards);
+        }
+
         private static MarketTapeZone? FindMarketTapeZone(MarketTapeState tape, string cardId)
         {
             if (ContainsCard(tape.SellImminentCards, cardId))
@@ -338,6 +358,7 @@ namespace AssetManager
             PurchasePaymentState payment,
             IReadOnlyList<AssetCardRuntimeData> assetCards,
             MarketTapeState marketTape,
+            ReservationState reservation,
             OwnedAssetState ownedAssets)
         {
             var committedRun = new RunSessionState(
@@ -353,7 +374,7 @@ namespace AssetManager
                 run.Performance,
                 assetCards,
                 marketTape,
-                run.Reservation,
+                reservation,
                 ownedAssets,
                 run.BusinessDay,
                 run.RedemptionPressure,

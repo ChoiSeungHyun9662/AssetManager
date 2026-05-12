@@ -81,6 +81,18 @@ namespace AssetManager
             RefreshRunUi();
         }
 
+        public void OpenReservedCardDetail(AssetCardRuntimeData selectedCard)
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun = MarketAreaFlow.OpenReservedCardDetail(CurrentRun, selectedCard);
+            resourceFeedbackMessage = string.Empty;
+            RefreshRunUi();
+        }
+
         public void CloseCardDetail()
         {
             if (CurrentRun == null)
@@ -301,6 +313,7 @@ namespace AssetManager
             runProgressControls = ProjectShell.EnsureRunProgressControls(uiRoot);
 
             marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
+            reservationView.SetReservedCardSelectedHandler(OpenReservedCardDetail);
 
             liquidityActionView.CentralBankButton.onClick.RemoveListener(EnterLiquidityAction);
             liquidityActionView.CentralBankButton.onClick.AddListener(EnterLiquidityAction);

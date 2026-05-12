@@ -169,6 +169,35 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void ReservedCardsPersistAcrossBusinessDayQuarterAndFiscalYearTransitions()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = ReserveFirstCurrentMarketCard(run);
+            var reservedCardId = run.Reservation.ReservedCards[0].Card.Id;
+
+            run = BusinessDayFlow.AdvanceToNextBusinessDay(run);
+
+            Assert.That(run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+
+            run = CompleteCurrentQuarter(run);
+
+            Assert.That(run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+
+            run = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
+
+            Assert.That(run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+
+            run = CompleteCurrentQuarter(run);
+            run = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
+            run = CompleteCurrentQuarter(run);
+            run = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
+            run = BusinessDayFlow.ContinueAfterVacation(run);
+
+            Assert.That(run.Calendar.FiscalYear, Is.EqualTo(2));
+            Assert.That(run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+        }
+
+        [Test]
         public void ContinueAfterFinalPlayableQuarterSettlementStartsFinalSettlement()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
@@ -204,6 +233,12 @@ namespace AssetManager.Tests
             }
 
             return run;
+        }
+
+        private static RunSessionState ReserveFirstCurrentMarketCard(RunSessionState run)
+        {
+            var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, run.MarketTape.CurrentMarketCards[0]);
+            return ReservationAction.ConfirmReservation(detailRun).Run;
         }
 
         private static RunSessionState AdvanceToPlayableQuarter(RunSessionState run, int fiscalYear, int quarter)
