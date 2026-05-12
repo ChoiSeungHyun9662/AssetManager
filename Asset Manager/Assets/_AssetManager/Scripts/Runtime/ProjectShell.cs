@@ -41,6 +41,8 @@ namespace AssetManager
         public const string VacationPlaceholderTextName = "Vacation Placeholder Text";
         public const string FinalSettlementPlaceholderPanelName = "Final Settlement Placeholder Panel";
         public const string FinalSettlementPlaceholderTextName = "Final Settlement Placeholder Text";
+        public const string RunFailurePlaceholderPanelName = "Run Failure Placeholder Panel";
+        public const string RunFailurePlaceholderTextName = "Run Failure Placeholder Text";
         public const string MarketTapeSellImminentPanelName = "Market Tape Sell Imminent Panel";
         public const string MarketTapeSellImminentTextName = "Market Tape Sell Imminent Text";
         public const string MarketTapeCurrentMarketPanelName = "Market Tape Current Market Panel";
@@ -51,6 +53,9 @@ namespace AssetManager
         public const string MarketTapeSellImminentCardButtonPrefix = "Market Tape Sell Imminent Card Button ";
         public const string MarketTapeCurrentMarketCardButtonPrefix = "Market Tape Current Market Card Button ";
         public const string MarketTapeUpcomingMarketCardButtonPrefix = "Market Tape Upcoming Market Card Button ";
+        public const string ReservationPanelName = "Reservation Panel";
+        public const string ReservationTitleTextName = "Reservation Title Text";
+        public const string ReservationCardButtonPrefix = "Reservation Card Button ";
         public const string MarketTapeAdvanceButtonName = "Market Tape Advance Button";
         public const string MarketTapeRefreshButtonName = "Market Tape Refresh Button";
         public const string CentralBankButtonName = "Central Bank Button";
@@ -128,6 +133,7 @@ namespace AssetManager
             EnsureResourceHud(uiRoot.transform);
             EnsurePortfolioSummaryView(uiRoot.transform);
             EnsureMarketTapeView(uiRoot.transform);
+            EnsureReservationView(uiRoot.transform);
             EnsureLiquidityActionView(uiRoot.transform);
             EnsureCardDetailView(uiRoot.transform);
             EnsureMarketTapeDevControls(uiRoot.transform);
@@ -235,6 +241,10 @@ namespace AssetManager
                 uiRoot,
                 FinalSettlementPlaceholderPanelName,
                 FinalSettlementPlaceholderTextName);
+            var runFailure = EnsurePlaceholderPanel(
+                uiRoot,
+                RunFailurePlaceholderPanelName,
+                RunFailurePlaceholderTextName);
 
             var controls = uiRoot.GetComponent<RunProgressControls>();
             if (controls == null)
@@ -250,7 +260,9 @@ namespace AssetManager
                 vacation.Panel,
                 vacation.Text,
                 finalSettlement.Panel,
-                finalSettlement.Text);
+                finalSettlement.Text,
+                runFailure.Panel,
+                runFailure.Text);
 
             return controls;
         }
@@ -544,6 +556,39 @@ namespace AssetManager
                 buyButton,
                 reserveButton);
             panel.SetActive(false);
+            return view;
+        }
+
+        public static ReservationView EnsureReservationView(Transform uiRoot)
+        {
+            var marketPanel = EnsureMarketPanel(uiRoot);
+            var panel = EnsurePanel(
+                marketPanel.transform,
+                ReservationPanelName,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -84f),
+                new Vector2(820f, 112f),
+                new Color(0.08f, 0.11f, 0.14f, 0.92f));
+
+            var title = EnsurePanelText(
+                panel.transform,
+                ReservationTitleTextName,
+                new Vector2(18f, -12f),
+                new Vector2(160f, 32f),
+                18,
+                TextAnchor.MiddleLeft);
+
+            var buttons = EnsureReservationCardButtons(panel.transform);
+
+            var view = uiRoot.GetComponent<ReservationView>();
+            if (view == null)
+            {
+                view = uiRoot.gameObject.AddComponent<ReservationView>();
+            }
+
+            view.Bind(panel, title, buttons);
             return view;
         }
 
@@ -842,6 +887,30 @@ namespace AssetManager
 
                 var text = button.GetComponentInChildren<Text>();
                 text.fontSize = 15;
+                buttons.Add(button);
+            }
+
+            return buttons;
+        }
+
+        private static IReadOnlyList<Button> EnsureReservationCardButtons(Transform panel)
+        {
+            var buttons = new List<Button>();
+            for (var i = 0; i < 3; i++)
+            {
+                var button = EnsureButton(
+                    panel,
+                    ReservationCardButtonPrefix + (i + 1),
+                    "비어 있음",
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(188f + (i * 204f), -18f),
+                    new Vector2(188f, 76f));
+
+                var text = button.GetComponentInChildren<Text>();
+                text.alignment = TextAnchor.MiddleLeft;
+                text.fontSize = 14;
                 buttons.Add(button);
             }
 

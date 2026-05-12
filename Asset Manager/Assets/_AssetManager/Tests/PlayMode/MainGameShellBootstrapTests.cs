@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -333,6 +334,144 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapReserveButtonMovesMarketCardToReservationAndUpdatesUi()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapReservationTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0];
+            var previousCurrentMarketSecondCardId = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[1].Card.Id;
+            var previousUpcomingMarketFirstCardId = bootstrap.CurrentRun.MarketTape.UpcomingMarketCards[0].Card.Id;
+            var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
+
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+
+            yield return null;
+
+            var reserveButton = FindUiObject(ProjectShell.CardDetailReserveButtonName).GetComponent<Button>();
+            Assert.That(reserveButton.interactable, Is.True);
+
+            reserveButton.onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+            Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Has.Count.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays - 1));
+            Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(previousUpcomingMarketFirstCardId));
+            Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[1].Card.Id, Is.EqualTo(previousCurrentMarketSecondCardId));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.ReservationTitleTextName).GetComponent<Text>().text, Does.Contain("1/3"));
+            Assert.That(
+                FindUiObject(ProjectShell.ReservationCardButtonPrefix + "1").GetComponentInChildren<Text>().text,
+                Does.Contain(selectedCard.Card.DisplayName));
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("환매 압력 +1"));
+            Assert.That(
+                FindUiObject(ProjectShell.RunStatusTextName).GetComponent<Text>().text,
+                Does.Contain("환매 압력 1/10"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapFullReservationAreaDisablesReserveAndPreservesBusinessDay()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapFullReservationTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            for (var i = 0; i < 3; i++)
+            {
+                bootstrap.OpenMarketCardDetail(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0]);
+                bootstrap.ConfirmReservation();
+            }
+
+            var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
+            var deal = bootstrap.CurrentRun.Resources.Deal;
+            var pressure = bootstrap.CurrentRun.RedemptionPressure.CurrentPressure;
+
+            bootstrap.OpenMarketCardDetail(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0]);
+
+            yield return null;
+
+            var reserveButton = FindUiObject(ProjectShell.CardDetailReserveButtonName).GetComponent<Button>();
+            Assert.That(reserveButton.interactable, Is.False);
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("예약 구역이 가득 찼습니다."));
+
+            bootstrap.ConfirmReservation();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Has.Count.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(deal));
+            Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(pressure));
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapReservationAtNinePressureShowsRunFailure()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapReservationFailureTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            SetCurrentRun(bootstrap, WithRedemptionPressure(bootstrap.CurrentRun, 9));
+            bootstrap.OpenMarketCardDetail(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0]);
+
+            yield return null;
+
+            FindUiObject(ProjectShell.CardDetailReserveButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.State, Is.EqualTo(RunState.Failed));
+            Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(10));
+            Assert.That(FindUiObject(ProjectShell.RunFailurePlaceholderPanelName).activeSelf, Is.True);
+            Assert.That(
+                FindUiObject(ProjectShell.RunFailurePlaceholderTextName).GetComponent<Text>().text,
+                Does.Contain("대규모 환매"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapLiquidityActionButtonsDriveGainLiquidity()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapLiquidityActionTests");
@@ -539,6 +678,31 @@ namespace AssetManager.Tests
             }
 
             return null;
+        }
+
+        private static RunSessionState WithRedemptionPressure(RunSessionState run, int currentPressure)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                new RedemptionPressureState(currentPressure, run.RedemptionPressure.MaxPressure),
+                run.CardDetail,
+                run.LiquidityAction);
+        }
+
+        private static void SetCurrentRun(MainGameShellBootstrap bootstrap, RunSessionState run)
+        {
+            typeof(MainGameShellBootstrap)
+                .GetProperty(nameof(MainGameShellBootstrap.CurrentRun), BindingFlags.Instance | BindingFlags.Public)
+                .SetValue(bootstrap, run);
         }
     }
 }

@@ -29,6 +29,12 @@ namespace AssetManager
         [SerializeField]
         private Text finalSettlementText;
 
+        [SerializeField]
+        private GameObject runFailurePanel;
+
+        [SerializeField]
+        private Text runFailureText;
+
         public Button NextBusinessDayButton => nextBusinessDayButton;
         public Button ContinueScheduleButton => continueScheduleButton;
 
@@ -40,7 +46,9 @@ namespace AssetManager
             GameObject vacation,
             Text vacationLabel,
             GameObject finalSettlement,
-            Text finalSettlementLabel)
+            Text finalSettlementLabel,
+            GameObject failure,
+            Text failureLabel)
         {
             nextBusinessDayButton = nextBusinessDay;
             continueScheduleButton = continueSchedule;
@@ -50,22 +58,28 @@ namespace AssetManager
             vacationText = vacationLabel;
             finalSettlementPanel = finalSettlement;
             finalSettlementText = finalSettlementLabel;
+            runFailurePanel = failure;
+            runFailureText = failureLabel;
         }
 
         public void Show(RunSessionState run)
         {
             var phase = run.BusinessDay.Phase;
 
-            SetActive(nextBusinessDayButton, MarketAreaFlow.CanAdvanceToNextBusinessDay(run));
-            SetActive(continueScheduleButton, phase == BusinessDayPhase.QuarterSettlement || phase == BusinessDayPhase.Vacation);
+            SetActive(nextBusinessDayButton, run.State == RunState.Playing && MarketAreaFlow.CanAdvanceToNextBusinessDay(run));
+            SetActive(
+                continueScheduleButton,
+                run.State == RunState.Playing && (phase == BusinessDayPhase.QuarterSettlement || phase == BusinessDayPhase.Vacation));
 
-            SetActive(quarterSettlementPanel, phase == BusinessDayPhase.QuarterSettlement);
-            SetActive(vacationPanel, phase == BusinessDayPhase.Vacation);
-            SetActive(finalSettlementPanel, phase == BusinessDayPhase.FinalSettlement);
+            SetActive(quarterSettlementPanel, run.State == RunState.Playing && phase == BusinessDayPhase.QuarterSettlement);
+            SetActive(vacationPanel, run.State == RunState.Playing && phase == BusinessDayPhase.Vacation);
+            SetActive(finalSettlementPanel, run.State == RunState.Completed && phase == BusinessDayPhase.FinalSettlement);
+            SetActive(runFailurePanel, run.State == RunState.Failed);
 
             SetText(quarterSettlementText, $"분기 마감: {run.Calendar.FiscalYear}회계년도 {run.Calendar.Quarter}Q");
             SetText(vacationText, $"4Q 휴가: {run.Calendar.FiscalYear}회계년도 {run.Calendar.Quarter}Q");
             SetText(finalSettlementText, $"최종 정산: {run.Calendar.FiscalYear}회계년도 {run.Calendar.Quarter}Q");
+            SetText(runFailureText, "런 실패: 대규모 환매");
         }
 
         private static void SetActive(Button button, bool isActive)

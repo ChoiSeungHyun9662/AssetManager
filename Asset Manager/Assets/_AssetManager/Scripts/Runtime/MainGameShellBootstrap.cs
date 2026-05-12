@@ -20,6 +20,7 @@ namespace AssetManager
         private ResourceHud resourceHud;
         private PortfolioSummaryView portfolioSummaryView;
         private MarketTapeView marketTapeView;
+        private ReservationView reservationView;
         private LiquidityActionView liquidityActionView;
         private CardDetailView cardDetailView;
         private MarketTapeDevControls marketTapeDevControls;
@@ -73,6 +74,10 @@ namespace AssetManager
             }
 
             CurrentRun = MarketAreaFlow.OpenMarketCardDetail(CurrentRun, selectedCard);
+            resourceFeedbackMessage = CurrentRun.CardDetail.ShouldShowReserveButton
+                && !ReservationAction.CanReserve(CurrentRun)
+                ? "예약 구역이 가득 찼습니다."
+                : string.Empty;
             RefreshRunUi();
         }
 
@@ -140,6 +145,17 @@ namespace AssetManager
 
             ApplyPaymentResult(PurchasePayment.ConfirmPurchase(CurrentRun));
         }
+
+        public void ConfirmReservation()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            ApplyReservationResult(ReservationAction.ConfirmReservation(CurrentRun));
+        }
+
 
         public void PlaceResearchPaymentChip()
         {
@@ -277,6 +293,7 @@ namespace AssetManager
             resourceHud = ProjectShell.EnsureResourceHud(uiRoot);
             portfolioSummaryView = ProjectShell.EnsurePortfolioSummaryView(uiRoot);
             marketTapeView = ProjectShell.EnsureMarketTapeView(uiRoot);
+            reservationView = ProjectShell.EnsureReservationView(uiRoot);
             liquidityActionView = ProjectShell.EnsureLiquidityActionView(uiRoot);
             cardDetailView = ProjectShell.EnsureCardDetailView(uiRoot);
             marketTapeDevControls = ProjectShell.EnsureMarketTapeDevControls(uiRoot);
@@ -308,6 +325,9 @@ namespace AssetManager
 
             cardDetailView.BuyButton.onClick.RemoveListener(ConfirmPurchase);
             cardDetailView.BuyButton.onClick.AddListener(ConfirmPurchase);
+
+            cardDetailView.ReserveButton.onClick.RemoveListener(ConfirmReservation);
+            cardDetailView.ReserveButton.onClick.AddListener(ConfirmReservation);
 
             cardDetailView.PlaceResearchButton.onClick.RemoveListener(PlaceResearchPaymentChip);
             cardDetailView.PlaceResearchButton.onClick.AddListener(PlaceResearchPaymentChip);
@@ -360,6 +380,7 @@ namespace AssetManager
             resourceHud.Show(CurrentRun, resourceFeedbackMessage);
             portfolioSummaryView.Show(CurrentRun);
             marketTapeView.Show(CurrentRun);
+            reservationView.Show(CurrentRun);
             liquidityActionView.Show(CurrentRun, resourceFeedbackMessage);
             cardDetailView.Show(CurrentRun);
             marketTapeDevControls.Show(CurrentRun);
@@ -422,6 +443,13 @@ namespace AssetManager
         }
 
         private void ApplyPaymentResult(PurchasePaymentResult result)
+        {
+            CurrentRun = result.Run;
+            resourceFeedbackMessage = result.Message;
+            RefreshRunUi();
+        }
+
+        private void ApplyReservationResult(ReservationActionResult result)
         {
             CurrentRun = result.Run;
             resourceFeedbackMessage = result.Message;

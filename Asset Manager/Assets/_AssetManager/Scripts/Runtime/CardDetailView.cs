@@ -139,6 +139,11 @@ namespace AssetManager
             }
 
             SetActive(reserveButton != null ? reserveButton.gameObject : null, run.CardDetail.ShouldShowReserveButton);
+            if (reserveButton != null)
+            {
+                reserveButton.interactable = ReservationAction.CanReserve(run);
+            }
+
             SetActive(placeResearchButton != null ? placeResearchButton.gameObject : null, true);
             SetActive(placeCreditButton != null ? placeCreditButton.gameObject : null, true);
             SetActive(placeCommodityButton != null ? placeCommodityButton.gameObject : null, true);

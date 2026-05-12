@@ -1,6 +1,6 @@
 # 09. 시장 카드 예약, 딜, 환매 압력
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -45,14 +45,14 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 예약은 시장 카드에만 가능하다.
-- [ ] 예약 카드 상세보기에서는 예약 버튼을 표시하지 않는다.
-- [ ] 예약 확인 상태 없이 버튼 클릭 즉시 예약을 실행한다.
-- [ ] 예약 구역은 최대 3개다.
-- [ ] 예약 구역이 가득 차면 예약은 실행되지 않고 영업일도 소비하지 않는다.
-- [ ] 딜 3/3이어도 예약 가능하며 추가 딜만 폐기된다.
-- [ ] 예약은 환매 압력 +1을 발생시키고 즉시 한도 검사를 한다.
-- [ ] 예약한 세로줄만 시장 테이프 진행처럼 처리하고 전체 시장 테이프는 진행하지 않는다.
+- [x] 예약은 시장 카드에만 가능하다.
+- [x] 예약 카드 상세보기에서는 예약 버튼을 표시하지 않는다.
+- [x] 예약 확인 상태 없이 버튼 클릭 즉시 예약을 실행한다.
+- [x] 예약 구역은 최대 3개다.
+- [x] 예약 구역이 가득 차면 예약은 실행되지 않고 영업일도 소비하지 않는다.
+- [x] 딜 3/3이어도 예약 가능하며 추가 딜만 폐기된다.
+- [x] 예약은 환매 압력 +1을 발생시키고 즉시 한도 검사를 한다.
+- [x] 예약한 세로줄만 시장 테이프 진행처럼 처리하고 전체 시장 테이프는 진행하지 않는다.
 
 ## Blocked by
 
@@ -64,3 +64,5 @@ Status: ready-for-agent
 10, 17, 32, 33, 34, 35, 36, 37, 51, 52
 
 ## Comments
+
+- 2026-05-12: Implemented with TDD. Added `ReservationAction` for reservation validation/confirmation, `ReservationView` for the 3-slot reservation area UI, CardDetail reserve-button wiring, and PlayMode coverage for reservation button flow, full reservation-area blocking, and 환매 압력 failure UI. Verification: RED compile failure for missing `ReservationAction`; final EditMode 43/43 passed; final PlayMode 14/14 passed.
