@@ -103,6 +103,26 @@ Rules:
 - Keep tests focused on observable behavior
 - Keep the user-facing progress log behavior-based: RED behavior, GREEN change, verification result
 
+### 3a. Unity Verification Economy
+
+Unity test launches are expensive. Preserve TDD intent, but choose the cheapest trustworthy verification signal for the current slice.
+
+For pure rule modules:
+
+- It is acceptable to write 2-3 closely related behavior tests before running EditMode, when they exercise the same public rule surface and do not force speculative implementation.
+- Still keep the implementation incremental: make the smallest rule change that satisfies the current grouped behaviors, then run EditMode and report the group as one RED/GREEN slice.
+- Do not group unrelated domains, UI wiring, or state-machine transitions just to reduce test runs.
+
+For compiler RED:
+
+- If the expected RED is a missing type, missing method, wrong signature, or assembly reference issue, use the fastest available compile/static signal instead of a full Unity test run when possible.
+- A compiler/static RED is enough only for proving compile failure; behavior still needs EditMode or PlayMode verification once implemented.
+
+For Unity-visible behavior:
+
+- Keep PlayMode tests for buttons, panels, scene objects, click wiring, visible state, and gating.
+- Run the relevant final EditMode and PlayMode suites before marking the task complete, unless blocked; report any skipped suite and remaining risk.
+
 ### 4. Refactor
 
 After all tests pass, look for [refactor candidates](refactoring.md):

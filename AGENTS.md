@@ -68,6 +68,15 @@ When using TDD, make the work reviewable without requiring the user to read impl
 - For Unity work, include the manual scene/flow/interaction checked, or say that manual testing was not run and why.
 - Finish with a compact verification receipt: behavior changed, tests run, Unity manual checks, files touched, and remaining risks.
 
+### Unity TDD verification economy
+
+Unity batchmode is comparatively expensive. Keep TDD behavior-first, but avoid spending Unity startup time on checks that a cheaper signal can cover.
+
+- For pure rule modules, group 2-3 closely related behavior tests before running EditMode, as long as each test still describes a distinct public behavior and the implementation stays minimal.
+- For compiler RED checks, prefer a fast compile/static signal when available instead of launching a full Unity test run just to prove a missing type or method.
+- Keep PlayMode/UI wiring tests for Unity-visible behavior such as buttons, panels, scene shell objects, and gating.
+- Always run the relevant final EditMode and PlayMode suites before calling the issue done, or clearly report any skipped verification and residual risk.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
