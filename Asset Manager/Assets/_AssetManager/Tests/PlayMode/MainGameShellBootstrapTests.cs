@@ -723,7 +723,50 @@ namespace AssetManager.Tests
             Assert.That(panel.activeSelf, Is.True);
 
             var text = GameObject.Find(ProjectShell.QuarterSettlementPlaceholderTextName).GetComponent<Text>().text;
-            Assert.That(text, Is.Not.Empty);
+            Assert.That(text, Does.Contain("분기 운용 수익"));
+            Assert.That(text, Does.Contain("분기 목표"));
+            Assert.That(text, Does.Contain("목표 달성률"));
+            Assert.That(text, Does.Contain("환매 압력 +3"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapQuarterSettlementFailureShowsRunFailureSummaryAndStopsContinue()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapQuarterFailureTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var run = WithCalendar(bootstrap.CurrentRun, new RunCalendarState(1, 2, 1));
+            run = WithPerformance(run, new RunPerformanceState(2, 2, 2, 0));
+            run = WithRedemptionPressure(run, 8);
+            SetCurrentRun(bootstrap, run);
+
+            bootstrap.AdvanceToNextBusinessDay();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.State, Is.EqualTo(RunState.Failed));
+            Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(10));
+            Assert.That(FindUiObject(ProjectShell.QuarterSettlementPlaceholderPanelName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.RunFailurePlaceholderPanelName).activeSelf, Is.True);
+            Assert.That(FindUiObject(ProjectShell.ContinueScheduleButtonName).activeSelf, Is.False);
+
+            var failureText = FindUiObject(ProjectShell.RunFailurePlaceholderTextName).GetComponent<Text>().text;
+            Assert.That(failureText, Does.Contain("대규모 환매 발생"));
+            Assert.That(failureText, Does.Contain("도달 지점 1회계년도 2Q"));
+            Assert.That(failureText, Does.Contain("총 운용 수익 2"));
+            Assert.That(failureText, Does.Contain("환매 압력 10/10"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -771,6 +814,42 @@ namespace AssetManager.Tests
                 run.OwnedAssets,
                 run.BusinessDay,
                 new RedemptionPressureState(currentPressure, run.RedemptionPressure.MaxPressure),
+                run.CardDetail,
+                run.LiquidityAction);
+        }
+
+        private static RunSessionState WithCalendar(RunSessionState run, RunCalendarState calendar)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction);
+        }
+
+        private static RunSessionState WithPerformance(RunSessionState run, RunPerformanceState performance)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
                 run.CardDetail,
                 run.LiquidityAction);
         }

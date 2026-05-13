@@ -76,10 +76,48 @@ namespace AssetManager
             SetActive(finalSettlementPanel, run.State == RunState.Completed && phase == BusinessDayPhase.FinalSettlement);
             SetActive(runFailurePanel, run.State == RunState.Failed);
 
-            SetText(quarterSettlementText, $"분기 마감: {run.Calendar.FiscalYear}회계년도 {run.Calendar.Quarter}Q");
+            SetText(quarterSettlementText, FormatQuarterSettlement(run));
             SetText(vacationText, $"4Q 휴가: {run.Calendar.FiscalYear}회계년도 {run.Calendar.Quarter}Q");
             SetText(finalSettlementText, $"최종 정산: {run.Calendar.FiscalYear}회계년도 {run.Calendar.Quarter}Q");
-            SetText(runFailureText, "런 실패: 대규모 환매");
+            SetText(runFailureText, FormatRunFailure(run));
+        }
+
+        private static string FormatQuarterSettlement(RunSessionState run)
+        {
+            var result = run.QuarterEndResult;
+            if (result == null)
+            {
+                return $"분기 마감: {run.Calendar.FiscalYear}회계년도 {run.Calendar.Quarter}Q";
+            }
+
+            return string.Format(
+                "분기 마감: {0}회계년도 {1}Q\n분기 운용 수익 {2} / 분기 목표 {3}\n목표 달성률 {4}% | 환매 압력 +{5} | 현재 환매 압력 {6}/{7}",
+                run.Calendar.FiscalYear,
+                run.Calendar.Quarter,
+                result.QuarterEarnedCash,
+                result.TargetEarnedCash,
+                (int)(result.AchievementRate * 100d),
+                result.RedemptionPressureIncrease,
+                result.CurrentRedemptionPressure,
+                run.RedemptionPressure.MaxPressure);
+        }
+
+        private static string FormatRunFailure(RunSessionState run)
+        {
+            var failureReason = run.FailureReason == string.Empty
+                ? RedemptionPressure.FailureReason
+                : run.FailureReason;
+
+            return string.Format(
+                "런 실패: {0}\n도달 지점 {1}회계년도 {2}Q\n현재 운용가치 {3} | 총 운용 수익 {4} | 보유 자산 {5}\n환매 압력 {6}/{7}",
+                failureReason,
+                run.Calendar.FiscalYear,
+                run.Calendar.Quarter,
+                run.OwnedAssets.CurrentManagementValue,
+                run.Performance.TotalEarnedCash,
+                run.OwnedAssets.Count,
+                run.RedemptionPressure.CurrentPressure,
+                run.RedemptionPressure.MaxPressure);
         }
 
         private static void SetActive(Button button, bool isActive)

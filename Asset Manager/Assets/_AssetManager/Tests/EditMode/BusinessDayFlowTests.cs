@@ -53,6 +53,49 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void LastBusinessDaySettlementAppliesQuarterEndResultWithoutStartingAnotherBusinessDayIncome()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            var ownedCard = new AssetCardRuntimeData(
+                run.AssetCards[0].Card,
+                AssetCardRuntimeState.Owned,
+                PurchaseSource.MarketTape);
+            run = WithOwnedAssets(run, new OwnedAssetState(new[] { ownedCard }));
+            run = WithCalendar(run, new RunCalendarState(1, 1, 1));
+
+            run = BusinessDayFlow.AdvanceToNextBusinessDay(run);
+
+            Assert.That(run.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.QuarterSettlement));
+            Assert.That(run.QuarterEndResult, Is.Not.Null);
+            Assert.That(run.QuarterEndResult.SettlementIncome, Is.EqualTo(ownedCard.Card.ManagementValue));
+            Assert.That(run.Performance.CurrentQuarterEarnedCash, Is.EqualTo(ownedCard.Card.ManagementValue));
+            Assert.That(run.Resources.Cash, Is.EqualTo(3 + ownedCard.Card.ManagementValue));
+        }
+
+        [Test]
+        public void QuarterSettlementFailureStopsLaterScheduleProgress()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = WithCalendar(run, new RunCalendarState(1, 2, 1));
+            run = WithPerformance(run, new RunPerformanceState(2, 2, 2, 0));
+            run = WithRedemptionPressure(run, 8);
+
+            run = BusinessDayFlow.AdvanceToNextBusinessDay(run);
+
+            Assert.That(run.State, Is.EqualTo(RunState.Failed));
+            Assert.That(run.RedemptionPressure.CurrentPressure, Is.EqualTo(10));
+            Assert.That(run.FailureReason, Is.EqualTo("대규모 환매 발생"));
+            Assert.That(run.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.QuarterSettlement));
+
+            var continuedRun = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
+
+            Assert.That(continuedRun.State, Is.EqualTo(RunState.Failed));
+            Assert.That(continuedRun.Calendar.FiscalYear, Is.EqualTo(1));
+            Assert.That(continuedRun.Calendar.Quarter, Is.EqualTo(2));
+            Assert.That(continuedRun.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.QuarterSettlement));
+        }
+
+        [Test]
         public void ContinueAfterQuarterSettlementStartsNextPlayableQuarterInSameFiscalYear()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
@@ -229,10 +272,35 @@ namespace AssetManager.Tests
         {
             while (run.BusinessDay.Phase != BusinessDayPhase.QuarterSettlement)
             {
+                if (run.Calendar.RemainingBusinessDays == 1)
+                {
+                    run = AddEarnedCashToMeetQuarterTarget(run);
+                }
+
                 run = BusinessDayFlow.AdvanceToNextBusinessDay(run);
             }
 
             return run;
+        }
+
+        private static RunSessionState AddEarnedCashToMeetQuarterTarget(RunSessionState run)
+        {
+            var target = GetQuarterTarget(run);
+            var missing = target - run.Performance.CurrentQuarterEarnedCash;
+            return missing > 0 ? ResourceLedger.AddEarnedCash(run, missing) : run;
+        }
+
+        private static int GetQuarterTarget(RunSessionState run)
+        {
+            foreach (var quarter in run.StaticData.Quarters)
+            {
+                if (quarter.FiscalYear == run.Calendar.FiscalYear && quarter.Quarter == run.Calendar.Quarter)
+                {
+                    return quarter.EarnedCashGoal;
+                }
+            }
+
+            return run.StaticData.Quarters[0].EarnedCashGoal;
         }
 
         private static RunSessionState ReserveFirstCurrentMarketCard(RunSessionState run)
@@ -282,6 +350,60 @@ namespace AssetManager.Tests
                 run.BusinessDay,
                 run.RedemptionPressure,
                 run.CardDetail);
+        }
+
+        private static RunSessionState WithCalendar(RunSessionState run, RunCalendarState calendar)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction);
+        }
+
+        private static RunSessionState WithPerformance(RunSessionState run, RunPerformanceState performance)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction);
+        }
+
+        private static RunSessionState WithRedemptionPressure(RunSessionState run, int currentPressure)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                new RedemptionPressureState(currentPressure, run.RedemptionPressure.MaxPressure),
+                run.CardDetail,
+                run.LiquidityAction);
         }
 
         private static AssetCardRuntimeData FindCard(System.Collections.Generic.IEnumerable<AssetCardRuntimeData> cards, string cardId)

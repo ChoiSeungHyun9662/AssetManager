@@ -15,6 +15,7 @@ namespace AssetManager.Tests
             Assert.That(fundedRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(0));
             Assert.That(fundedRun.Performance.CurrentFiscalYearEarnedCash, Is.EqualTo(0));
             Assert.That(fundedRun.Performance.TotalEarnedCash, Is.EqualTo(0));
+            Assert.That(fundedRun.Performance.FundingCash, Is.EqualTo(2));
 
             var earnedRun = ResourceLedger.AddEarnedCash(fundedRun, 3);
 

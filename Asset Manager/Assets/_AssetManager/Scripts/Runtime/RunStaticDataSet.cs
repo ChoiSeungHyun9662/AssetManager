@@ -379,7 +379,16 @@ namespace AssetManager
 
             quarters = new List<QuarterData>
             {
-                new QuarterData(1, 1, 4, 3)
+                new QuarterData(1, 1, 4, 3),
+                new QuarterData(1, 2, 4, 4),
+                new QuarterData(1, 3, 4, 4),
+                new QuarterData(2, 1, 4, 4),
+                new QuarterData(2, 2, 4, 4),
+                new QuarterData(2, 3, 4, 4),
+                new QuarterData(3, 1, 5, 5),
+                new QuarterData(3, 2, 5, 5),
+                new QuarterData(3, 3, 5, 5),
+                new QuarterData(3, 4, 5, 5)
             };
 
             finalRatings = new List<FinalRatingData>

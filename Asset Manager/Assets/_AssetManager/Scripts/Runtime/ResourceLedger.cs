@@ -22,7 +22,11 @@ namespace AssetManager
                     run.Resources.Credit,
                     run.Resources.Commodity,
                     run.Resources.Deal),
-                run.Performance);
+                new RunPerformanceState(
+                    run.Performance.CurrentQuarterEarnedCash,
+                    run.Performance.CurrentFiscalYearEarnedCash,
+                    run.Performance.TotalEarnedCash,
+                    run.Performance.FundingCash + amount));
         }
 
         public static RunSessionState AddEarnedCash(RunSessionState run, int amount)
@@ -210,7 +214,10 @@ namespace AssetManager
                 run.OwnedAssets,
                 run.BusinessDay,
                 run.RedemptionPressure,
-                run.CardDetail);
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason);
         }
     }
 

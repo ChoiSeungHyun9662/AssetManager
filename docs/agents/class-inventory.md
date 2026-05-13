@@ -2,8 +2,8 @@
 
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
-Last reviewed: 2026-05-12
-Covered implementation slices: issues 00-10
+Last reviewed: 2026-05-13
+Covered implementation slices: issues 00-11
 
 ## Update Workflow
 
@@ -37,6 +37,7 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **08 - 자원 확보 action**: adds LiquidityAction as the public 자원 확보 rule service, opens GainLiquidity from the 중앙 은행, applies 조달 현금 and 전문 자원 choices, completes on two matching or three different basic resources, blocks 딜 and professional-resource cap overflow, and connects the GainLiquidity UI.
 - **09 - 예약 action**: adds ReservationAction as the public 예약 rule service, moves 시장 카드 into the 예약 구역, grants 딜, increases 환매 압력, advances only the reserved market-tape column, and connects the 예약 구역 UI.
 - **10 - 예약 카드 유지 and 매수**: keeps 예약 카드 across calendar and 시장 테이프 transitions, opens 예약 카드 상세보기 from the 예약 구역, buys reserved cards through PurchasePayment with `Reserved` source, clears only the purchased reservation slot, and leaves 시장 테이프 unchanged.
+- **11 - 분기 마감 and 환매 압력 실패**: adds QuarterSettlement and RedemptionPressure rule modules, applies 정산 수익 before 목표 달성률, excludes 조달 현금 from 분기 운용 수익, stores QuarterEndResult, and switches to 런 실패 when 환매 압력 reaches 10.
 
 Current runtime flow:
 
@@ -67,7 +68,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `ProfessionalResourceCost` | `Runtime/RunModels.cs` | One 전문 자원 cost requirement for a 자산 카드. |
 | `TagData` | `Runtime/RunModels.cs` | Serialized 태그 identity, display name, and tag type. |
 | `AssetCardData` | `Runtime/RunModels.cs` | Static 자산 카드 definition: costs, 희귀도, 운용가치, income field, and tags. |
-| `QuarterData` | `Runtime/RunModels.cs` | Static 분기 row used by bootstrap data. The full MVP playable schedule currently lives in `RunCalendar`. |
+| `QuarterData` | `Runtime/RunModels.cs` | Static 분기 row used by bootstrap and 분기 마감 target lookup. `RunCalendar` still owns playable schedule routing. |
 | `FinalRatingData` | `Runtime/RunModels.cs` | Final rating threshold row for later 최종 정산. |
 | `RedemptionPressureLevelData` | `Runtime/RunModels.cs` | 환매 압력 단계 row for later final comments. |
 | `FinalManagementCommentData` | `Runtime/RunModels.cs` | 운용 코멘트 row keyed by final rating and 환매 압력 단계. |
@@ -81,19 +82,20 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | --- | --- | --- |
 | `ResourceState` | `Runtime/RunModels.cs` | Current 현금, 리서치, 신용, 원자재, 딜, plus 전문 자원 total lookup. |
 | `RunCalendarState` | `Runtime/RunModels.cs` | Current 회계년도, 분기, and remaining 영업일. |
-| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 운용 수익 counters. |
+| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 운용 수익 counters plus tracked 조달 현금. |
 | `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one 자산 카드 and whether it is available, reserved, owned, or removed; owned cards can carry 매수 출처 and AcquiredOrder. |
 | `MarketTapeState` | `Runtime/RunModels.cs` | Current visible market tape cards by zone. |
 | `ReservationState` | `Runtime/RunModels.cs` | 예약 구역 capacity and reserved cards. |
 | `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list plus Owned-only 보유 자산 수, 현재 운용가치, and 영업일 시작 운용 수익 totals. |
 | `BusinessDayState` | `Runtime/RunModels.cs` | Current phase and 시장 영역 state. |
 | `LiquidityActionState` | `Runtime/RunModels.cs` | Current 자원 확보 selected basic resources and whether the first resource has committed the action. |
+| `QuarterEndResult` | `Runtime/RunModels.cs` | Snapshot of a completed 분기 마감: 정산 수익, 분기 운용 수익, 분기 목표, 목표 달성률, and 환매 압력 impact. |
 | `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기. |
 | `PaymentSlotState` | `Runtime/CardDetailState.cs` | One 비용 슬롯 in 카드 상세보기: required 전문 자원 and optional placed 전문 자원 or 딜. |
 | `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Pending 자산 매수 payment in 카드 상세보기: card id, base cash cost, 비용 슬롯 list, and 딜-discounted final cash cost. |
 | `CardDetailState` | `Runtime/CardDetailState.cs` | Transient 카드 상세보기 state: selected card, 매수 출처, display data, pending payment, extra-buy flag, and Reserve visibility condition. |
 | `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 환매 압력. |
-| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including transient 카드 상세보기 and 자원 확보 state. Most transitions create a new instance. |
+| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, and failure reason. Most transitions create a new instance. |
 
 ## Enums
 
@@ -117,15 +119,19 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunCalendarQuarter` | `Runtime/RunCalendar.cs` | One playable calendar row with 회계년도, 분기, and 영업일 count. |
 | `RunCalendarDefinition` | `Runtime/RunCalendar.cs` | Query object for playable quarters, 4Q 휴가, and total playable 영업일. |
 | `RunCalendar` | `Runtime/RunCalendar.cs` | Factory for the MVP calendar: 1/2회계년도 1Q-3Q have 4 영업일; 3회계년도 1Q-4Q have 5 영업일. |
-| `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, applies 보유 자산 영업일 시작 운용 수익 through ResourceLedger, enters 분기 마감, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
+| `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, applies 보유 자산 영업일 시작 운용 수익 through ResourceLedger, settles the last 영업일 into 분기 마감, blocks schedule progress after 런 실패, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
 | `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for entering/closing 카드 상세보기 and gating 다음 영업일 to Market state only. |
 | `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 운용 수익, capped 전문 자원, and capped 딜. |
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
+| `QuarterSettlement` | `Runtime/QuarterSettlement.cs` | Public rule service for 분기 마감 정산, 정산 수익 application, 목표 달성률, 환매 압력 increase, and QuarterEndResult creation. |
+| `QuarterSettlementResult` | `Runtime/QuarterSettlement.cs` | Return data for 분기 마감, including the updated run and the stored QuarterEndResult fields. |
+| `RedemptionPressure` | `Runtime/RedemptionPressure.cs` | Public rule service for adding 환매 압력 and immediately converting the run to 런 실패 at the configured max. |
+| `RedemptionPressureResult` | `Runtime/RedemptionPressure.cs` | Return data for 환매 압력 changes, including the updated run, increase amount, and failure flag. |
 | `LiquidityAction` | `Runtime/LiquidityAction.cs` | Public rule service for 자원 확보 entry, close eligibility, selected resource sequence validation, funding-cash/professional-resource gain, auto-ending, and 영업일 consumption. |
 | `LiquidityActionResult` | `Runtime/LiquidityAction.cs` | Return data for 자원 확보 selections, including the updated run and short feedback message. |
 | `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, 자산 매수 validation, 시장/예약 카드 ownership transition, purchased-column advance for 시장 카드 only, reservation cleanup for 예약 카드, and 영업일 consumption. |
 | `PurchasePaymentResult` | `Runtime/PurchasePayment.cs` | Return data for 결제 and 자산 매수 operations, including success and short feedback message. |
-| `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for 예약 validation, 예약 카드 transition, 예약 구역 capacity, 딜 reward, 환매 압력 increase/failure check, reserved-column market-tape advance, and 영업일 consumption. |
+| `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for 예약 validation, 예약 카드 transition, 예약 구역 capacity, 딜 reward, 환매 압력 increase through RedemptionPressure, reserved-column market-tape advance, and 영업일 consumption. |
 | `ReservationActionResult` | `Runtime/ReservationAction.cs` | Return data for 예약 operations, including success and short feedback message. |
 
 ## Market Rules
@@ -150,7 +156,7 @@ Important distinction:
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays 보유 자원, 전문 자원 total/cap, 딜 total/cap, and the current short resource message. |
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary: 보유 자산 수, 현재 운용가치, 이번 분기 운용 수익, and a short ordered 보유 자산 list. |
-| `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 placeholder UI; 다음 영업일 uses MarketArea gating. |
+| `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 UI; displays 분기 마감 result details and 런 실패 summary. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and clickable visible market card summary buttons. |
 | `ReservationView` | `Runtime/ReservationView.cs` | Renders the 예약 구역 count and three reserved-card summary slots in the 시장 area, with clickable occupied slots for 예약 카드 상세보기. |
 | `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Shows 중앙 은행 entry, GainLiquidity resource buttons, selected resource text, close gating, and cap feedback through `LiquidityAction`. |
@@ -172,8 +178,9 @@ Important distinction:
 | 보유 자산 income and 포트폴리오 UI | `OwnedAssetStateTests`, `BusinessDayFlowTests`, `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 | 자원 확보 action and GainLiquidity UI | `LiquidityActionTests`, `MainGameShellBootstrapTests` |
 | 예약 action, 예약 구역 UI, and 예약 카드 매수 | `ReservationActionTests`, `PurchasePaymentTests`, `BusinessDayFlowTests`, `MarketTapeTests`, `MainGameShellBootstrapTests` |
+| 분기 마감 and 환매 압력 실패 | `QuarterSettlementTests`, `BusinessDayFlowTests`, `ResourceLedgerTests`, `ReservationActionTests`, `MainGameShellBootstrapTests` |
 
 ## Notes For Next Cleanup
 
 - `MarketTapeView` currently displays the label `인컴`; the glossary prefers 운용 수익 language. Do not spread the older term into new user-facing UI.
-- `RunStaticDataSet` has minimal `QuarterData` seed data while `RunCalendar` owns the full MVP schedule. If future work needs quarter goals for all playable quarters, reconcile those two sources deliberately.
+- `RunCalendar` still owns playable schedule routing, while `RunStaticDataSet.Quarters` now supplies MVP target rows for every playable 분기. Keep those responsibilities separate unless a future data unification issue explicitly changes it.

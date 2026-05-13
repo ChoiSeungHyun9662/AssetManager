@@ -26,6 +26,17 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
+            if (run.State != RunState.Playing)
+            {
+                return run;
+            }
+
+            if (run.BusinessDay.Phase != BusinessDayPhase.AwaitingAction
+                || run.Calendar.RemainingBusinessDays <= 0)
+            {
+                return run;
+            }
+
             var remainingBusinessDays = run.Calendar.RemainingBusinessDays - 1;
             var nextPhase = remainingBusinessDays == 0
                 ? BusinessDayPhase.QuarterSettlement
@@ -47,9 +58,12 @@ namespace AssetManager
                 new BusinessDayState(nextPhase, MarketAreaState.Market),
                 run.RedemptionPressure);
 
-            return nextPhase == BusinessDayPhase.AwaitingAction
-                ? ResourceLedger.AddEarnedCash(nextRun, nextRun.OwnedAssets.BusinessDayStartIncome)
-                : nextRun;
+            if (nextPhase == BusinessDayPhase.AwaitingAction)
+            {
+                return ResourceLedger.AddEarnedCash(nextRun, nextRun.OwnedAssets.BusinessDayStartIncome);
+            }
+
+            return QuarterSettlement.Settle(nextRun).Run;
         }
 
         public static RunSessionState ContinueAfterQuarterSettlement(RunSessionState run)
@@ -59,7 +73,17 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
+            if (run.State != RunState.Playing || run.BusinessDay.Phase != BusinessDayPhase.QuarterSettlement)
+            {
+                return run;
+            }
+
             var calendar = RunCalendar.CreateMvpCalendar();
+            var nextQuarterPerformance = new RunPerformanceState(
+                0,
+                run.Performance.CurrentFiscalYearEarnedCash,
+                run.Performance.TotalEarnedCash,
+                run.Performance.FundingCash);
 
             if (run.Calendar.FiscalYear == 3 && run.Calendar.Quarter == 4)
             {
@@ -68,7 +92,7 @@ namespace AssetManager
                     run.StaticData,
                     new RunCalendarState(run.Calendar.FiscalYear, run.Calendar.Quarter, 0),
                     run.Resources,
-                    run.Performance,
+                    nextQuarterPerformance,
                     run.AssetCards,
                     run.MarketTape,
                     run.Reservation,
@@ -88,7 +112,7 @@ namespace AssetManager
                 run.StaticData,
                 new RunCalendarState(run.Calendar.FiscalYear, nextQuarter, businessDays),
                 run.Resources,
-                run.Performance,
+                nextQuarterPerformance,
                 run.AssetCards,
                 run.MarketTape,
                 run.Reservation,
@@ -108,16 +132,26 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
+            if (run.State != RunState.Playing || run.BusinessDay.Phase != BusinessDayPhase.Vacation)
+            {
+                return run;
+            }
+
             var calendar = RunCalendar.CreateMvpCalendar();
             var nextFiscalYear = run.Calendar.FiscalYear + 1;
             var businessDays = calendar.GetPlayableBusinessDays(nextFiscalYear, 1);
+            var nextFiscalYearPerformance = new RunPerformanceState(
+                0,
+                0,
+                run.Performance.TotalEarnedCash,
+                run.Performance.FundingCash);
 
             var nextRun = new RunSessionState(
                 run.State,
                 run.StaticData,
                 new RunCalendarState(nextFiscalYear, 1, businessDays),
                 run.Resources,
-                run.Performance,
+                nextFiscalYearPerformance,
                 run.AssetCards,
                 run.MarketTape,
                 run.Reservation,

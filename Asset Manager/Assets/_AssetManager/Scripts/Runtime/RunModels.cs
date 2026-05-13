@@ -625,6 +625,32 @@ namespace AssetManager
         public int MaxPressure { get; }
     }
 
+    public sealed class QuarterEndResult
+    {
+        public QuarterEndResult(
+            int settlementIncome,
+            int quarterEarnedCash,
+            int targetEarnedCash,
+            double achievementRate,
+            int redemptionPressureIncrease,
+            int currentRedemptionPressure)
+        {
+            SettlementIncome = settlementIncome;
+            QuarterEarnedCash = quarterEarnedCash;
+            TargetEarnedCash = targetEarnedCash;
+            AchievementRate = achievementRate;
+            RedemptionPressureIncrease = redemptionPressureIncrease;
+            CurrentRedemptionPressure = currentRedemptionPressure;
+        }
+
+        public int SettlementIncome { get; }
+        public int QuarterEarnedCash { get; }
+        public int TargetEarnedCash { get; }
+        public double AchievementRate { get; }
+        public int RedemptionPressureIncrease { get; }
+        public int CurrentRedemptionPressure { get; }
+    }
+
     public sealed class RunSessionState
     {
         public RunSessionState(
@@ -640,7 +666,9 @@ namespace AssetManager
             BusinessDayState businessDay,
             RedemptionPressureState redemptionPressure,
             CardDetailState cardDetail = null,
-            LiquidityActionState liquidityAction = null)
+            LiquidityActionState liquidityAction = null,
+            QuarterEndResult quarterEndResult = null,
+            string failureReason = "")
         {
             State = state;
             StaticData = staticData;
@@ -655,6 +683,8 @@ namespace AssetManager
             RedemptionPressure = redemptionPressure;
             CardDetail = cardDetail ?? CardDetailState.Empty;
             LiquidityAction = liquidityAction ?? LiquidityActionState.Empty;
+            QuarterEndResult = quarterEndResult;
+            FailureReason = failureReason ?? string.Empty;
         }
 
         public RunState State { get; }
@@ -670,5 +700,7 @@ namespace AssetManager
         public RedemptionPressureState RedemptionPressure { get; }
         public CardDetailState CardDetail { get; }
         public LiquidityActionState LiquidityAction { get; }
+        public QuarterEndResult QuarterEndResult { get; }
+        public string FailureReason { get; }
     }
 }

@@ -38,12 +38,13 @@ namespace AssetManager
 
             var reservedRun = WithReservedCard(run, assetCards, marketTape, reservation);
             var dealResult = ResourceLedger.AddDeal(reservedRun, 1);
-            var pressuredRun = AddRedemptionPressure(dealResult.Run, 1);
+            var pressureResult = RedemptionPressure.AddPressure(dealResult.Run, 1);
+            var pressuredRun = pressureResult.Run;
             var message = dealResult.Message;
 
-            if (pressuredRun.RedemptionPressure.CurrentPressure >= pressuredRun.RedemptionPressure.MaxPressure)
+            if (pressureResult.DidFail)
             {
-                return new ReservationActionResult(FailRun(pressuredRun), true, "대규모 환매: 환매 압력 한도 도달");
+                return new ReservationActionResult(pressuredRun, true, "대규모 환매: 환매 압력 한도 도달");
             }
 
             if (message == string.Empty)
@@ -95,42 +96,6 @@ namespace AssetManager
                 assetCards,
                 marketTape,
                 reservation,
-                run.OwnedAssets,
-                new BusinessDayState(run.BusinessDay.Phase, MarketAreaState.Market),
-                run.RedemptionPressure,
-                CardDetailState.Empty,
-                run.LiquidityAction);
-        }
-
-        private static RunSessionState AddRedemptionPressure(RunSessionState run, int amount)
-        {
-            return new RunSessionState(
-                run.State,
-                run.StaticData,
-                run.Calendar,
-                run.Resources,
-                run.Performance,
-                run.AssetCards,
-                run.MarketTape,
-                run.Reservation,
-                run.OwnedAssets,
-                run.BusinessDay,
-                new RedemptionPressureState(run.RedemptionPressure.CurrentPressure + amount, run.RedemptionPressure.MaxPressure),
-                run.CardDetail,
-                run.LiquidityAction);
-        }
-
-        private static RunSessionState FailRun(RunSessionState run)
-        {
-            return new RunSessionState(
-                RunState.Failed,
-                run.StaticData,
-                run.Calendar,
-                run.Resources,
-                run.Performance,
-                run.AssetCards,
-                run.MarketTape,
-                run.Reservation,
                 run.OwnedAssets,
                 new BusinessDayState(run.BusinessDay.Phase, MarketAreaState.Market),
                 run.RedemptionPressure,
