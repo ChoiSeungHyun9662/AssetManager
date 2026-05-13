@@ -69,6 +69,61 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void InflationCostModifierAppliesAfterDealDiscount()
+        {
+            var payment = new PurchasePaymentState(
+                "inflation-test-card",
+                5,
+                new[]
+                {
+                    new PaymentSlotState(ResourceType.Research, ResourceType.Deal),
+                    new PaymentSlotState(ResourceType.Credit, ResourceType.Deal)
+                },
+                1);
+
+            Assert.That(payment.FinalCashCost, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void CurrentQuarterInflationModifierAppliesWhenOpeningMarketCardPayment()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = WithCalendar(run, new RunCalendarState(1, 2, run.Calendar.RemainingBusinessDays));
+            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+
+            run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
+
+            Assert.That(run.CardDetail.PendingPayment.InflationCostModifier, Is.EqualTo(1));
+            Assert.That(run.CardDetail.PendingPayment.FinalCashCost, Is.EqualTo(selectedCard.Card.CashCost + 1));
+        }
+
+        [Test]
+        public void InflationCashShortageBlocksPurchaseAndLeavesResourcesCardMarketAndBusinessDayUnchanged()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = WithCalendar(run, new RunCalendarState(1, 2, run.Calendar.RemainingBusinessDays));
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 1).Run;
+            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+            run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
+            run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
+            run = PurchasePayment.PlaceChip(run, ResourceType.Credit).Run;
+
+            var result = PurchasePayment.ConfirmPurchase(run);
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Run.Resources.Cash, Is.EqualTo(run.Resources.Cash));
+            Assert.That(result.Run.Resources.Research, Is.EqualTo(run.Resources.Research));
+            Assert.That(result.Run.Resources.Credit, Is.EqualTo(run.Resources.Credit));
+            Assert.That(result.Run.Resources.Deal, Is.EqualTo(run.Resources.Deal));
+            Assert.That(result.Run.OwnedAssets.OwnedCards, Is.Empty);
+            Assert.That(FindCard(result.Run.AssetCards, selectedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Available));
+            Assert.That(result.Run.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays));
+            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
+        }
+
+        [Test]
         public void IncompletePurchaseConfirmationLeavesResourcesCardMarketAndBusinessDayUnchanged()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
@@ -188,6 +243,37 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays - 1));
         }
 
+        [Test]
+        public void ReservedCardPurchaseUsesCurrentInflationModifierAtPurchaseTime()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            var marketCard = run.MarketTape.CurrentMarketCards[0];
+            run = MarketAreaFlow.OpenMarketCardDetail(run, marketCard);
+            run = ReservationAction.ConfirmReservation(run).Run;
+            var reservedCard = run.Reservation.ReservedCards[0];
+            run = WithCalendar(run, new RunCalendarState(1, 2, run.Calendar.RemainingBusinessDays));
+            run = ResourceLedger.AddFundingCash(run, 1);
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 1).Run;
+            var cashBeforePurchase = run.Resources.Cash;
+            run = MarketAreaFlow.OpenReservedCardDetail(run, reservedCard);
+
+            Assert.That(run.CardDetail.PendingPayment.InflationCostModifier, Is.EqualTo(1));
+            Assert.That(run.CardDetail.PendingPayment.FinalCashCost, Is.EqualTo(reservedCard.Card.CashCost + 1));
+
+            run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
+            run = PurchasePayment.PlaceChip(run, ResourceType.Credit).Run;
+
+            var result = PurchasePayment.ConfirmPurchase(run);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.Run.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
+            Assert.That(result.Run.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(reservedCard.Card.Id));
+            Assert.That(result.Run.OwnedAssets.OwnedCards[0].PurchaseSource, Is.EqualTo(PurchaseSource.Reserved));
+            Assert.That(result.Run.Resources.Cash, Is.EqualTo(cashBeforePurchase - reservedCard.Card.CashCost - 1 + reservedCard.Card.Income));
+            Assert.That(result.Run.Reservation.ReservedCards, Is.Empty);
+        }
+
         private static AssetCardRuntimeData FindCard(System.Collections.Generic.IEnumerable<AssetCardRuntimeData> cards, string cardId)
         {
             foreach (var card in cards)
@@ -223,6 +309,24 @@ namespace AssetManager.Tests
             {
                 Assert.That(actualCards[i].Card.Id, Is.EqualTo(expectedCardIds[i]));
             }
+        }
+
+        private static RunSessionState WithCalendar(RunSessionState run, RunCalendarState calendar)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction);
         }
     }
 }

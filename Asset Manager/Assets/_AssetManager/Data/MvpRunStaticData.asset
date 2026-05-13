@@ -363,6 +363,52 @@ MonoBehaviour:
     quarter: 1
     businessDays: 4
     earnedCashGoal: 3
+    inflationCostModifier: 0
+  - fiscalYear: 1
+    quarter: 2
+    businessDays: 4
+    earnedCashGoal: 4
+    inflationCostModifier: 1
+  - fiscalYear: 1
+    quarter: 3
+    businessDays: 4
+    earnedCashGoal: 4
+    inflationCostModifier: 0
+  - fiscalYear: 2
+    quarter: 1
+    businessDays: 4
+    earnedCashGoal: 4
+    inflationCostModifier: 0
+  - fiscalYear: 2
+    quarter: 2
+    businessDays: 4
+    earnedCashGoal: 4
+    inflationCostModifier: 0
+  - fiscalYear: 2
+    quarter: 3
+    businessDays: 4
+    earnedCashGoal: 4
+    inflationCostModifier: 0
+  - fiscalYear: 3
+    quarter: 1
+    businessDays: 5
+    earnedCashGoal: 5
+    inflationCostModifier: 0
+  - fiscalYear: 3
+    quarter: 2
+    businessDays: 5
+    earnedCashGoal: 5
+    inflationCostModifier: 0
+  - fiscalYear: 3
+    quarter: 3
+    businessDays: 5
+    earnedCashGoal: 5
+    inflationCostModifier: 0
+  - fiscalYear: 3
+    quarter: 4
+    businessDays: 5
+    earnedCashGoal: 5
+    inflationCostModifier: 0
   finalRatings:
   - ratingId: seed
     displayName: Seed

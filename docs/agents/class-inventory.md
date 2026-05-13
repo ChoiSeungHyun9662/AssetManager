@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-13
-Covered implementation slices: issues 00-11
+Covered implementation slices: issues 00-11A
 
 ## Update Workflow
 
@@ -38,6 +38,7 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **09 - 예약 action**: adds ReservationAction as the public 예약 rule service, moves 시장 카드 into the 예약 구역, grants 딜, increases 환매 압력, advances only the reserved market-tape column, and connects the 예약 구역 UI.
 - **10 - 예약 카드 유지 and 매수**: keeps 예약 카드 across calendar and 시장 테이프 transitions, opens 예약 카드 상세보기 from the 예약 구역, buys reserved cards through PurchasePayment with `Reserved` source, clears only the purchased reservation slot, and leaves 시장 테이프 unchanged.
 - **11 - 분기 마감 and 환매 압력 실패**: adds QuarterSettlement and RedemptionPressure rule modules, applies 정산 수익 before 목표 달성률, excludes 조달 현금 from 분기 운용 수익, stores QuarterEndResult, and switches to 런 실패 when 환매 압력 reaches 10.
+- **11A - 인플레이션 비용 수정**: adds table-driven quarter inflation as an integer cash-cost modifier, applies it after deal discounts in PurchasePayment, and shows the same final cash cost in 카드 상세보기.
 
 Current runtime flow:
 
@@ -64,11 +65,11 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `RunStaticDataSet` | `Runtime/RunStaticDataSet.cs` | ScriptableObject container for seed 자산 카드, 분기 data, final ratings, market/resource/redemption configs, and MVP default data. |
+| `RunStaticDataSet` | `Runtime/RunStaticDataSet.cs` | ScriptableObject container for seed 자산 카드, 분기 data, quarter inflation lookup, final ratings, market/resource/redemption configs, and MVP default data. |
 | `ProfessionalResourceCost` | `Runtime/RunModels.cs` | One 전문 자원 cost requirement for a 자산 카드. |
 | `TagData` | `Runtime/RunModels.cs` | Serialized 태그 identity, display name, and tag type. |
 | `AssetCardData` | `Runtime/RunModels.cs` | Static 자산 카드 definition: costs, 희귀도, 운용가치, income field, and tags. |
-| `QuarterData` | `Runtime/RunModels.cs` | Static 분기 row used by bootstrap and 분기 마감 target lookup. `RunCalendar` still owns playable schedule routing. |
+| `QuarterData` | `Runtime/RunModels.cs` | Static 분기 row used by bootstrap, 분기 마감 target lookup, and table-driven inflation cash-cost modifiers. `RunCalendar` still owns playable schedule routing. |
 | `FinalRatingData` | `Runtime/RunModels.cs` | Final rating threshold row for later 최종 정산. |
 | `RedemptionPressureLevelData` | `Runtime/RunModels.cs` | 환매 압력 단계 row for later final comments. |
 | `FinalManagementCommentData` | `Runtime/RunModels.cs` | 운용 코멘트 row keyed by final rating and 환매 압력 단계. |
@@ -92,7 +93,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `QuarterEndResult` | `Runtime/RunModels.cs` | Snapshot of a completed 분기 마감: 정산 수익, 분기 운용 수익, 분기 목표, 목표 달성률, and 환매 압력 impact. |
 | `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기. |
 | `PaymentSlotState` | `Runtime/CardDetailState.cs` | One 비용 슬롯 in 카드 상세보기: required 전문 자원 and optional placed 전문 자원 or 딜. |
-| `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Pending 자산 매수 payment in 카드 상세보기: card id, base cash cost, 비용 슬롯 list, and 딜-discounted final cash cost. |
+| `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Pending 자산 매수 payment in 카드 상세보기: card id, base cash cost, 비용 슬롯 list, current quarter inflation modifier, and 딜-discounted final cash cost. |
 | `CardDetailState` | `Runtime/CardDetailState.cs` | Transient 카드 상세보기 state: selected card, 매수 출처, display data, pending payment, extra-buy flag, and Reserve visibility condition. |
 | `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 환매 압력. |
 | `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, and failure reason. Most transitions create a new instance. |
@@ -129,7 +130,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RedemptionPressureResult` | `Runtime/RedemptionPressure.cs` | Return data for 환매 압력 changes, including the updated run, increase amount, and failure flag. |
 | `LiquidityAction` | `Runtime/LiquidityAction.cs` | Public rule service for 자원 확보 entry, close eligibility, selected resource sequence validation, funding-cash/professional-resource gain, auto-ending, and 영업일 consumption. |
 | `LiquidityActionResult` | `Runtime/LiquidityAction.cs` | Return data for 자원 확보 selections, including the updated run and short feedback message. |
-| `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, 자산 매수 validation, 시장/예약 카드 ownership transition, purchased-column advance for 시장 카드 only, reservation cleanup for 예약 카드, and 영업일 consumption. |
+| `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, inflation-aware cash-cost validation, 자산 매수 validation, 시장/예약 카드 ownership transition, purchased-column advance for 시장 카드 only, reservation cleanup for 예약 카드, and 영업일 consumption. |
 | `PurchasePaymentResult` | `Runtime/PurchasePayment.cs` | Return data for 결제 and 자산 매수 operations, including success and short feedback message. |
 | `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for 예약 validation, 예약 카드 transition, 예약 구역 capacity, 딜 reward, 환매 압력 increase through RedemptionPressure, reserved-column market-tape advance, and 영업일 consumption. |
 | `ReservationActionResult` | `Runtime/ReservationAction.cs` | Return data for 예약 operations, including success and short feedback message. |

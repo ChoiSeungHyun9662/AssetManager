@@ -334,6 +334,49 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapCardDetailFinalCashCostShowsInflationAndDealPlacement()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapInflationCostTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var run = WithCalendar(
+                bootstrap.CurrentRun,
+                new RunCalendarState(1, 2, bootstrap.CurrentRun.Calendar.RemainingBusinessDays));
+            run = ResourceLedger.AddDeal(run, 1).Run;
+            SetCurrentRun(bootstrap, run);
+
+            var selectedCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0];
+            bootstrap.OpenMarketCardDetail(selectedCard);
+
+            yield return null;
+
+            Assert.That(
+                FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).GetComponent<Text>().text,
+                Does.Contain("최종 현금 " + (selectedCard.Card.CashCost + 1)));
+
+            FindUiObject(ProjectShell.CardDetailPlaceDealButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.CardDetail.PendingPayment.FinalCashCost, Is.EqualTo(selectedCard.Card.CashCost));
+            Assert.That(
+                FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).GetComponent<Text>().text,
+                Does.Contain("최종 현금 " + selectedCard.Card.CashCost));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapReserveButtonMovesMarketCardToReservationAndUpdatesUi()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapReservationTests");

@@ -70,7 +70,11 @@ namespace AssetManager
             return WithMarketArea(
                 run,
                 MarketAreaState.CardDetail,
-                CardDetailState.Open(selectedCard, purchaseSource, false));
+                CardDetailState.Open(
+                    selectedCard,
+                    purchaseSource,
+                    false,
+                    run.StaticData.GetInflationCostModifier(run.Calendar.FiscalYear, run.Calendar.Quarter)));
         }
 
         private static RunSessionState WithMarketArea(

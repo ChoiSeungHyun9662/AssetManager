@@ -7,12 +7,17 @@ namespace AssetManager
     {
         public static PurchasePaymentState CreateForCard(AssetCardData card)
         {
+            return CreateForCard(card, 0);
+        }
+
+        public static PurchasePaymentState CreateForCard(AssetCardData card, int inflationCostModifier)
+        {
             if (card == null)
             {
                 throw new ArgumentNullException(nameof(card));
             }
 
-            return new PurchasePaymentState(card);
+            return new PurchasePaymentState(card, inflationCostModifier);
         }
 
         public static PurchasePaymentResult PlaceChip(RunSessionState run, ResourceType resourceType)
@@ -43,7 +48,13 @@ namespace AssetManager
                 {
                     slots[i] = new PaymentSlotState(slot.RequiredResourceType, resourceType);
                     return new PurchasePaymentResult(
-                        WithPendingPayment(run, new PurchasePaymentState(payment.CardId, payment.CashCost, slots)),
+                        WithPendingPayment(
+                            run,
+                            new PurchasePaymentState(
+                                payment.CardId,
+                                payment.CashCost,
+                                slots,
+                                payment.InflationCostModifier)),
                         true,
                         string.Empty);
                 }
@@ -72,7 +83,13 @@ namespace AssetManager
             slots[slotIndex] = new PaymentSlotState(slot.RequiredResourceType, null);
 
             return new PurchasePaymentResult(
-                WithPendingPayment(run, new PurchasePaymentState(payment.CardId, payment.CashCost, slots)),
+                WithPendingPayment(
+                    run,
+                    new PurchasePaymentState(
+                        payment.CardId,
+                        payment.CashCost,
+                        slots,
+                        payment.InflationCostModifier)),
                 true,
                 string.Empty);
         }

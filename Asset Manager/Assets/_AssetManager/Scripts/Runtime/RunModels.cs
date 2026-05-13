@@ -205,22 +205,37 @@ namespace AssetManager
         [SerializeField]
         private int earnedCashGoal;
 
+        [SerializeField]
+        private int inflationCostModifier;
+
         public QuarterData()
         {
         }
 
         public QuarterData(int fiscalYear, int quarter, int businessDays, int earnedCashGoal)
+            : this(fiscalYear, quarter, businessDays, earnedCashGoal, 0)
+        {
+        }
+
+        public QuarterData(
+            int fiscalYear,
+            int quarter,
+            int businessDays,
+            int earnedCashGoal,
+            int inflationCostModifier)
         {
             this.fiscalYear = fiscalYear;
             this.quarter = quarter;
             this.businessDays = businessDays;
             this.earnedCashGoal = earnedCashGoal;
+            this.inflationCostModifier = inflationCostModifier;
         }
 
         public int FiscalYear => fiscalYear;
         public int Quarter => quarter;
         public int BusinessDays => businessDays;
         public int EarnedCashGoal => earnedCashGoal;
+        public int InflationCostModifier => inflationCostModifier;
     }
 
     [Serializable]

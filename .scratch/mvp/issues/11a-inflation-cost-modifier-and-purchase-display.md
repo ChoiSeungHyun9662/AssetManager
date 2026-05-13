@@ -1,6 +1,6 @@
 # 11A. 인플레이션 비용 수정과 매수 표시
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -38,14 +38,14 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 인플레이션 기본값 0에서는 기존 매수 비용과 테스트가 유지된다.
-- [ ] 인플레이션은 현금 비용에만 적용되고 전문 자원 비용에는 적용되지 않는다.
-- [ ] 딜 할인 후 인플레이션이 적용된다.
-- [ ] 인플레이션이 반영된 최종 현금 비용으로 현금 부족 여부를 판정한다.
-- [ ] 시장 카드 매수와 예약 카드 매수 모두 인플레이션을 적용한다.
-- [ ] 예약 카드는 예약 시점이 아니라 실제 매수 시점의 인플레이션을 적용한다.
-- [ ] 카드 상세보기의 최종 현금 비용 표시가 인플레이션과 딜 배치 상태를 반영한다.
-- [ ] MVP QA smoke scenario에 인플레이션 매수 경로가 추가된다.
+- [x] 인플레이션 기본값 0에서는 기존 매수 비용과 테스트가 유지된다.
+- [x] 인플레이션은 현금 비용에만 적용되고 전문 자원 비용에는 적용되지 않는다.
+- [x] 딜 할인 후 인플레이션이 적용된다.
+- [x] 인플레이션이 반영된 최종 현금 비용으로 현금 부족 여부를 판정한다.
+- [x] 시장 카드 매수와 예약 카드 매수 모두 인플레이션을 적용한다.
+- [x] 예약 카드는 예약 시점이 아니라 실제 매수 시점의 인플레이션을 적용한다.
+- [x] 카드 상세보기의 최종 현금 비용 표시가 인플레이션과 딜 배치 상태를 반영한다.
+- [x] MVP QA smoke scenario에 인플레이션 매수 경로가 추가된다.
 
 ## Blocked by
 
@@ -59,3 +59,4 @@ Status: ready-for-agent
 ## Comments
 
 - 2026-05-13: Added after MVP scope was updated to include inflation. This slice can be implemented after the current issue 11 work lands to avoid overlapping changes around run state and settlement flow, but it does not depend on quarter settlement behavior.
+- 2026-05-13: Implemented table-driven quarter inflation. 1회계년도 2Q has +1 in MVP defaults for QA coverage; EditMode and PlayMode tests cover final cost, cash shortage, reserved purchase timing, and card detail display updates.

@@ -45,21 +45,37 @@ namespace AssetManager
     public sealed class PurchasePaymentState
     {
         public PurchasePaymentState(AssetCardData card)
-            : this(card.Id, card.CashCost, CreateEmptySlots(card.ProfessionalCosts))
+            : this(card, 0)
+        {
+        }
+
+        public PurchasePaymentState(AssetCardData card, int inflationCostModifier)
+            : this(card.Id, card.CashCost, CreateEmptySlots(card.ProfessionalCosts), inflationCostModifier)
         {
         }
 
         public PurchasePaymentState(string cardId, int cashCost, IEnumerable<PaymentSlotState> slots)
+            : this(cardId, cashCost, slots, 0)
+        {
+        }
+
+        public PurchasePaymentState(
+            string cardId,
+            int cashCost,
+            IEnumerable<PaymentSlotState> slots,
+            int inflationCostModifier)
         {
             CardId = cardId;
             CashCost = cashCost;
             Slots = new List<PaymentSlotState>(slots).AsReadOnly();
+            InflationCostModifier = inflationCostModifier;
         }
 
         public string CardId { get; }
         public int CashCost { get; }
         public IReadOnlyList<PaymentSlotState> Slots { get; }
-        public int FinalCashCost => Math.Max(0, CashCost - PlacedDealCount);
+        public int InflationCostModifier { get; }
+        public int FinalCashCost => Math.Max(0, CashCost - PlacedDealCount + InflationCostModifier);
 
         private int PlacedDealCount
         {
@@ -125,13 +141,14 @@ namespace AssetManager
         public static CardDetailState Open(
             AssetCardRuntimeData selectedCard,
             PurchaseSource purchaseSource,
-            bool isOpenedDuringExtraBuy)
+            bool isOpenedDuringExtraBuy,
+            int inflationCostModifier)
         {
             return new CardDetailState(
                 selectedCard,
                 purchaseSource,
                 new CardDetailDisplayData(selectedCard.Card),
-                new PurchasePaymentState(selectedCard.Card),
+                new PurchasePaymentState(selectedCard.Card, inflationCostModifier),
                 isOpenedDuringExtraBuy);
         }
     }

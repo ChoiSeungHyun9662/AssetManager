@@ -39,6 +39,19 @@ namespace AssetManager
         public ResourceConfigData ResourceConfig => resourceConfig;
         public RedemptionPressureConfigData RedemptionPressureConfig => redemptionPressureConfig;
 
+        public int GetInflationCostModifier(int fiscalYear, int quarter)
+        {
+            foreach (var quarterData in quarters)
+            {
+                if (quarterData.FiscalYear == fiscalYear && quarterData.Quarter == quarter)
+                {
+                    return quarterData.InflationCostModifier;
+                }
+            }
+
+            return 0;
+        }
+
         public bool HasRequiredMvpData =>
             assetCards.Count > 0
             && quarters.Count > 0
@@ -380,7 +393,7 @@ namespace AssetManager
             quarters = new List<QuarterData>
             {
                 new QuarterData(1, 1, 4, 3),
-                new QuarterData(1, 2, 4, 4),
+                new QuarterData(1, 2, 4, 4, 1),
                 new QuarterData(1, 3, 4, 4),
                 new QuarterData(2, 1, 4, 4),
                 new QuarterData(2, 2, 4, 4),
