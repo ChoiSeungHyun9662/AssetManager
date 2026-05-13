@@ -413,6 +413,12 @@ MonoBehaviour:
   - ratingId: seed
     displayName: Seed
     minimumManagementValue: 0
+  - ratingId: core
+    displayName: Core
+    minimumManagementValue: 5
+  - ratingId: flagship
+    displayName: Flagship
+    minimumManagementValue: 10
   redemptionPressureLevels:
   - levelId: stable
     displayName: Stable
@@ -435,6 +441,38 @@ MonoBehaviour:
     ratingId: seed
     pressureLevelId: stable
     comment: "\uAE30\uCD08 \uC6B4\uC6A9 \uCCB4\uACC4\uAC00 \uC791\uB3D9\uD569\uB2C8\uB2E4."
+  - commentId: seed-watch
+    ratingId: seed
+    pressureLevelId: watch
+    comment: "기초 운용은 유지했지만 환매 압력을 낮춰야 합니다."
+  - commentId: seed-critical
+    ratingId: seed
+    pressureLevelId: critical
+    comment: "운용 기반은 남았지만 환매 압력이 높습니다."
+  - commentId: core-stable
+    ratingId: core
+    pressureLevelId: stable
+    comment: "안정적인 핵심 포트폴리오를 구축했습니다."
+  - commentId: core-watch
+    ratingId: core
+    pressureLevelId: watch
+    comment: "성과는 충분하지만 환매 압력 관리가 필요합니다."
+  - commentId: core-critical
+    ratingId: core
+    pressureLevelId: critical
+    comment: "성과는 충분하지만 환매 압력이 높습니다."
+  - commentId: flagship-stable
+    ratingId: flagship
+    pressureLevelId: stable
+    comment: "대표 운용사로 인정받을 만한 성과입니다."
+  - commentId: flagship-watch
+    ratingId: flagship
+    pressureLevelId: watch
+    comment: "높은 성과와 함께 환매 압력 관리 과제가 남았습니다."
+  - commentId: flagship-critical
+    ratingId: flagship
+    pressureLevelId: critical
+    comment: "성과는 탁월하지만 환매 압력이 높습니다."
   marketConfig:
     sellImminentSlots: 3
     currentMarketSlots: 3

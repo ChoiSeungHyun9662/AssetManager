@@ -466,7 +466,7 @@ namespace AssetManager
     public sealed class RunPerformanceState
     {
         public RunPerformanceState(int earnedCash, int fundingCash)
-            : this(earnedCash, earnedCash, earnedCash, fundingCash)
+            : this(earnedCash, earnedCash, earnedCash, fundingCash, Array.Empty<QuarterPerformanceRecord>())
         {
         }
 
@@ -475,11 +475,28 @@ namespace AssetManager
             int currentFiscalYearEarnedCash,
             int totalEarnedCash,
             int fundingCash)
+            : this(
+                currentQuarterEarnedCash,
+                currentFiscalYearEarnedCash,
+                totalEarnedCash,
+                fundingCash,
+                Array.Empty<QuarterPerformanceRecord>())
+        {
+        }
+
+        public RunPerformanceState(
+            int currentQuarterEarnedCash,
+            int currentFiscalYearEarnedCash,
+            int totalEarnedCash,
+            int fundingCash,
+            IEnumerable<QuarterPerformanceRecord> completedQuarterEarnedCash)
         {
             CurrentQuarterEarnedCash = currentQuarterEarnedCash;
             CurrentFiscalYearEarnedCash = currentFiscalYearEarnedCash;
             TotalEarnedCash = totalEarnedCash;
             FundingCash = fundingCash;
+            CompletedQuarterEarnedCash = new List<QuarterPerformanceRecord>(
+                completedQuarterEarnedCash ?? Array.Empty<QuarterPerformanceRecord>()).AsReadOnly();
         }
 
         public int CurrentQuarterEarnedCash { get; }
@@ -487,6 +504,21 @@ namespace AssetManager
         public int TotalEarnedCash { get; }
         public int EarnedCash => TotalEarnedCash;
         public int FundingCash { get; }
+        public IReadOnlyList<QuarterPerformanceRecord> CompletedQuarterEarnedCash { get; }
+    }
+
+    public sealed class QuarterPerformanceRecord
+    {
+        public QuarterPerformanceRecord(int fiscalYear, int quarter, int earnedCash)
+        {
+            FiscalYear = fiscalYear;
+            Quarter = quarter;
+            EarnedCash = earnedCash;
+        }
+
+        public int FiscalYear { get; }
+        public int Quarter { get; }
+        public int EarnedCash { get; }
     }
 
     public sealed class AssetCardRuntimeData

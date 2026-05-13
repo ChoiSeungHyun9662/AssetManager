@@ -814,6 +814,104 @@ namespace AssetManager.Tests
             yield return SceneManager.UnloadSceneAsync(scene);
         }
 
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapShowsVacationSummaryAndContinuesToNextFiscalYear()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapVacationTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            for (var quarter = 1; quarter <= 3; quarter++)
+            {
+                for (var day = 0; day < 4; day++)
+                {
+                    bootstrap.AdvanceToNextBusinessDay();
+                }
+
+                yield return null;
+                bootstrap.ContinueSchedule();
+                yield return null;
+            }
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.Vacation));
+            Assert.That(FindUiObject(ProjectShell.VacationPlaceholderPanelName).activeSelf, Is.True);
+            Assert.That(FindUiObject(ProjectShell.ContinueScheduleButtonName).activeSelf, Is.True);
+
+            var vacationText = FindUiObject(ProjectShell.VacationPlaceholderTextName).GetComponent<Text>().text;
+            Assert.That(vacationText, Does.Contain("4Q 휴가: 1회계년도 요약"));
+            Assert.That(vacationText, Does.Contain("현재 운용가치"));
+            Assert.That(vacationText, Does.Contain("올해 운용 수익"));
+            Assert.That(vacationText, Does.Contain("분기별 운용 수익"));
+            Assert.That(vacationText, Does.Contain("보유 자산"));
+            Assert.That(vacationText, Does.Contain("환매 압력"));
+
+            FindUiObject(ProjectShell.ContinueScheduleButtonName).GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Calendar.FiscalYear, Is.EqualTo(2));
+            Assert.That(bootstrap.CurrentRun.Calendar.Quarter, Is.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.AwaitingAction));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapShowsFinalSettlementSummary()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapFinalSettlementTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var ownedOffice = new AssetCardRuntimeData(
+                bootstrap.CurrentRun.AssetCards[0].Card,
+                AssetCardRuntimeState.Owned,
+                PurchaseSource.MarketTape);
+            var ownedDataCenter = new AssetCardRuntimeData(
+                bootstrap.CurrentRun.AssetCards[3].Card,
+                AssetCardRuntimeState.Owned,
+                PurchaseSource.MarketTape);
+            var run = WithCalendar(bootstrap.CurrentRun, new RunCalendarState(3, 4, 0));
+            run = WithBusinessDay(run, new BusinessDayState(BusinessDayPhase.QuarterSettlement, MarketAreaState.Market));
+            run = WithOwnedAssets(run, new OwnedAssetState(new[] { ownedOffice, ownedDataCenter }));
+            SetCurrentRun(bootstrap, run);
+
+            bootstrap.ContinueSchedule();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.State, Is.EqualTo(RunState.Completed));
+            Assert.That(bootstrap.CurrentRun.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.FinalSettlement));
+            Assert.That(FindUiObject(ProjectShell.FinalSettlementPlaceholderPanelName).activeSelf, Is.True);
+
+            var finalText = FindUiObject(ProjectShell.FinalSettlementPlaceholderTextName).GetComponent<Text>().text;
+            Assert.That(finalText, Does.Contain("최종 운용가치 7"));
+            Assert.That(finalText, Does.Contain("최종 평가 Core"));
+            Assert.That(finalText, Does.Contain("총 운용 수익"));
+            Assert.That(finalText, Does.Contain("보유 자산 2"));
+            Assert.That(finalText, Does.Contain("환매 압력"));
+            Assert.That(finalText, Does.Contain("운용 코멘트"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
         private static GameObject FindUiObject(string objectName)
         {
             var uiRoot = GameObject.Find(ProjectShell.UiRootName);
@@ -892,6 +990,42 @@ namespace AssetManager.Tests
                 run.Reservation,
                 run.OwnedAssets,
                 run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction);
+        }
+
+        private static RunSessionState WithOwnedAssets(RunSessionState run, OwnedAssetState ownedAssets)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                ownedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction);
+        }
+
+        private static RunSessionState WithBusinessDay(RunSessionState run, BusinessDayState businessDay)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                businessDay,
                 run.RedemptionPressure,
                 run.CardDetail,
                 run.LiquidityAction);

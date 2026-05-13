@@ -77,8 +77,8 @@ namespace AssetManager
             SetActive(runFailurePanel, run.State == RunState.Failed);
 
             SetText(quarterSettlementText, FormatQuarterSettlement(run));
-            SetText(vacationText, $"4Q 휴가: {run.Calendar.FiscalYear}회계년도 {run.Calendar.Quarter}Q");
-            SetText(finalSettlementText, $"최종 정산: {run.Calendar.FiscalYear}회계년도 {run.Calendar.Quarter}Q");
+            SetText(vacationText, FormatVacation(run));
+            SetText(finalSettlementText, FormatFinalSettlement(run));
             SetText(runFailureText, FormatRunFailure(run));
         }
 
@@ -100,6 +100,51 @@ namespace AssetManager
                 result.RedemptionPressureIncrease,
                 result.CurrentRedemptionPressure,
                 run.RedemptionPressure.MaxPressure);
+        }
+
+        private static string FormatVacation(RunSessionState run)
+        {
+            var summary = FiscalYearSummary.Create(run);
+            return string.Format(
+                "4Q 휴가: {0}회계년도 요약\n현재 운용가치 {1} | 올해 운용 수익 {2}\n분기별 운용 수익 {3}\n보유 자산 {4} | 환매 압력 {5}/{6}",
+                summary.FiscalYear,
+                summary.CurrentManagementValue,
+                summary.FiscalYearEarnedCash,
+                FormatQuarterEarnedCash(summary),
+                summary.OwnedAssetCount,
+                summary.CurrentRedemptionPressure,
+                summary.MaxRedemptionPressure);
+        }
+
+        private static string FormatQuarterEarnedCash(FiscalYearSummaryResult summary)
+        {
+            if (summary.QuarterEarnedCash.Count == 0)
+            {
+                return "없음";
+            }
+
+            var lines = new string[summary.QuarterEarnedCash.Count];
+            for (var i = 0; i < summary.QuarterEarnedCash.Count; i++)
+            {
+                var record = summary.QuarterEarnedCash[i];
+                lines[i] = record.Quarter + "Q " + record.EarnedCash;
+            }
+
+            return string.Join(" / ", lines);
+        }
+
+        private static string FormatFinalSettlement(RunSessionState run)
+        {
+            var settlement = FinalSettlement.Create(run);
+            return string.Format(
+                "최종 정산\n최종 운용가치 {0} | 최종 평가 {1}\n총 운용 수익 {2} | 보유 자산 {3}\n환매 압력 {4}/{5}\n운용 코멘트: {6}",
+                settlement.FinalManagementValue,
+                settlement.FinalRating.DisplayName,
+                settlement.TotalEarnedCash,
+                settlement.OwnedAssetCount,
+                settlement.CurrentRedemptionPressure,
+                settlement.MaxRedemptionPressure,
+                settlement.ManagementComment);
         }
 
         private static string FormatRunFailure(RunSessionState run)

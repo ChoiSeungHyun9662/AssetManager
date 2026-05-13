@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-13
-Covered implementation slices: issues 00-11A
+Covered implementation slices: issues 00-12
 
 ## Update Workflow
 
@@ -39,6 +39,7 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **10 - 예약 카드 유지 and 매수**: keeps 예약 카드 across calendar and 시장 테이프 transitions, opens 예약 카드 상세보기 from the 예약 구역, buys reserved cards through PurchasePayment with `Reserved` source, clears only the purchased reservation slot, and leaves 시장 테이프 unchanged.
 - **11 - 분기 마감 and 환매 압력 실패**: adds QuarterSettlement and RedemptionPressure rule modules, applies 정산 수익 before 목표 달성률, excludes 조달 현금 from 분기 운용 수익, stores QuarterEndResult, and switches to 런 실패 when 환매 압력 reaches 10.
 - **11A - 인플레이션 비용 수정**: adds table-driven quarter inflation as an integer cash-cost modifier, applies it after deal discounts in PurchasePayment, and shows the same final cash cost in 카드 상세보기.
+- **12 - 4Q 휴가 and 최종 정산**: adds fiscal-year summary and final settlement rule modules, stores completed 분기 운용 수익 records, displays 4Q 휴가 summaries for 1/2회계년도, and displays 최종 운용가치-based 최종 정산 after 3회계년도 4Q.
 
 Current runtime flow:
 
@@ -83,7 +84,8 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | --- | --- | --- |
 | `ResourceState` | `Runtime/RunModels.cs` | Current 현금, 리서치, 신용, 원자재, 딜, plus 전문 자원 total lookup. |
 | `RunCalendarState` | `Runtime/RunModels.cs` | Current 회계년도, 분기, and remaining 영업일. |
-| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 운용 수익 counters plus tracked 조달 현금. |
+| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 운용 수익 counters, tracked 조달 현금, and completed 분기 운용 수익 records for 4Q 휴가 summaries. |
+| `QuarterPerformanceRecord` | `Runtime/RunModels.cs` | Completed 회계년도/분기 운용 수익 row recorded at 분기 마감 for later 회계년도 summary display. |
 | `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one 자산 카드 and whether it is available, reserved, owned, or removed; owned cards can carry 매수 출처 and AcquiredOrder. |
 | `MarketTapeState` | `Runtime/RunModels.cs` | Current visible market tape cards by zone. |
 | `ReservationState` | `Runtime/RunModels.cs` | 예약 구역 capacity and reserved cards. |
@@ -126,6 +128,10 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
 | `QuarterSettlement` | `Runtime/QuarterSettlement.cs` | Public rule service for 분기 마감 정산, 정산 수익 application, 목표 달성률, 환매 압력 increase, and QuarterEndResult creation. |
 | `QuarterSettlementResult` | `Runtime/QuarterSettlement.cs` | Return data for 분기 마감, including the updated run and the stored QuarterEndResult fields. |
+| `FiscalYearSummary` | `Runtime/FiscalYearSummary.cs` | Public rule service for 4Q 휴가 summary data: 현재 운용가치, 회계년도 운용 수익, completed 분기별 운용 수익, 보유 자산 수, and 환매 압력. |
+| `FiscalYearSummaryResult` | `Runtime/FiscalYearSummary.cs` | Return data displayed by the 4Q 휴가 panel. |
+| `FinalSettlement` | `Runtime/FinalSettlement.cs` | Public rule service for 최종 정산: computes 최종 운용가치 from 보유 자산 only, selects the highest reachable 최종 평가, and picks an 운용 코멘트 by 환매 압력 단계. |
+| `FinalSettlementResult` | `Runtime/FinalSettlement.cs` | Return data displayed by the 최종 정산 panel. |
 | `RedemptionPressure` | `Runtime/RedemptionPressure.cs` | Public rule service for adding 환매 압력 and immediately converting the run to 런 실패 at the configured max. |
 | `RedemptionPressureResult` | `Runtime/RedemptionPressure.cs` | Return data for 환매 압력 changes, including the updated run, increase amount, and failure flag. |
 | `LiquidityAction` | `Runtime/LiquidityAction.cs` | Public rule service for 자원 확보 entry, close eligibility, selected resource sequence validation, funding-cash/professional-resource gain, auto-ending, and 영업일 consumption. |
@@ -157,7 +163,7 @@ Important distinction:
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays 보유 자원, 전문 자원 total/cap, 딜 total/cap, and the current short resource message. |
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary: 보유 자산 수, 현재 운용가치, 이번 분기 운용 수익, and a short ordered 보유 자산 list. |
-| `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 UI; displays 분기 마감 result details and 런 실패 summary. |
+| `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 UI; displays 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 summaries. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and clickable visible market card summary buttons. |
 | `ReservationView` | `Runtime/ReservationView.cs` | Renders the 예약 구역 count and three reserved-card summary slots in the 시장 area, with clickable occupied slots for 예약 카드 상세보기. |
 | `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Shows 중앙 은행 entry, GainLiquidity resource buttons, selected resource text, close gating, and cap feedback through `LiquidityAction`. |
@@ -179,7 +185,7 @@ Important distinction:
 | 보유 자산 income and 포트폴리오 UI | `OwnedAssetStateTests`, `BusinessDayFlowTests`, `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 | 자원 확보 action and GainLiquidity UI | `LiquidityActionTests`, `MainGameShellBootstrapTests` |
 | 예약 action, 예약 구역 UI, and 예약 카드 매수 | `ReservationActionTests`, `PurchasePaymentTests`, `BusinessDayFlowTests`, `MarketTapeTests`, `MainGameShellBootstrapTests` |
-| 분기 마감 and 환매 압력 실패 | `QuarterSettlementTests`, `BusinessDayFlowTests`, `ResourceLedgerTests`, `ReservationActionTests`, `MainGameShellBootstrapTests` |
+| 분기 마감, 4Q 휴가, 최종 정산, and 환매 압력 실패 | `QuarterSettlementTests`, `FiscalYearSummaryTests`, `FinalSettlementTests`, `BusinessDayFlowTests`, `ResourceLedgerTests`, `ReservationActionTests`, `MainGameShellBootstrapTests` |
 
 ## Notes For Next Cleanup
 

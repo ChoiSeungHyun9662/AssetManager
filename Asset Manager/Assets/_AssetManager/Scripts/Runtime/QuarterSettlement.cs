@@ -19,6 +19,7 @@ namespace AssetManager
                 ? 1d
                 : Math.Min(1d, quarterEarnedCash / (double)targetEarnedCash);
             var pressureIncrease = CalculatePressureIncrease(achievementRate);
+            settledRun = RecordCompletedQuarter(settledRun, quarterEarnedCash);
             var pressureResult = RedemptionPressure.AddPressure(settledRun, pressureIncrease);
             var result = new QuarterEndResult(
                 settlementIncome,
@@ -62,6 +63,39 @@ namespace AssetManager
             }
 
             return run.StaticData.Quarters[0].EarnedCashGoal;
+        }
+
+        private static RunSessionState RecordCompletedQuarter(RunSessionState run, int quarterEarnedCash)
+        {
+            var records = new System.Collections.Generic.List<QuarterPerformanceRecord>(
+                run.Performance.CompletedQuarterEarnedCash)
+            {
+                new QuarterPerformanceRecord(run.Calendar.FiscalYear, run.Calendar.Quarter, quarterEarnedCash)
+            };
+
+            var performance = new RunPerformanceState(
+                run.Performance.CurrentQuarterEarnedCash,
+                run.Performance.CurrentFiscalYearEarnedCash,
+                run.Performance.TotalEarnedCash,
+                run.Performance.FundingCash,
+                records);
+
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason);
         }
 
         private static RunSessionState WithQuarterEndResult(RunSessionState run, QuarterEndResult result)

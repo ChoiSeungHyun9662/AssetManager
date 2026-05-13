@@ -26,7 +26,8 @@ namespace AssetManager
                     run.Performance.CurrentQuarterEarnedCash,
                     run.Performance.CurrentFiscalYearEarnedCash,
                     run.Performance.TotalEarnedCash,
-                    run.Performance.FundingCash + amount));
+                    run.Performance.FundingCash + amount,
+                    run.Performance.CompletedQuarterEarnedCash));
         }
 
         public static RunSessionState AddEarnedCash(RunSessionState run, int amount)
@@ -52,7 +53,8 @@ namespace AssetManager
                     performance.CurrentQuarterEarnedCash + amount,
                     performance.CurrentFiscalYearEarnedCash + amount,
                     performance.TotalEarnedCash + amount,
-                    performance.FundingCash));
+                    performance.FundingCash,
+                    performance.CompletedQuarterEarnedCash));
         }
 
         public static ResourceLedgerResult AddProfessionalResource(

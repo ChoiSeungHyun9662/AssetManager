@@ -406,7 +406,9 @@ namespace AssetManager
 
             finalRatings = new List<FinalRatingData>
             {
-                new FinalRatingData("seed", "Seed", 0)
+                new FinalRatingData("seed", "Seed", 0),
+                new FinalRatingData("core", "Core", 5),
+                new FinalRatingData("flagship", "Flagship", 10)
             };
 
             redemptionPressureLevels = new List<RedemptionPressureLevelData>
@@ -419,7 +421,15 @@ namespace AssetManager
 
             finalManagementComments = new List<FinalManagementCommentData>
             {
-                new FinalManagementCommentData("seed-stable", "seed", "stable", "기초 운용 체계가 작동합니다.")
+                new FinalManagementCommentData("seed-stable", "seed", "stable", "기초 운용 체계가 작동합니다."),
+                new FinalManagementCommentData("seed-watch", "seed", "watch", "기초 운용은 유지했지만 환매 압력을 낮춰야 합니다."),
+                new FinalManagementCommentData("seed-critical", "seed", "critical", "운용 기반은 남았지만 환매 압력이 높습니다."),
+                new FinalManagementCommentData("core-stable", "core", "stable", "안정적인 핵심 포트폴리오를 구축했습니다."),
+                new FinalManagementCommentData("core-watch", "core", "watch", "성과는 충분하지만 환매 압력 관리가 필요합니다."),
+                new FinalManagementCommentData("core-critical", "core", "critical", "성과는 충분하지만 환매 압력이 높습니다."),
+                new FinalManagementCommentData("flagship-stable", "flagship", "stable", "대표 운용사로 인정받을 만한 성과입니다."),
+                new FinalManagementCommentData("flagship-watch", "flagship", "watch", "높은 성과와 함께 환매 압력 관리 과제가 남았습니다."),
+                new FinalManagementCommentData("flagship-critical", "flagship", "critical", "성과는 탁월하지만 환매 압력이 높습니다.")
             };
 
             marketConfig = new MarketConfigData(3, 3, 3);

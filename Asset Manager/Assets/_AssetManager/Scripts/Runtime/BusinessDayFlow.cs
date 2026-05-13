@@ -83,10 +83,16 @@ namespace AssetManager
                 0,
                 run.Performance.CurrentFiscalYearEarnedCash,
                 run.Performance.TotalEarnedCash,
-                run.Performance.FundingCash);
+                run.Performance.FundingCash,
+                run.Performance.CompletedQuarterEarnedCash);
 
             if (run.Calendar.FiscalYear == 3 && run.Calendar.Quarter == 4)
             {
+                if (run.RedemptionPressure.CurrentPressure >= run.RedemptionPressure.MaxPressure)
+                {
+                    return run;
+                }
+
                 return new RunSessionState(
                     RunState.Completed,
                     run.StaticData,
@@ -144,7 +150,8 @@ namespace AssetManager
                 0,
                 0,
                 run.Performance.TotalEarnedCash,
-                run.Performance.FundingCash);
+                run.Performance.FundingCash,
+                run.Performance.CompletedQuarterEarnedCash);
 
             var nextRun = new RunSessionState(
                 run.State,
