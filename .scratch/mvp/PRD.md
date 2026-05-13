@@ -14,6 +14,7 @@ MVP에서 해결해야 하는 핵심 문제는 다음이다.
 - 시장 테이프가 표시되고, 진행과 갱신과 슬롯 보충이 서로 다르게 동작해야 한다.
 - 플레이어가 시장 카드와 예약 카드를 상세보기에서 검토하고 매수할 수 있어야 한다.
 - 플레이어가 시장 카드를 예약해 딜을 얻고 환매 압력을 감수할 수 있어야 한다.
+- 인플레이션이 매수 현금 비용에 반영되어, 분기별 비용 압박이 플레이 판단에 들어가야 한다.
 - 플레이어가 자원 확보로 현금과 전문 자원을 얻되, 운용 수익과 조달 현금이 섞이지 않아야 한다.
 - 분기 마감에서 운용 수익, 분기 목표, 환매 압력을 판정해야 한다.
 - 환매 압력 10 이상 도달 시 즉시 런 실패가 발생해야 한다.
@@ -34,6 +35,7 @@ MVP는 다음 시스템을 포함한다.
 - 자원 구조: 현금, 리서치, 신용, 원자재, 딜
 - 자산 카드: 운용가치, 운용 수익, 비용, 태그, 희귀도
 - 카드 상세보기와 매수 결제
+- 인플레이션: 현재 값, 현금 비용 적용, 비용 표시
 - 칩 조작 최소 UX: 클릭 배치, 회수, 딜 배치, 비용 슬롯 표시
 - 예약 시스템과 딜
 - 자원 확보
@@ -49,6 +51,7 @@ MVP는 다음 시스템을 포함한다.
 - 1회계년도 1Q부터 3회계년도 4Q까지 진행할 수 있다.
 - 영업일이 행동 확정 시점에만 소비된다.
 - 자산을 매수하고 보유 자산의 영업일 시작 현금을 받을 수 있다.
+- 인플레이션이 매수 최종 현금 비용에 적용된다.
 - 자원 확보로 자원을 얻을 수 있다.
 - 시장 카드를 예약하고, 딜과 환매 압력을 처리할 수 있다.
 - 예약 카드를 유지하고 나중에 매수할 수 있다.
@@ -116,6 +119,8 @@ MVP는 다음 시스템을 포함한다.
 56. As a designer, I want card costs, income, management value, tags, quarter goals, ratings, market slots, and comments to be table-driven, so that balance can be tuned without rewriting rules.
 57. As a developer, I want runtime state separated from static data, so that rules can be tested and later saved cleanly.
 58. As an implementation agent, I want deep modules with narrow interfaces, so that each rule cluster can be tested in isolation before UI integration.
+59. As a player, I want current inflation reflected in final purchase cash cost, so that expensive market periods change my buying decisions.
+60. As a designer, I want MVP inflation values to be table-driven, so that the pressure curve can be tuned without changing purchase rules.
 
 ## Implementation Decisions
 
@@ -123,10 +128,12 @@ MVP는 다음 시스템을 포함한다.
 - Do not use AUM in user-facing text, data field names, or domain terminology. Use ManagementValue / 운용가치.
 - Do not use 턴 or 스테이지 in user-facing text. Use 영업일 and 분기.
 - Implement the first MVP with reservation and deal chips included. They are central to the current gameplay. If scope must be cut again, reservation, deal, extra buy, and advanced chip UX are the candidates for a second MVP, but the preferred MVP includes reservation and deal.
+- Include MVP inflation as a simple table-driven integer cash-cost modifier, not a full economic event system.
+- Apply inflation only to cash cost, after cost modifiers and deal discounts. Reserved cards use the inflation value at purchase time, not reservation time.
 - Treat additional buy as part of MVP rules, but make its priority dependent on whether the first MVP card pool actually contains a GrantExtraBuyAction-style effect.
 - Keep UI layout and art exactness out of the core MVP. The MVP defines which controls exist, when they are visible/enabled, and what they do.
-- Store balance-sensitive values in data tables: card costs, professional costs, management value, income, tags, rarity, quarter targets, rating thresholds, redemption pressure levels, final comments, and market slot count per zone.
-- Separate static data from runtime state. Static data defines cards, tags, quarters, rating bands, comments, resource config, market config, and redemption pressure config. Runtime state tracks current resources, calendar, performance, market tape, reservation slots, owned assets, card runtime state, business day state, and redemption pressure.
+- Store balance-sensitive values in data tables: card costs, professional costs, management value, income, tags, rarity, quarter targets, inflation values, rating thresholds, redemption pressure levels, final comments, and market slot count per zone.
+- Separate static data from runtime state. Static data defines cards, tags, quarters, inflation config, rating bands, comments, resource config, market config, and redemption pressure config. Runtime state tracks current resources, calendar, current inflation, performance, market tape, reservation slots, owned assets, card runtime state, business day state, and redemption pressure.
 
 Proposed major modules:
 
@@ -137,6 +144,7 @@ Proposed major modules:
 - AssetCard module: owns static card data, runtime card state, ownership transition, management value calculation, income application, tags, and owned asset ordering.
 - ResourceLedger module: owns cash, professional resources, deal count, earned cash vs funding cash, professional resource cap, deal cap, and resource add/spend operations.
 - PurchasePayment module: owns payment slots, chip placement state, deal substitution, final cash cost calculation, validation, and transaction-like purchase confirmation.
+- Inflation module: owns current inflation value lookup, quarter-start update, cash-cost modifier, and display-ready cost breakdown.
 - Reservation module: owns reservation slot capacity, reserve action validation, card movement into reservation, deal gain, redemption pressure increase, and reserved card purchase cleanup.
 - LiquidityAction module: owns liquidity entry, close conditions, selected resource sequence, valid next choices, completion, auto-end, and funding-cash handling.
 - ExtraBuyAction module: owns extra buy grant, non-stacking, no carryover, input restrictions, second-purchase resolution, and GrantExtraBuyAction suppression during extra buy.
@@ -152,6 +160,7 @@ Suggested deep modules to test first:
 - MarketTape: a small interface can advance, refresh, refill, and draw without duplicate card states.
 - ResourceLedger: a small interface can add funding cash, add earned cash, add capped resources, add capped deal, and spend confirmed payment.
 - PurchasePayment: a small interface can create payment slots, place/remove chips, calculate final cash cost, and validate/commit a purchase.
+- Inflation: a small interface can return the current cash-cost modifier and apply it after deal discount.
 - LiquidityAction: a small interface can evaluate valid choices and completion from a selected resource sequence.
 - RedemptionPressure: a small interface can add pressure and return whether run failure is triggered.
 - QuarterSettlement: a small interface can calculate achievement rate, pressure increase, and quarter result.
@@ -165,7 +174,7 @@ Implementation order:
 4. MarketTape state and card draw/refill behavior.
 5. AssetCard static/runtime data and owned asset behavior.
 6. MarketAreaState and CardDetail state.
-7. PurchasePayment and minimal chip placement.
+7. PurchasePayment, inflation modifier, and minimal chip placement.
 8. LiquidityAction.
 9. Reservation.
 10. Deal chip behavior.
@@ -223,7 +232,11 @@ Core rules to test:
 - Purchase: closing card detail returns all placed chips and consumes no 영업일.
 - Purchase: deal can fill any professional resource slot.
 - Purchase: each used deal reduces base cash cost by 1, with minimum cash cost 0.
-- Purchase: deal discount is applied before any later inflation modifier.
+- Purchase: deal discount is applied before the current inflation modifier.
+- Purchase: inflation applies only to cash cost, after cost modifiers and deal discount.
+- Purchase: MVP default inflation +0 leaves final cash cost unchanged.
+- Purchase: reserved card purchase uses purchase-time inflation.
+- Purchase: final cash cost is clamped at 0 after inflation.
 - Purchase: market purchase records source as MarketTape and moves the card to owned assets.
 - Purchase: reserved purchase records source as Reserved and moves the card to owned assets.
 - Reservation: reservation is only available for market cards.
@@ -282,6 +295,7 @@ MVP smoke scenarios:
 4. 시장 카드 클릭 → 카드 상세보기 → 예약 → 예약 구역 추가 → 딜 +1 → 환매 압력 +1 → 시장 테이프 진행 → 영업일 종료.
 5. 환매 압력 9 → 시장 카드 예약 → 환매 압력 10 → 실패 화면.
 6. 3회계년도 4Q 완료 → 환매 압력 10 미만 → 최종 정산 → 최종 운용가치 / 평가 / 총 운용 수익 표시.
+7. 기본 현금 비용 5 → 딜 2개 사용 → 인플레이션 +1 → 최종 현금 비용 4 → 매수 확정 시 현금 4 차감.
 
 ## Out of Scope
 
@@ -291,6 +305,7 @@ MVP smoke scenarios:
 - 고급 칩 물리감, 고급 카드 연출, 고급 사운드.
 - 튜토리얼 전체 시나리오.
 - 시장 뉴스 시스템.
+- 시장 뉴스나 이벤트로 변하는 동적 인플레이션.
 - 복잡한 이벤트 시스템.
 - 휴가 보너스 또는 휴가 패널티.
 - 카드 매각 기능.
@@ -305,6 +320,7 @@ MVP smoke scenarios:
 - PRD 작성 기준: 기존 plan 문서 세트의 MVP 범위와 시스템별 규칙을 종합했다.
 - 구현 기준: Unity 클라이언트 구현을 염두에 두되, 이 PRD는 구체적인 파일 구조나 UI 좌표를 강제하지 않는다.
 - 핵심 리스크: 운용 수익과 조달 현금이 섞이면 분기 목표와 최종 통계가 무너진다. ResourceLedger와 RunPerformanceState 성격을 초기에 확실히 분리해야 한다.
+- 핵심 리스크: 인플레이션 적용 순서가 흔들리면 딜 가치와 매수 가능 판정이 달라진다. PurchasePayment는 비용 수정 효과, 딜 할인, 인플레이션, 최종 0 클램프 순서를 한 경로로 계산해야 한다.
 - 핵심 리스크: 시장 테이프 진행, 갱신, 슬롯 보충이 섞이면 예약과 매수의 의사결정 비용이 흐려진다. MarketTape module을 독립적으로 먼저 테스트해야 한다.
 - 핵심 리스크: 예약 카드와 보유 자산이 섞이면 운용가치, 운용 수익, 정산, 최종 평가가 모두 오염된다. 카드 런타임 상태 전환을 명확하게 제한해야 한다.
 - 핵심 리스크: 환매 압력 한도 검사가 늦으면 실패해야 할 런이 다음 영업일, 휴가, 또는 최종 정산으로 진행될 수 있다. RedemptionPressure module은 pressure add와 failure check를 한 인터페이스로 묶는 것이 좋다.
