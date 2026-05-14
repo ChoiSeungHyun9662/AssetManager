@@ -1,6 +1,6 @@
 # 14. MVP Play Mode QA와 회귀 검증
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -38,13 +38,13 @@ MVP 성공 기준이 Unity 엔진 안에서 모두 구현되었는지 확인할 
 
 ## Acceptance criteria
 
-- [ ] PRD의 MVP smoke scenario 6개가 Unity에서 검증 가능하다.
-- [ ] 핵심 규칙 모듈의 자동 테스트 또는 명시적 회귀 테스트가 있다.
-- [ ] Play Mode QA 체크리스트가 이슈 또는 문서로 남는다.
-- [ ] 모든 주요 UI 입력은 Scene에서 실제 버튼/카드/중앙 은행 조작으로 확인된다.
-- [ ] 완료 기준은 코드 존재가 아니라 Unity 실행 결과로 판정한다.
-- [ ] 누락된 에디터 연결이나 데이터 연결이 있으면 QA에서 잡을 수 있다.
-- [ ] 최종 상태에서 새 런부터 실패 또는 최종 정산까지 한 흐름이 플레이 가능하다.
+- [x] PRD의 MVP smoke scenario 6개가 Unity에서 검증 가능하다.
+- [x] 핵심 규칙 모듈의 자동 테스트 또는 명시적 회귀 테스트가 있다.
+- [x] Play Mode QA 체크리스트가 이슈 또는 문서로 남는다.
+- [x] 모든 주요 UI 입력은 Scene에서 실제 버튼/카드/중앙 은행 조작으로 확인된다.
+- [x] 완료 기준은 코드 존재가 아니라 Unity 실행 결과로 판정한다.
+- [x] 누락된 에디터 연결이나 데이터 연결이 있으면 QA에서 잡을 수 있다.
+- [x] 최종 상태에서 새 런부터 실패 또는 최종 정산까지 한 흐름이 플레이 가능하다.
 
 ## Blocked by
 
@@ -56,3 +56,5 @@ MVP 성공 기준이 Unity 엔진 안에서 모두 구현되었는지 확인할 
 1, 2, 3, 6, 9, 10, 11, 15, 16, 32, 40, 49, 51, 52, 53, 54, 55, 58
 
 ## Comments
+
+- 2026-05-14: Implemented issue 14 with TDD. Added `MvpSmokeScenarioTests` PlayMode coverage for the six MVP smoke scenarios: basic progression, market purchase/income, liquidity, reservation, redemption-pressure failure, and final settlement. Added `.scratch/mvp/play-mode-qa-checklist.md` for manual Play Mode QA. Verified Unity PlayMode 26/26 passed and EditMode 66/66 passed via `scripts/Run-UnityBatchmode.ps1`.
