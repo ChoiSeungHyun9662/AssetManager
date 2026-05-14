@@ -2,8 +2,8 @@
 
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
-Last reviewed: 2026-05-13
-Covered implementation slices: issues 00-12
+Last reviewed: 2026-05-14
+Covered implementation slices: issues 00-13
 
 ## Update Workflow
 
@@ -41,6 +41,8 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **11A - 인플레이션 비용 수정**: adds table-driven quarter inflation as an integer cash-cost modifier, applies it after deal discounts in PurchasePayment, and shows the same final cash cost in 카드 상세보기.
 - **12 - 4Q 휴가 and 최종 정산**: adds fiscal-year summary and final settlement rule modules, stores completed 분기 운용 수익 records, displays 4Q 휴가 summaries for 1/2회계년도, and displays 최종 운용가치-based 최종 정산 after 3회계년도 4Q.
 
+- **13 - 추가 매수권 지원**: adds ExtraBuyAction, stores extra-buy ownership/choice/purchase state on BusinessDayState, lets GrantExtraBuyAction cards keep the same 영업일 open for one extra market or reserved card purchase, blocks 예약 and 자원 확보 during that state, and clears the right after use or forfeiture.
+
 Current runtime flow:
 
 1. `BootstrapSceneLoader` loads `MainGame`.
@@ -49,6 +51,14 @@ Current runtime flow:
 4. `MarketTape.Refresh` fills the first market tape.
 5. UI components render the current `RunSessionState`.
 6. Buttons call `BusinessDayFlow`, `MarketAreaFlow`, `PurchasePayment`, `ReservationAction`, `LiquidityAction`, `MarketTape`, or `ResourceLedger`, then all UI is refreshed from the new state.
+
+## Issue 13 Inventory Notes
+
+- `AssetCardData` now includes an optional GrantExtraBuyAction flag for cards that can create an extra buy right after purchase.
+- `BusinessDayState` now carries the extra buy right state: has right, awaiting choice, or buying with the right.
+- `ExtraBuyAction` (`Runtime/ExtraBuyAction.cs`) is the public rule service for entering extra-buy choice, opening extra-buy purchases, and returning from card detail to the pending choice.
+- `PurchasePayment` now routes first purchases that grant an extra buy into `ExtraBuyAction` instead of consuming the 영업일 immediately, while purchases made with the right consume it and ignore nested GrantExtraBuyAction grants.
+- `RunStatusFormatter`, `RunProgressControls`, `LiquidityActionView`, `MarketTapeDevControls`, and `ResourceDevControls` expose or respect the pending extra-buy state so only market/reserved card purchase or forfeiture remains available.
 
 ## Shell And Editor Setup
 

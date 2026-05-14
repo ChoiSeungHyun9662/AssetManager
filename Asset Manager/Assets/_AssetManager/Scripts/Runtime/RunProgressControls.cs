@@ -67,6 +67,9 @@ namespace AssetManager
             var phase = run.BusinessDay.Phase;
 
             SetActive(nextBusinessDayButton, run.State == RunState.Playing && MarketAreaFlow.CanAdvanceToNextBusinessDay(run));
+            SetButtonText(
+                nextBusinessDayButton,
+                run.BusinessDay.IsAwaitingExtraBuyChoice ? "추가 매수 포기" : "다음 영업일");
             SetActive(
                 continueScheduleButton,
                 run.State == RunState.Playing && (phase == BusinessDayPhase.QuarterSettlement || phase == BusinessDayPhase.Vacation));
@@ -184,6 +187,20 @@ namespace AssetManager
 
         private static void SetText(Text text, string value)
         {
+            if (text != null)
+            {
+                text.text = value;
+            }
+        }
+
+        private static void SetButtonText(Button button, string value)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            var text = button.GetComponentInChildren<Text>();
             if (text != null)
             {
                 text.text = value;

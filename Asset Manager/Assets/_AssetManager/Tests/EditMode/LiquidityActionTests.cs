@@ -140,5 +140,17 @@ namespace AssetManager.Tests
             Assert.That(researchSelection.Run.Resources.ProfessionalTotal, Is.EqualTo(10));
             Assert.That(researchSelection.Message, Is.Not.Empty);
         }
+
+        [Test]
+        public void ExtraBuyChoiceCannotEnterLiquidityAction()
+        {
+            var run = ExtraBuyAction.BeginChoice(RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults()));
+
+            var liquidityRun = LiquidityAction.Enter(run);
+
+            Assert.That(liquidityRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+            Assert.That(liquidityRun.BusinessDay.HasExtraBuyAction, Is.True);
+            Assert.That(liquidityRun.BusinessDay.IsAwaitingExtraBuyChoice, Is.True);
+        }
     }
 }

@@ -1,6 +1,6 @@
 # 13. 추가 매수권 지원
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -41,14 +41,14 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 추가 매수권은 자산 매수 후 발생할 수 있다.
-- [ ] 추가 매수권이 발생하면 첫 번째 매수 직후 영업일을 종료하지 않는다.
-- [ ] 추가 매수권으로 시장 카드와 예약 카드는 매수 가능하다.
-- [ ] 추가 매수권으로 예약과 자원 확보는 불가능하다.
-- [ ] 추가 매수권은 중첩되지 않는다.
-- [ ] 추가 매수권은 다음 영업일로 이월되지 않는다.
-- [ ] 추가 매수 후에는 즉시 영업일을 종료한다.
-- [ ] 추가 매수에서 발생한 GrantExtraBuyAction은 무시한다.
+- [x] 추가 매수권은 자산 매수 후 발생할 수 있다.
+- [x] 추가 매수권이 발생하면 첫 번째 매수 직후 영업일을 종료하지 않는다.
+- [x] 추가 매수권으로 시장 카드와 예약 카드는 매수 가능하다.
+- [x] 추가 매수권으로 예약과 자원 확보는 불가능하다.
+- [x] 추가 매수권은 중첩되지 않는다.
+- [x] 추가 매수권은 다음 영업일로 이월되지 않는다.
+- [x] 추가 매수 후에는 즉시 영업일을 종료한다.
+- [x] 추가 매수에서 발생한 GrantExtraBuyAction은 무시한다.
 
 ## Blocked by
 
@@ -59,3 +59,5 @@ Status: ready-for-agent
 46, 47, 48
 
 ## Comments
+
+- Implemented with TDD on 2026-05-14. Verified by EditMode `AssetManager.Tests.EditMode` and PlayMode `AssetManager.Tests.PlayMode`.

@@ -30,6 +30,11 @@ namespace AssetManager
                 return run;
             }
 
+            if (run.BusinessDay.IsBuyingWithExtraBuy)
+            {
+                return ExtraBuyAction.ReturnToChoice(run);
+            }
+
             return WithMarketArea(run, MarketAreaState.Market, CardDetailState.Empty);
         }
 
@@ -67,14 +72,16 @@ namespace AssetManager
                 return run;
             }
 
-            return WithMarketArea(
-                run,
-                MarketAreaState.CardDetail,
-                CardDetailState.Open(
-                    selectedCard,
-                    purchaseSource,
-                    false,
-                    run.StaticData.GetInflationCostModifier(run.Calendar.FiscalYear, run.Calendar.Quarter)));
+            var isExtraBuy = run.BusinessDay.IsAwaitingExtraBuyChoice;
+            var cardDetail = CardDetailState.Open(
+                selectedCard,
+                purchaseSource,
+                isExtraBuy,
+                run.StaticData.GetInflationCostModifier(run.Calendar.FiscalYear, run.Calendar.Quarter));
+
+            return isExtraBuy
+                ? ExtraBuyAction.BeginPurchase(run, cardDetail)
+                : WithMarketArea(run, MarketAreaState.CardDetail, cardDetail);
         }
 
         private static RunSessionState WithMarketArea(

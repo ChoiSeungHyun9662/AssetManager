@@ -53,5 +53,29 @@ namespace AssetManager.Tests
             Assert.That(detailRun.CardDetail.PendingPayment, Is.Not.Null);
             Assert.That(detailRun.CardDetail.ShouldShowReserveButton, Is.False);
         }
+
+        [Test]
+        public void ExtraBuyChoiceOpensCardDetailAsExtraBuyAndBlocksReservation()
+        {
+            var run = ExtraBuyAction.BeginChoice(RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults()));
+            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+
+            var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
+
+            Assert.That(detailRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
+            Assert.That(detailRun.BusinessDay.HasExtraBuyAction, Is.True);
+            Assert.That(detailRun.BusinessDay.IsAwaitingExtraBuyChoice, Is.False);
+            Assert.That(detailRun.BusinessDay.IsBuyingWithExtraBuy, Is.True);
+            Assert.That(detailRun.CardDetail.IsOpenedDuringExtraBuy, Is.True);
+            Assert.That(detailRun.CardDetail.ShouldShowReserveButton, Is.False);
+            Assert.That(ReservationAction.CanReserve(detailRun), Is.False);
+
+            var closedRun = MarketAreaFlow.CloseCardDetail(detailRun);
+
+            Assert.That(closedRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+            Assert.That(closedRun.BusinessDay.HasExtraBuyAction, Is.True);
+            Assert.That(closedRun.BusinessDay.IsAwaitingExtraBuyChoice, Is.True);
+            Assert.That(closedRun.BusinessDay.IsBuyingWithExtraBuy, Is.False);
+        }
     }
 }

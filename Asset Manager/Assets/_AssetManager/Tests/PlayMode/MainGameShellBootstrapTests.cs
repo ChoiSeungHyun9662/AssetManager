@@ -736,6 +736,45 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapShowsExtraBuyChoiceState()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapExtraBuyChoiceTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            SetCurrentRun(bootstrap, ExtraBuyAction.BeginChoice(bootstrap.CurrentRun));
+            RefreshRunUi(bootstrap);
+
+            yield return null;
+
+            var statusText = FindUiObject(ProjectShell.RunStatusTextName).GetComponent<Text>();
+            var centralBankButton = FindUiObject(ProjectShell.CentralBankButtonName);
+            var marketTapeAdvanceButton = FindUiObject(ProjectShell.MarketTapeAdvanceButtonName);
+            var resourceDevCashButton = FindUiObject(ProjectShell.ResourceDevFundingCashButtonName);
+            var nextBusinessDayButton = FindUiObject(ProjectShell.NextBusinessDayButtonName).GetComponent<Button>();
+            var nextBusinessDayButtonText = nextBusinessDayButton.GetComponentInChildren<Text>();
+
+            Assert.That(statusText.text, Does.Contain("추가 매수 가능"));
+            Assert.That(centralBankButton.activeSelf, Is.False);
+            Assert.That(marketTapeAdvanceButton.activeSelf, Is.False);
+            Assert.That(resourceDevCashButton.activeSelf, Is.False);
+            Assert.That(nextBusinessDayButton.gameObject.activeSelf, Is.True);
+            Assert.That(nextBusinessDayButton.interactable, Is.True);
+            Assert.That(nextBusinessDayButtonText.text, Is.EqualTo("추가 매수 포기"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapShowsQuarterSettlementPlaceholderAfterLastBusinessDay()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapQuarterSettlementTests");
@@ -1036,6 +1075,13 @@ namespace AssetManager.Tests
             typeof(MainGameShellBootstrap)
                 .GetProperty(nameof(MainGameShellBootstrap.CurrentRun), BindingFlags.Instance | BindingFlags.Public)
                 .SetValue(bootstrap, run);
+        }
+
+        private static void RefreshRunUi(MainGameShellBootstrap bootstrap)
+        {
+            typeof(MainGameShellBootstrap)
+                .GetMethod("RefreshRunUi", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(bootstrap, new object[0]);
         }
 
         private static System.Collections.Generic.List<string> CollectCardIds(

@@ -397,6 +397,11 @@ namespace AssetManager
                 run.RedemptionPressure,
                 CardDetailState.Empty);
 
+            if (!run.CardDetail.IsOpenedDuringExtraBuy && ExtraBuyAction.CanGrantFrom(run.CardDetail.SelectedCard.Card))
+            {
+                return ExtraBuyAction.BeginChoice(committedRun);
+            }
+
             return BusinessDayFlow.ConsumeBusinessDay(committedRun);
         }
     }

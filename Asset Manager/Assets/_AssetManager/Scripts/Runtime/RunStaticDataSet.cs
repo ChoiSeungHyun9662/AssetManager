@@ -387,7 +387,8 @@ namespace AssetManager
                     },
                     1,
                     1,
-                    new[] { realEstateTag })
+                    new[] { realEstateTag },
+                    true)
             };
 
             quarters = new List<QuarterData>

@@ -14,7 +14,8 @@ namespace AssetManager
 
             if (run.State != RunState.Playing
                 || run.BusinessDay.Phase != BusinessDayPhase.AwaitingAction
-                || run.BusinessDay.MarketArea != MarketAreaState.Market)
+                || run.BusinessDay.MarketArea != MarketAreaState.Market
+                || run.BusinessDay.IsAwaitingExtraBuyChoice)
             {
                 return run;
             }

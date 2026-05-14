@@ -38,6 +38,20 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void AdvanceToNextBusinessDayForfeitsExtraBuyAction()
+        {
+            var run = ExtraBuyAction.BeginChoice(RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults()));
+
+            var nextRun = BusinessDayFlow.AdvanceToNextBusinessDay(run);
+
+            Assert.That(nextRun.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays - 1));
+            Assert.That(nextRun.BusinessDay.HasExtraBuyAction, Is.False);
+            Assert.That(nextRun.BusinessDay.IsAwaitingExtraBuyChoice, Is.False);
+            Assert.That(nextRun.BusinessDay.IsBuyingWithExtraBuy, Is.False);
+            Assert.That(nextRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+        }
+
+        [Test]
         public void AdvanceToNextBusinessDayEntersQuarterSettlementAfterLastBusinessDay()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());

@@ -358,6 +358,7 @@ MonoBehaviour:
     - id: real-estate
       displayName: "\uBD80\uB3D9\uC0B0"
       tagType: 0
+    grantsExtraBuyAction: 1
   quarters:
   - fiscalYear: 1
     quarter: 1

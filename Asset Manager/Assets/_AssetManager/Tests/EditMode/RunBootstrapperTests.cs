@@ -31,5 +31,26 @@ namespace AssetManager.Tests
             Assert.That(run.MarketTape.CurrentMarketCards, Has.Count.EqualTo(staticData.MarketConfig.CurrentMarketSlots));
             Assert.That(run.MarketTape.UpcomingMarketCards, Has.Count.EqualTo(staticData.MarketConfig.UpcomingMarketSlots));
         }
+
+        [Test]
+        public void MvpDefaultsIncludeGrantExtraBuyActionCard()
+        {
+            var staticData = RunStaticDataSet.CreateMvpDefaults();
+
+            Assert.That(ContainsExtraBuyGrant(staticData.AssetCards), Is.True);
+        }
+
+        private static bool ContainsExtraBuyGrant(System.Collections.Generic.IEnumerable<AssetCardData> cards)
+        {
+            foreach (var card in cards)
+            {
+                if (card.GrantsExtraBuyAction)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

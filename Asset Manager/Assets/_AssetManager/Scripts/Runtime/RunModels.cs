@@ -153,6 +153,9 @@ namespace AssetManager
         [SerializeField]
         private List<TagData> tags = new List<TagData>();
 
+        [SerializeField]
+        private bool grantsExtraBuyAction;
+
         public AssetCardData()
         {
         }
@@ -166,7 +169,8 @@ namespace AssetManager
             IEnumerable<ProfessionalResourceCost> professionalCosts,
             int managementValue,
             int income,
-            IEnumerable<TagData> tags)
+            IEnumerable<TagData> tags,
+            bool grantsExtraBuyAction = false)
         {
             this.id = id;
             this.displayName = displayName;
@@ -177,6 +181,7 @@ namespace AssetManager
             this.managementValue = managementValue;
             this.income = income;
             this.tags = new List<TagData>(tags);
+            this.grantsExtraBuyAction = grantsExtraBuyAction;
         }
 
         public string Id => id;
@@ -188,6 +193,7 @@ namespace AssetManager
         public int ManagementValue => managementValue;
         public int Income => income;
         public IReadOnlyList<TagData> Tags => tags;
+        public bool GrantsExtraBuyAction => grantsExtraBuyAction;
     }
 
     [Serializable]
@@ -638,13 +644,29 @@ namespace AssetManager
     public sealed class BusinessDayState
     {
         public BusinessDayState(BusinessDayPhase phase, MarketAreaState marketArea)
+            : this(phase, marketArea, false, false, false)
+        {
+        }
+
+        public BusinessDayState(
+            BusinessDayPhase phase,
+            MarketAreaState marketArea,
+            bool hasExtraBuyAction,
+            bool isAwaitingExtraBuyChoice,
+            bool isBuyingWithExtraBuy)
         {
             Phase = phase;
             MarketArea = marketArea;
+            HasExtraBuyAction = hasExtraBuyAction;
+            IsAwaitingExtraBuyChoice = isAwaitingExtraBuyChoice;
+            IsBuyingWithExtraBuy = isBuyingWithExtraBuy;
         }
 
         public BusinessDayPhase Phase { get; }
         public MarketAreaState MarketArea { get; }
+        public bool HasExtraBuyAction { get; }
+        public bool IsAwaitingExtraBuyChoice { get; }
+        public bool IsBuyingWithExtraBuy { get; }
     }
 
     public sealed class LiquidityActionState

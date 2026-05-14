@@ -73,7 +73,8 @@ namespace AssetManager
 
             var canEnter = run.State == RunState.Playing
                 && run.BusinessDay.Phase == BusinessDayPhase.AwaitingAction
-                && run.BusinessDay.MarketArea == MarketAreaState.Market;
+                && run.BusinessDay.MarketArea == MarketAreaState.Market
+                && !run.BusinessDay.IsAwaitingExtraBuyChoice;
             var isLiquidityAction = run.BusinessDay.MarketArea == MarketAreaState.GainLiquidity;
 
             SetActive(centralBankButton, canEnter);

@@ -50,7 +50,8 @@ namespace AssetManager
         {
             var isActive = run.State == RunState.Playing
                 && run.BusinessDay.Phase == BusinessDayPhase.AwaitingAction
-                && run.BusinessDay.MarketArea == MarketAreaState.Market;
+                && run.BusinessDay.MarketArea == MarketAreaState.Market
+                && !run.BusinessDay.IsAwaitingExtraBuyChoice;
 
             SetActive(fundingCashButton, isActive);
             SetActive(earnedCashButton, isActive);

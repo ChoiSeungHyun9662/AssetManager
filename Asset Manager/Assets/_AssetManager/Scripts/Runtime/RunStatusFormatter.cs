@@ -6,8 +6,7 @@ namespace AssetManager
         {
             var resources = run.Resources;
             var redemptionPressure = run.RedemptionPressure;
-
-            return string.Format(
+            var status = string.Format(
                 "{0}회계년도 {1}Q | 남은 {2}영업일 | 현금 {3} | 리서치 {4} | 신용 {5} | 원자재 {6} | 딜 {7}/{8} | 환매 압력 {9}/{10}",
                 run.Calendar.FiscalYear,
                 run.Calendar.Quarter,
@@ -20,6 +19,10 @@ namespace AssetManager
                 run.StaticData.ResourceConfig.MaxDeal,
                 redemptionPressure.CurrentPressure,
                 redemptionPressure.MaxPressure);
+
+            return run.BusinessDay.IsAwaitingExtraBuyChoice
+                ? status + " | 추가 매수 가능"
+                : status;
         }
     }
 }
