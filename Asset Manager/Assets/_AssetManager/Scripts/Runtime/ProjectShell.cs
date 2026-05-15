@@ -372,6 +372,15 @@ namespace AssetManager
                 upcomingMarketText.transform.parent,
                 MarketTapeUpcomingMarketCardButtonPrefix);
 
+            ApplyMarketTapeLayout(
+                marketPanel,
+                sellImminentText,
+                currentMarketText,
+                upcomingMarketText,
+                sellImminentButtons,
+                currentMarketButtons,
+                upcomingMarketButtons);
+
             var view = uiRoot.GetComponent<MarketTapeView>();
             if (view == null)
             {
@@ -530,6 +539,26 @@ namespace AssetManager
                 new Vector2(-132f, 36f),
                 new Vector2(160f, 48f));
 
+            ApplyCardDetailLayout(
+                panel,
+                nameText,
+                descriptionText,
+                costText,
+                managementValueText,
+                incomeText,
+                tagsText,
+                rarityText,
+                paymentSlotsText,
+                finalCashCostText,
+                paymentSlotButtons,
+                placeResearchButton,
+                placeCreditButton,
+                placeCommodityButton,
+                placeDealButton,
+                closeButton,
+                buyButton,
+                reserveButton);
+
             var view = uiRoot.GetComponent<CardDetailView>();
             if (view == null)
             {
@@ -581,6 +610,8 @@ namespace AssetManager
                 TextAnchor.MiddleLeft);
 
             var buttons = EnsureReservationCardButtons(panel.transform);
+
+            ApplyReservationLayout(panel, title, buttons);
 
             var view = uiRoot.GetComponent<ReservationView>();
             if (view == null)
@@ -798,6 +829,186 @@ namespace AssetManager
             return controls;
         }
 
+        private static void ApplyMarketTapeLayout(
+            GameObject marketPanel,
+            Text sellImminentText,
+            Text currentMarketText,
+            Text upcomingMarketText,
+            IReadOnlyList<Button> sellImminentButtons,
+            IReadOnlyList<Button> currentMarketButtons,
+            IReadOnlyList<Button> upcomingMarketButtons)
+        {
+            SetRect(
+                marketPanel,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                Vector2.zero,
+                new Vector2(1500f, 720f));
+
+            ApplyMarketTapeZoneLayout(sellImminentText, new Vector2(-470f, -220f));
+            ApplyMarketTapeZoneLayout(currentMarketText, new Vector2(0f, -220f));
+            ApplyMarketTapeZoneLayout(upcomingMarketText, new Vector2(470f, -220f));
+            ApplyMarketTapeCardLayout(sellImminentButtons);
+            ApplyMarketTapeCardLayout(currentMarketButtons);
+            ApplyMarketTapeCardLayout(upcomingMarketButtons);
+        }
+
+        private static void ApplyMarketTapeZoneLayout(Text title, Vector2 anchoredPosition)
+        {
+            if (title == null || title.transform.parent == null)
+            {
+                return;
+            }
+
+            SetRect(
+                title.transform.parent.gameObject,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                anchoredPosition,
+                new Vector2(420f, 500f));
+            SetTextRect(title, new Vector2(18f, -14f), new Vector2(384f, 54f), 19, TextAnchor.MiddleLeft);
+        }
+
+        private static void ApplyMarketTapeCardLayout(IReadOnlyList<Button> buttons)
+        {
+            for (var i = 0; i < buttons.Count; i++)
+            {
+                var button = buttons[i];
+                if (button == null)
+                {
+                    continue;
+                }
+
+                SetRect(
+                    button.gameObject,
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0f, -92f - (i * 140f)),
+                    new Vector2(372f, 124f));
+                SetButtonTextInset(button, new Vector2(14f, 10f), new Vector2(14f, 10f), 16, TextAnchor.UpperLeft);
+            }
+        }
+
+        private static void ApplyReservationLayout(
+            GameObject panel,
+            Text title,
+            IReadOnlyList<Button> buttons)
+        {
+            SetRect(
+                panel,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -84f),
+                new Vector2(900f, 126f));
+            SetTextRect(title, new Vector2(18f, -16f), new Vector2(150f, 34f), 18, TextAnchor.MiddleLeft);
+
+            for (var i = 0; i < buttons.Count; i++)
+            {
+                var button = buttons[i];
+                if (button == null)
+                {
+                    continue;
+                }
+
+                SetRect(
+                    button.gameObject,
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(180f + (i * 230f), -18f),
+                    new Vector2(212f, 90f));
+                SetButtonTextInset(button, new Vector2(10f, 8f), new Vector2(10f, 8f), 14, TextAnchor.UpperLeft);
+            }
+        }
+
+        private static void ApplyCardDetailLayout(
+            GameObject panel,
+            Text nameText,
+            Text descriptionText,
+            Text costText,
+            Text managementValueText,
+            Text incomeText,
+            Text tagsText,
+            Text rarityText,
+            Text paymentSlotsText,
+            Text finalCashCostText,
+            IReadOnlyList<Button> paymentSlotButtons,
+            Button placeResearchButton,
+            Button placeCreditButton,
+            Button placeCommodityButton,
+            Button placeDealButton,
+            Button closeButton,
+            Button buyButton,
+            Button reserveButton)
+        {
+            SetRect(
+                panel,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -160f),
+                new Vector2(1280f, 520f));
+
+            SetTextRect(nameText, new Vector2(28f, -24f), new Vector2(500f, 44f), 30, TextAnchor.MiddleLeft);
+            SetTextRect(rarityText, new Vector2(28f, -76f), new Vector2(180f, 32f), 17, TextAnchor.MiddleLeft);
+            SetTextRect(tagsText, new Vector2(220f, -76f), new Vector2(300f, 32f), 17, TextAnchor.MiddleLeft);
+            SetTextRect(costText, new Vector2(28f, -126f), new Vector2(500f, 84f), 20, TextAnchor.UpperLeft);
+            SetTextRect(descriptionText, new Vector2(28f, -236f), new Vector2(500f, 176f), 17, TextAnchor.UpperLeft);
+            SetTextRect(managementValueText, new Vector2(560f, -48f), new Vector2(270f, 88f), 26, TextAnchor.MiddleCenter);
+            SetTextRect(incomeText, new Vector2(560f, -156f), new Vector2(270f, 88f), 26, TextAnchor.MiddleCenter);
+            SetTextRect(finalCashCostText, new Vector2(560f, -274f), new Vector2(270f, 92f), 19, TextAnchor.MiddleCenter);
+            SetTextRect(paymentSlotsText, new Vector2(880f, -48f), new Vector2(360f, 72f), 17, TextAnchor.UpperLeft);
+
+            for (var i = 0; i < paymentSlotButtons.Count; i++)
+            {
+                var button = paymentSlotButtons[i];
+                if (button == null)
+                {
+                    continue;
+                }
+
+                SetRect(
+                    button.gameObject,
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(880f, -136f - (i * 46f)),
+                    new Vector2(360f, 36f));
+                SetButtonTextInset(button, new Vector2(10f, 4f), new Vector2(10f, 4f), 15, TextAnchor.MiddleLeft);
+            }
+
+            SetDetailActionButton(placeResearchButton, new Vector2(880f, -334f), "리서치");
+            SetDetailActionButton(placeCreditButton, new Vector2(1004f, -334f), "신용");
+            SetDetailActionButton(placeCommodityButton, new Vector2(1128f, -334f), "원자재");
+            SetDetailActionButton(placeDealButton, new Vector2(880f, -388f), "딜");
+            SetRect(closeButton != null ? closeButton.gameObject : null, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-110f, -38f), new Vector2(150f, 46f));
+            SetButtonTextInset(closeButton, new Vector2(8f, 4f), new Vector2(8f, 4f), 18, TextAnchor.MiddleCenter);
+            SetButtonLabel(closeButton, "닫기");
+            SetRect(buyButton != null ? buyButton.gameObject : null, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-286f, 34f), new Vector2(170f, 52f));
+            SetButtonTextInset(buyButton, new Vector2(8f, 4f), new Vector2(8f, 4f), 20, TextAnchor.MiddleCenter);
+            SetButtonLabel(buyButton, "매수");
+            SetRect(reserveButton != null ? reserveButton.gameObject : null, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-102f, 34f), new Vector2(170f, 52f));
+            SetButtonTextInset(reserveButton, new Vector2(8f, 4f), new Vector2(8f, 4f), 20, TextAnchor.MiddleCenter);
+            SetButtonLabel(reserveButton, "예약");
+        }
+
+        private static void SetDetailActionButton(Button button, Vector2 anchoredPosition, string label)
+        {
+            SetRect(
+                button != null ? button.gameObject : null,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                anchoredPosition,
+                new Vector2(112f, 42f));
+            SetButtonTextInset(button, new Vector2(8f, 4f), new Vector2(8f, 4f), 16, TextAnchor.MiddleCenter);
+            SetButtonLabel(button, label);
+        }
+
         private static GameObject EnsureMarketPanel(Transform uiRoot)
         {
             return EnsurePanel(
@@ -807,8 +1018,108 @@ namespace AssetManager
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 Vector2.zero,
-                new Vector2(1440f, 560f),
+                new Vector2(1500f, 720f),
                 new Color(0f, 0f, 0f, 0f));
+        }
+
+        private static void SetRect(
+            GameObject gameObject,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 pivot,
+            Vector2 anchoredPosition,
+            Vector2 sizeDelta)
+        {
+            if (gameObject == null)
+            {
+                return;
+            }
+
+            var rectTransform = gameObject.GetComponent<RectTransform>();
+            if (rectTransform == null)
+            {
+                return;
+            }
+
+            rectTransform.anchorMin = anchorMin;
+            rectTransform.anchorMax = anchorMax;
+            rectTransform.pivot = pivot;
+            rectTransform.anchoredPosition = anchoredPosition;
+            rectTransform.sizeDelta = sizeDelta;
+        }
+
+        private static void SetTextRect(
+            Text text,
+            Vector2 anchoredPosition,
+            Vector2 sizeDelta,
+            int fontSize,
+            TextAnchor alignment)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            SetRect(
+                text.gameObject,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                anchoredPosition,
+                sizeDelta);
+            text.fontSize = fontSize;
+            text.alignment = alignment;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = Mathf.Max(10, fontSize - 6);
+            text.resizeTextMaxSize = fontSize;
+        }
+
+        private static void SetButtonTextInset(
+            Button button,
+            Vector2 lowerLeftInset,
+            Vector2 upperRightInset,
+            int fontSize,
+            TextAnchor alignment)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            var text = button.GetComponentInChildren<Text>();
+            if (text == null)
+            {
+                return;
+            }
+
+            var rectTransform = text.GetComponent<RectTransform>();
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = lowerLeftInset;
+            rectTransform.offsetMax = new Vector2(-upperRightInset.x, -upperRightInset.y);
+            text.fontSize = fontSize;
+            text.alignment = alignment;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = Mathf.Max(10, fontSize - 5);
+            text.resizeTextMaxSize = fontSize;
+        }
+
+        private static void SetButtonLabel(Button button, string label)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            var text = button.GetComponentInChildren<Text>();
+            if (text != null)
+            {
+                text.text = label;
+            }
         }
 
         private static GameObject EnsurePanel(
@@ -931,7 +1242,7 @@ namespace AssetManager
             rectTransform.anchorMax = new Vector2(1f, 1f);
             rectTransform.pivot = new Vector2(0.5f, 1f);
             rectTransform.anchoredPosition = new Vector2(0f, -24f);
-            rectTransform.sizeDelta = new Vector2(-64f, 48f);
+            rectTransform.sizeDelta = new Vector2(-64f, 58f);
 
             var text = textObject.GetComponent<Text>();
             if (text == null)
@@ -941,8 +1252,13 @@ namespace AssetManager
 
             text.text = RunStatusPlaceholderText;
             text.alignment = TextAnchor.MiddleLeft;
-            text.fontSize = 24;
+            text.fontSize = 23;
             text.color = Color.white;
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = 16;
+            text.resizeTextMaxSize = 23;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
 
             if (text.font == null)
             {

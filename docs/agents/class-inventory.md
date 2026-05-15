@@ -174,8 +174,8 @@ Important distinction:
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays 보유 자원, 전문 자원 total/cap, 딜 total/cap, and the current short resource message. |
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary: 보유 자산 수, 현재 운용가치, 이번 분기 운용 수익, and a short ordered 보유 자산 list. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 UI; displays 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 summaries. |
-| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and clickable visible market card summary buttons. |
-| `ReservationView` | `Runtime/ReservationView.cs` | Renders the 예약 구역 count and three reserved-card summary slots in the 시장 area, with clickable occupied slots for 예약 카드 상세보기. |
+| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and clickable visible market card summaries with cost, 운용가치, 운용 수익, tags, and action-context hints. |
+| `ReservationView` | `Runtime/ReservationView.cs` | Renders the 예약 구역 count and three reserved-card card summaries in the 시장 area, with clickable occupied slots for 예약 카드 상세보기. |
 | `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Shows 중앙 은행 entry, GainLiquidity resource buttons, selected resource text, close gating, and cap feedback through `LiquidityAction`. |
 | `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, 비용 슬롯 state, final cash cost, chip placement/recovery buttons, buy availability, and 예약 button visibility/availability. |
 | `MarketTapeDevControls` | `Runtime/MarketTapeDevControls.cs` | Temporary Market-state-only development buttons for 시장 테이프 진행 and 시장 테이프 갱신. |
@@ -199,5 +199,4 @@ Important distinction:
 
 ## Notes For Next Cleanup
 
-- `MarketTapeView` currently displays the label `인컴`; the glossary prefers 운용 수익 language. Do not spread the older term into new user-facing UI.
 - `RunCalendar` still owns playable schedule routing, while `RunStaticDataSet.Quarters` now supplies MVP target rows for every playable 분기. Keep those responsibilities separate unless a future data unification issue explicitly changes it.

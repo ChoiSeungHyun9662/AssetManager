@@ -123,15 +123,16 @@ namespace AssetManager
             }
 
             var display = run.CardDetail.DisplayData;
+            var payment = run.CardDetail.PendingPayment;
             SetText(nameText, display.DisplayName);
             SetText(descriptionText, display.Description);
             SetText(costText, FormatCosts(display));
-            SetText(managementValueText, "운용가치 " + display.ManagementValue);
-            SetText(incomeText, "운용 수익 " + display.Income);
+            SetText(managementValueText, "장기\n운용가치 " + display.ManagementValue);
+            SetText(incomeText, "단기\n운용 수익 " + display.Income);
             SetText(tagsText, FormatTags(display));
             SetText(rarityText, "희귀도 " + display.Rarity);
-            SetText(paymentSlotsText, FormatPaymentSlots(run.CardDetail.PendingPayment));
-            SetText(finalCashCostText, "최종 현금 " + run.CardDetail.PendingPayment.FinalCashCost);
+            SetText(paymentSlotsText, "비용 슬롯\n" + FormatPaymentSlots(payment));
+            SetText(finalCashCostText, FormatFinalCashCost(payment));
             SetActive(buyButton != null ? buyButton.gameObject : null, true);
             if (buyButton != null)
             {
@@ -148,21 +149,39 @@ namespace AssetManager
             SetActive(placeCreditButton != null ? placeCreditButton.gameObject : null, true);
             SetActive(placeCommodityButton != null ? placeCommodityButton.gameObject : null, true);
             SetActive(placeDealButton != null ? placeDealButton.gameObject : null, true);
-            ShowPaymentSlotButtons(run.CardDetail.PendingPayment);
+            ShowPaymentSlotButtons(payment);
         }
 
         private static string FormatCosts(CardDetailDisplayData display)
         {
             var builder = new StringBuilder();
+            builder.AppendLine("매수 비용");
             builder.Append("현금 ");
             builder.Append(display.CashCost);
+            builder.AppendLine();
+            builder.Append(FormatProfessionalCosts(display.ProfessionalCosts));
+            return builder.ToString();
+        }
 
-            foreach (var cost in display.ProfessionalCosts)
+        private static string FormatProfessionalCosts(IReadOnlyList<ProfessionalResourceCost> costs)
+        {
+            if (costs.Count == 0)
             {
-                builder.Append(" | ");
-                builder.Append(cost.ResourceType);
+                return "전문자원 없음";
+            }
+
+            var builder = new StringBuilder();
+            builder.Append("전문자원 ");
+            for (var i = 0; i < costs.Count; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(", ");
+                }
+
+                builder.Append(ResourceLedger.GetResourceDisplayName(costs[i].ResourceType));
                 builder.Append(" ");
-                builder.Append(cost.Amount);
+                builder.Append(costs[i].Amount);
             }
 
             return builder.ToString();
@@ -182,13 +201,40 @@ namespace AssetManager
             {
                 if (i > 0)
                 {
-                    builder.Append(", ");
+                    builder.Append(" / ");
                 }
 
                 builder.Append(display.Tags[i].DisplayName);
             }
 
             return builder.ToString();
+        }
+
+        private static string FormatFinalCashCost(PurchasePaymentState payment)
+        {
+            var placedDealCount = CountPlacedDeal(payment);
+            return "최종 현금 "
+                + payment.FinalCashCost
+                + "\n기본 "
+                + payment.CashCost
+                + " - 딜 "
+                + placedDealCount
+                + " + 인플레 "
+                + payment.InflationCostModifier;
+        }
+
+        private static int CountPlacedDeal(PurchasePaymentState payment)
+        {
+            var count = 0;
+            foreach (var slot in payment.Slots)
+            {
+                if (slot.PlacedResourceType == ResourceType.Deal)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static string FormatPaymentSlots(PurchasePaymentState payment)
