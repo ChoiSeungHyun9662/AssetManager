@@ -112,20 +112,22 @@ namespace AssetManager
 
     public sealed class CardDetailState
     {
-        public static readonly CardDetailState Empty = new CardDetailState(null, null, null, null, false);
+        public static readonly CardDetailState Empty = new CardDetailState(null, null, null, null, false, false);
 
         public CardDetailState(
             AssetCardRuntimeData selectedCard,
             PurchaseSource? purchaseSource,
             CardDetailDisplayData displayData,
             PurchasePaymentState pendingPayment,
-            bool isOpenedDuringExtraBuy)
+            bool isOpenedDuringExtraBuy,
+            bool isPreview)
         {
             SelectedCard = selectedCard;
             PurchaseSource = purchaseSource;
             DisplayData = displayData;
             PendingPayment = pendingPayment;
             IsOpenedDuringExtraBuy = isOpenedDuringExtraBuy;
+            IsPreview = isPreview;
         }
 
         public AssetCardRuntimeData SelectedCard { get; }
@@ -133,10 +135,13 @@ namespace AssetManager
         public CardDetailDisplayData DisplayData { get; }
         public PurchasePaymentState PendingPayment { get; }
         public bool IsOpenedDuringExtraBuy { get; }
+        public bool IsPreview { get; }
+        public bool ShouldShowBuyButton => SelectedCard != null && !IsPreview;
         public bool ShouldShowReserveButton =>
             SelectedCard != null
             && PurchaseSource == AssetManager.PurchaseSource.MarketTape
-            && !IsOpenedDuringExtraBuy;
+            && !IsOpenedDuringExtraBuy
+            && !IsPreview;
 
         public static CardDetailState Open(
             AssetCardRuntimeData selectedCard,
@@ -149,7 +154,19 @@ namespace AssetManager
                 purchaseSource,
                 new CardDetailDisplayData(selectedCard.Card),
                 new PurchasePaymentState(selectedCard.Card, inflationCostModifier),
-                isOpenedDuringExtraBuy);
+                isOpenedDuringExtraBuy,
+                false);
+        }
+
+        public static CardDetailState OpenPreview(AssetCardRuntimeData selectedCard)
+        {
+            return new CardDetailState(
+                selectedCard,
+                null,
+                new CardDetailDisplayData(selectedCard.Card),
+                null,
+                false,
+                true);
         }
     }
 }

@@ -2,8 +2,8 @@
 
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
-Last reviewed: 2026-05-14
-Covered implementation slices: issues 00-13
+Last reviewed: 2026-05-15
+Covered implementation slices: issues 00-17
 
 ## Update Workflow
 
@@ -60,12 +60,29 @@ Current runtime flow:
 - `PurchasePayment` now routes first purchases that grant an extra buy into `ExtraBuyAction` instead of consuming the 영업일 immediately, while purchases made with the right consume it and ignore nested GrantExtraBuyAction grants.
 - `RunStatusFormatter`, `RunProgressControls`, `LiquidityActionView`, `MarketTapeDevControls`, and `ResourceDevControls` expose or respect the pending extra-buy state so only market/reserved card purchase or forfeiture remains available.
 
+## Issue 15 Inventory Notes
+
+- `RunStatusFormatter` now keeps player resources out of the top status bar; resource counts live in the bottom chip tray.
+- `ResourceHud` now renders the bottom tray as separate resource object lanes: cash as `<value>$`, professional resources and Deal as image-only chip stacks, plus short message text.
+- `ProjectShell` creates those tray lanes and image placeholders only when they are missing, preserving existing Editor-authored RectTransform layout on later bootstraps; it also removes legacy root-level Market Tape zone duplicates so the zone panels live under `Market Area Market Panel`, removes legacy Market Tape zone title Text objects, and keeps Reservation/Central Bank overlays directly under `UI Root`.
+
+## Issue 16 Inventory Notes
+
+- `MarketTapeView` now renders market asset cards with compact icon/chip tokens for cash, professional resources, income, and management value instead of prose labels.
+- `ProjectShell` keeps the market tape as three columns while giving 예비 시장 cards smaller preview-card geometry.
+- `MarketAreaFlow`, `CardDetailState`, and `CardDetailView` now distinguish 예비 시장 previews from transaction card details, hiding Buy/Reserve and payment controls for preview cards.
+
+## Issue 17 Inventory Notes
+
+- `ProjectShell` now creates a named Payment Pot background in 카드 상세보기, loads `PaymentPot_Background_Default` when available, and keeps the placeholder/warning path for missing payment pot and resource object sprites.
+- `CardDetailView` now treats buyable transaction payment as a Payment Pot surface: only 전문 자원 비용 슬롯 are shown in the pot, preview details hide the pot, and the existing chip placement/recovery buttons continue to update final cash cost and Buy availability.
+
 ## Shell And Editor Setup
 
 | Type | File | Purpose |
 | --- | --- | --- |
 | `ProjectShellRoots` | `Runtime/ProjectShell.cs` | Small return value for the ensured Game Root and UI Canvas. |
-| `ProjectShell` | `Runtime/ProjectShell.cs` | Central scene/UI factory for MVP shell objects, names, paths, Canvas settings, placeholder panels, status HUD, market tape UI, and temporary controls. |
+| `ProjectShell` | `Runtime/ProjectShell.cs` | Central scene/UI factory for MVP shell objects, names, paths, Canvas settings, placeholder panels, status HUD, market tape UI, Payment Pot UI, and temporary controls; applies default layout only to UI objects it creates in the current bootstrap pass, keeps Market Tape zone panels under `Market Area Market Panel`, and keeps Reservation/Central Bank overlays under `UI Root`. |
 | `ProjectShell.PlaceholderPanel` | `Runtime/ProjectShell.cs` | Private helper return value for placeholder panel GameObject/Text pairs. |
 | `BootstrapSceneLoader` | `Runtime/BootstrapSceneLoader.cs` | Play-mode component that moves from Bootstrap scene to MainGame scene. |
 | `AssetManagerProjectSetup` | `Editor/AssetManagerProjectSetup.cs` | Unity editor menu commands for creating/verifying scenes, build scene entries, static data asset, and required shell objects. |
@@ -106,7 +123,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기. |
 | `PaymentSlotState` | `Runtime/CardDetailState.cs` | One 비용 슬롯 in 카드 상세보기: required 전문 자원 and optional placed 전문 자원 or 딜. |
 | `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Pending 자산 매수 payment in 카드 상세보기: card id, base cash cost, 비용 슬롯 list, current quarter inflation modifier, and 딜-discounted final cash cost. |
-| `CardDetailState` | `Runtime/CardDetailState.cs` | Transient 카드 상세보기 state: selected card, 매수 출처, display data, pending payment, extra-buy flag, and Reserve visibility condition. |
+| `CardDetailState` | `Runtime/CardDetailState.cs` | Transient 카드 상세보기 state: selected card, 매수 출처, display data, pending payment, extra-buy flag, preview flag, and Buy/Reserve visibility conditions. |
 | `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 환매 압력. |
 | `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, and failure reason. Most transitions create a new instance. |
 
@@ -133,7 +150,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunCalendarDefinition` | `Runtime/RunCalendar.cs` | Query object for playable quarters, 4Q 휴가, and total playable 영업일. |
 | `RunCalendar` | `Runtime/RunCalendar.cs` | Factory for the MVP calendar: 1/2회계년도 1Q-3Q have 4 영업일; 3회계년도 1Q-4Q have 5 영업일. |
 | `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, applies 보유 자산 영업일 시작 운용 수익 through ResourceLedger, settles the last 영업일 into 분기 마감, blocks schedule progress after 런 실패, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
-| `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for entering/closing 카드 상세보기 and gating 다음 영업일 to Market state only. |
+| `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for entering/closing buyable 카드 상세보기 or 예비 시장 preview detail, and gating 다음 영업일 to Market state only. |
 | `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 운용 수익, capped 전문 자원, and capped 딜. |
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
 | `QuarterSettlement` | `Runtime/QuarterSettlement.cs` | Public rule service for 분기 마감 정산, 정산 수익 application, 목표 달성률, 환매 압력 increase, and QuarterEndResult creation. |
@@ -168,16 +185,16 @@ Important distinction:
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus market/reserved card clicks to rule services, and refreshes all visible UI including GainLiquidity. |
-| `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD text from `RunSessionState`. |
+| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus zone-aware market/reserved card clicks to rule services, and refreshes all visible UI including GainLiquidity. |
+| `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD time/progress/pressure text from `RunSessionState` without player resource counts. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
-| `ResourceHud` | `Runtime/ResourceHud.cs` | Displays 보유 자원, 전문 자원 total/cap, 딜 total/cap, and the current short resource message. |
+| `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, professional resource chip stacks, Deal chip stack, manual Sprite slots, current short resource message, and runtime chip stack instances anchored to the configured base images. |
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary: 보유 자산 수, 현재 운용가치, 이번 분기 운용 수익, and a short ordered 보유 자산 list. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 UI; displays 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 summaries. |
-| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders market tape zone names and clickable visible market card summaries with cost, 운용가치, 운용 수익, tags, and action-context hints. |
+| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders clickable visible market cards using icon/chip tokens for costs, 운용가치, 운용 수익, tags, and action-context hints; zone identity is left to the Market Tape panel backgrounds instead of title Text objects. |
 | `ReservationView` | `Runtime/ReservationView.cs` | Renders the 예약 구역 count and three reserved-card card summaries in the 시장 area, with clickable occupied slots for 예약 카드 상세보기. |
-| `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Shows 중앙 은행 entry, GainLiquidity resource buttons, selected resource text, close gating, and cap feedback through `LiquidityAction`. |
-| `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, 비용 슬롯 state, final cash cost, chip placement/recovery buttons, buy availability, and 예약 button visibility/availability. |
+| `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Shows 중앙 은행 entry, GainLiquidity resource-object choices with manual Sprite slots for cash/research/credit/commodity, selected resource text, close gating, and cap feedback through `LiquidityAction`. |
+| `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, Payment Pot professional-cost slots, final cash cost, chip placement/recovery buttons, buy availability, 예약 visibility/availability, and preview-only detail without transaction controls. |
 | `MarketTapeDevControls` | `Runtime/MarketTapeDevControls.cs` | Temporary Market-state-only development buttons for 시장 테이프 진행 and 시장 테이프 갱신. |
 | `ResourceDevControls` | `Runtime/ResourceDevControls.cs` | Temporary Market-state-only development buttons for adding 조달 현금, 운용 수익, 전문 자원, and 딜 through `ResourceLedger`. |
 

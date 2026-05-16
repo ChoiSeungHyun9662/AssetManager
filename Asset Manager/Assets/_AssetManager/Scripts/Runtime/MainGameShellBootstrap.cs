@@ -68,12 +68,19 @@ namespace AssetManager
 
         public void OpenMarketCardDetail(AssetCardRuntimeData selectedCard)
         {
+            OpenMarketCardDetail(selectedCard, MarketTapeZone.CurrentMarket);
+        }
+
+        public void OpenMarketCardDetail(AssetCardRuntimeData selectedCard, MarketTapeZone zone)
+        {
             if (CurrentRun == null)
             {
                 return;
             }
 
-            CurrentRun = MarketAreaFlow.OpenMarketCardDetail(CurrentRun, selectedCard);
+            CurrentRun = zone == MarketTapeZone.UpcomingMarket
+                ? MarketAreaFlow.OpenMarketPreviewCardDetail(CurrentRun, selectedCard)
+                : MarketAreaFlow.OpenMarketCardDetail(CurrentRun, selectedCard);
             resourceFeedbackMessage = CurrentRun.CardDetail.ShouldShowReserveButton
                 && !ReservationAction.CanReserve(CurrentRun)
                 ? "예약 구역이 가득 찼습니다."

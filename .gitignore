@@ -27,3 +27,7 @@
 /EditModeRun.log
 /PlayModeRun.log
 /.scratch/test-results/
+
+# Assets
+/Assets
+/Asset Manager/assets/resources

@@ -11,48 +11,30 @@ namespace AssetManager
         [SerializeField]
         private GameObject marketPanel;
 
-        [SerializeField]
-        private Text sellImminentText;
-
-        [SerializeField]
-        private Text currentMarketText;
-
-        [SerializeField]
-        private Text upcomingMarketText;
-
         private readonly List<Button> sellImminentButtons = new List<Button>();
         private readonly List<Button> currentMarketButtons = new List<Button>();
         private readonly List<Button> upcomingMarketButtons = new List<Button>();
-        private Action<AssetCardRuntimeData> onMarketCardSelected;
+        private Action<AssetCardRuntimeData, MarketTapeZone> onMarketCardSelected;
 
         public GameObject MarketPanel => marketPanel;
-        public Text SellImminentText => sellImminentText;
-        public Text CurrentMarketText => currentMarketText;
-        public Text UpcomingMarketText => upcomingMarketText;
         public IReadOnlyList<Button> SellImminentButtons => sellImminentButtons;
         public IReadOnlyList<Button> CurrentMarketButtons => currentMarketButtons;
         public IReadOnlyList<Button> UpcomingMarketButtons => upcomingMarketButtons;
 
         public void Bind(
             GameObject market,
-            Text sellImminent,
-            Text currentMarket,
-            Text upcomingMarket,
             IEnumerable<Button> sellImminentCardButtons,
             IEnumerable<Button> currentMarketCardButtons,
             IEnumerable<Button> upcomingMarketCardButtons)
         {
             marketPanel = market;
-            sellImminentText = sellImminent;
-            currentMarketText = currentMarket;
-            upcomingMarketText = upcomingMarket;
 
             ReplaceButtons(sellImminentButtons, sellImminentCardButtons);
             ReplaceButtons(currentMarketButtons, currentMarketCardButtons);
             ReplaceButtons(upcomingMarketButtons, upcomingMarketCardButtons);
         }
 
-        public void SetMarketCardSelectedHandler(Action<AssetCardRuntimeData> handler)
+        public void SetMarketCardSelectedHandler(Action<AssetCardRuntimeData, MarketTapeZone> handler)
         {
             onMarketCardSelected = handler;
         }
@@ -60,12 +42,6 @@ namespace AssetManager
         public void Show(RunSessionState run)
         {
             SetActive(marketPanel, run.BusinessDay.MarketArea == MarketAreaState.Market);
-            SetZoneTitle(sellImminentText, "매도 임박", "다음 진행 시 사라짐");
-            SetZoneTitle(currentMarketText, "현재 시장", "매수 / 예약 가능");
-            SetZoneTitle(upcomingMarketText, "예비 시장", "다음 진행 시 이동");
-            SetZoneColor(sellImminentText, new Color(0.17f, 0.09f, 0.08f, 0.94f));
-            SetZoneColor(currentMarketText, new Color(0.07f, 0.15f, 0.13f, 0.96f));
-            SetZoneColor(upcomingMarketText, new Color(0.09f, 0.11f, 0.18f, 0.94f));
 
             ShowCards(sellImminentButtons, run.MarketTape.SellImminentCards, MarketTapeZone.SellImminent);
             ShowCards(currentMarketButtons, run.MarketTape.CurrentMarketCards, MarketTapeZone.CurrentMarket);
@@ -98,35 +74,35 @@ namespace AssetManager
                 var card = cards[i];
                 SetButtonText(button, FormatCard(card));
                 StyleCardButton(button, card, zone);
-                button.onClick.AddListener(() => onMarketCardSelected?.Invoke(card));
+                button.onClick.AddListener(() => onMarketCardSelected?.Invoke(card, zone));
             }
         }
 
         private static string FormatCard(AssetCardRuntimeData card)
         {
             var builder = new StringBuilder();
-            builder.AppendLine(card.Card.DisplayName);
-            builder.Append("현금 ");
+            builder.Append("₩");
             builder.Append(card.Card.CashCost);
-            builder.Append("  |  ");
+            builder.Append("  ");
             builder.Append(FormatProfessionalCosts(card.Card.ProfessionalCosts));
-            builder.AppendLine();
-            builder.Append("운용가치 ");
-            builder.Append(card.Card.ManagementValue);
-            builder.Append("  |  운용 수익 ");
+            builder.Append("        ↗");
             builder.Append(card.Card.Income);
-
             if (card.Card.GrantsExtraBuyAction)
             {
-                builder.Append("  |  추가 매수권");
+                builder.Append("  +↺");
             }
 
+            builder.AppendLine();
+            builder.Append("■ ");
+            builder.AppendLine(card.Card.DisplayName);
             var tags = FormatTags(card.Card.Tags);
             if (tags != string.Empty)
             {
-                builder.AppendLine();
-                builder.Append(tags);
+                builder.AppendLine(tags);
             }
+
+            builder.Append("◆");
+            builder.Append(card.Card.ManagementValue);
 
             return builder.ToString();
         }
@@ -135,7 +111,7 @@ namespace AssetManager
         {
             if (costs.Count == 0)
             {
-                return "전문자원 없음";
+                return "—";
             }
 
             var builder = new StringBuilder();
@@ -146,12 +122,30 @@ namespace AssetManager
                     builder.Append(", ");
                 }
 
-                builder.Append(ResourceLedger.GetResourceDisplayName(costs[i].ResourceType));
-                builder.Append(" ");
+                builder.Append(GetResourceToken(costs[i].ResourceType));
                 builder.Append(costs[i].Amount);
             }
 
             return builder.ToString();
+        }
+
+        private static string GetResourceToken(ResourceType resourceType)
+        {
+            switch (resourceType)
+            {
+                case ResourceType.Research:
+                    return "R";
+                case ResourceType.Credit:
+                    return "C";
+                case ResourceType.Commodity:
+                    return "M";
+                case ResourceType.Deal:
+                    return "D";
+                case ResourceType.Cash:
+                    return "₩";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(resourceType), resourceType, null);
+            }
         }
 
         private static string FormatTags(IReadOnlyList<TagData> tags)
@@ -187,12 +181,15 @@ namespace AssetManager
             if (text != null)
             {
                 text.alignment = TextAnchor.UpperLeft;
-                text.fontSize = 16;
+                text.fontSize = zone == MarketTapeZone.UpcomingMarket ? 14 : 16;
                 text.resizeTextForBestFit = true;
-                text.resizeTextMinSize = 12;
-                text.resizeTextMaxSize = 16;
+                text.resizeTextMinSize = zone == MarketTapeZone.UpcomingMarket ? 10 : 12;
+                text.resizeTextMaxSize = zone == MarketTapeZone.UpcomingMarket ? 14 : 16;
                 text.horizontalOverflow = HorizontalWrapMode.Wrap;
                 text.verticalOverflow = VerticalWrapMode.Truncate;
+                text.color = zone == MarketTapeZone.UpcomingMarket
+                    ? new Color(0.78f, 0.82f, 0.86f, 0.86f)
+                    : Color.white;
             }
         }
 
@@ -215,30 +212,6 @@ namespace AssetManager
             return zone == MarketTapeZone.CurrentMarket
                 ? new Color(0.12f, 0.18f, 0.17f, 0.98f)
                 : new Color(0.10f, 0.13f, 0.15f, 0.96f);
-        }
-
-        private static void SetZoneTitle(Text text, string title, string subtitle)
-        {
-            SetText(text, title + "\n" + subtitle);
-            if (text != null)
-            {
-                text.fontSize = 19;
-                text.lineSpacing = 0.9f;
-            }
-        }
-
-        private static void SetZoneColor(Text text, Color color)
-        {
-            if (text == null || text.transform.parent == null)
-            {
-                return;
-            }
-
-            var image = text.transform.parent.GetComponent<Image>();
-            if (image != null)
-            {
-                image.color = color;
-            }
         }
 
         private static void ReplaceButtons(List<Button> target, IEnumerable<Button> source)
@@ -264,12 +237,5 @@ namespace AssetManager
             }
         }
 
-        private static void SetText(Text text, string value)
-        {
-            if (text != null)
-            {
-                text.text = value;
-            }
-        }
     }
 }

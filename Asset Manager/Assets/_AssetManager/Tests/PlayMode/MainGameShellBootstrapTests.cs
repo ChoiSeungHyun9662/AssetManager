@@ -85,9 +85,22 @@ namespace AssetManager.Tests
 
             var initialCash = bootstrap.CurrentRun.Resources.Cash;
             var resourceText = FindUiObject(ProjectShell.ResourceHudTextName).GetComponent<Text>();
+            var cashText = FindUiObject(ProjectShell.ResourceHudCashTextName).GetComponent<Text>();
+            var researchText = FindUiObject(ProjectShell.ResourceHudResearchTextName).GetComponent<Text>();
+            var creditText = FindUiObject(ProjectShell.ResourceHudCreditTextName).GetComponent<Text>();
+            var commodityText = FindUiObject(ProjectShell.ResourceHudCommodityTextName).GetComponent<Text>();
+            var dealText = FindUiObject(ProjectShell.ResourceHudDealTextName).GetComponent<Text>();
+            var resourceHud = FindUiObject(ProjectShell.UiRootName).GetComponent<ResourceHud>();
+            SetPrivateSprite(resourceHud, "researchChipSprite", CreateTestSprite());
 
-            Assert.That(resourceText.text, Does.Contain("전문 자원 0/10"));
-            Assert.That(resourceText.text, Does.Contain("딜 0/3"));
+            Assert.That(resourceText.text, Is.Empty);
+            Assert.That(cashText.text, Is.EqualTo(initialCash + "$"));
+            Assert.That(cashText.text, Does.Not.Contain("지폐다발"));
+            Assert.That(cashText.text, Does.Not.Contain("칩"));
+            Assert.That(researchText.text, Is.Empty);
+            Assert.That(creditText.text, Is.Empty);
+            Assert.That(commodityText.text, Is.Empty);
+            Assert.That(dealText.text, Is.Empty);
 
             FindUiObject(ProjectShell.ResourceDevFundingCashButtonName).GetComponent<Button>().onClick.Invoke();
 
@@ -95,7 +108,7 @@ namespace AssetManager.Tests
 
             Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(initialCash + 1));
             Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(0));
-            Assert.That(FindUiObject(ProjectShell.ResourceHudTextName).GetComponent<Text>().text, Does.Contain($"현금 {initialCash + 1}"));
+            Assert.That(FindUiObject(ProjectShell.ResourceHudCashTextName).GetComponent<Text>().text, Is.EqualTo((initialCash + 1) + "$"));
 
             FindUiObject(ProjectShell.ResourceDevEarnedCashButtonName).GetComponent<Button>().onClick.Invoke();
 
@@ -105,7 +118,174 @@ namespace AssetManager.Tests
             Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.Performance.CurrentFiscalYearEarnedCash, Is.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.Performance.TotalEarnedCash, Is.EqualTo(1));
-            Assert.That(FindUiObject(ProjectShell.ResourceHudTextName).GetComponent<Text>().text, Does.Contain($"현금 {initialCash + 2}"));
+            Assert.That(FindUiObject(ProjectShell.ResourceHudCashTextName).GetComponent<Text>().text, Is.EqualTo((initialCash + 2) + "$"));
+
+            FindUiObject(ProjectShell.ResourceDevResearchButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.ResourceDevResearchButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            var updatedResearchText = FindUiObject(ProjectShell.ResourceHudResearchTextName).GetComponent<Text>().text;
+            Assert.That(updatedResearchText, Is.Empty);
+
+            var firstResearchChip = FindUiObject("Resource Hud Research Image").GetComponent<Image>();
+            var secondResearchChip = FindUiObject("Resource Hud Research Image Stack 1").GetComponent<Image>();
+            Assert.That(firstResearchChip.enabled, Is.True);
+            Assert.That(secondResearchChip.enabled, Is.True);
+            Assert.That(
+                secondResearchChip.GetComponent<RectTransform>().anchoredPosition,
+                Is.Not.EqualTo(firstResearchChip.GetComponent<RectTransform>().anchoredPosition));
+            Assert.That(
+                secondResearchChip.GetComponent<RectTransform>().anchoredPosition.x,
+                Is.GreaterThan(firstResearchChip.GetComponent<RectTransform>().anchoredPosition.x));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapPreservesExistingResourceHudPanelLayout()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPreservesHudLayoutTests");
+            SceneManager.SetActiveScene(scene);
+
+            var uiRoot = new GameObject(ProjectShell.UiRootName);
+            var existingPanel = new GameObject(ProjectShell.ResourceHudPanelName, typeof(RectTransform));
+            existingPanel.transform.SetParent(uiRoot.transform, false);
+
+            var panelRect = existingPanel.GetComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0f, 0f);
+            panelRect.anchorMax = new Vector2(0f, 0f);
+            panelRect.pivot = new Vector2(0f, 0f);
+            panelRect.anchoredPosition = new Vector2(42f, 84f);
+            panelRect.sizeDelta = new Vector2(640f, 220f);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var updatedRect = FindUiObject(ProjectShell.ResourceHudPanelName).GetComponent<RectTransform>();
+            Assert.That(updatedRect.anchorMin, Is.EqualTo(new Vector2(0f, 0f)));
+            Assert.That(updatedRect.anchorMax, Is.EqualTo(new Vector2(0f, 0f)));
+            Assert.That(updatedRect.pivot, Is.EqualTo(new Vector2(0f, 0f)));
+            Assert.That(updatedRect.anchoredPosition, Is.EqualTo(new Vector2(42f, 84f)));
+            Assert.That(updatedRect.sizeDelta, Is.EqualTo(new Vector2(640f, 220f)));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapRemovesRootLevelMarketTapeZoneDuplicates()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapRemovesMarketTapeDuplicatesTests");
+            SceneManager.SetActiveScene(scene);
+
+            var uiRoot = new GameObject(ProjectShell.UiRootName);
+            var marketPanel = new GameObject(ProjectShell.MarketAreaMarketPanelName, typeof(RectTransform));
+            marketPanel.transform.SetParent(uiRoot.transform, false);
+
+            CreateChild(marketPanel.transform, ProjectShell.MarketTapeSellImminentPanelName);
+            CreateChild(marketPanel.transform, ProjectShell.MarketTapeCurrentMarketPanelName);
+            CreateChild(marketPanel.transform, ProjectShell.MarketTapeUpcomingMarketPanelName);
+            CreateChild(uiRoot.transform, ProjectShell.MarketTapeSellImminentPanelName);
+            CreateChild(uiRoot.transform, ProjectShell.MarketTapeCurrentMarketPanelName);
+            CreateChild(uiRoot.transform, ProjectShell.MarketTapeUpcomingMarketPanelName);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var updatedUiRoot = GameObject.Find(ProjectShell.UiRootName).transform;
+            var updatedMarketPanel = updatedUiRoot.Find(ProjectShell.MarketAreaMarketPanelName);
+
+            Assert.That(updatedUiRoot.Find(ProjectShell.MarketTapeSellImminentPanelName), Is.Null);
+            Assert.That(updatedUiRoot.Find(ProjectShell.MarketTapeCurrentMarketPanelName), Is.Null);
+            Assert.That(updatedUiRoot.Find(ProjectShell.MarketTapeUpcomingMarketPanelName), Is.Null);
+            Assert.That(updatedMarketPanel.Find(ProjectShell.MarketTapeSellImminentPanelName), Is.Not.Null);
+            Assert.That(updatedMarketPanel.Find(ProjectShell.MarketTapeCurrentMarketPanelName), Is.Not.Null);
+            Assert.That(updatedMarketPanel.Find(ProjectShell.MarketTapeUpcomingMarketPanelName), Is.Not.Null);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapKeepsMarketOverlaysUnderUiRoot()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapKeepsMarketOverlaysUnderUiRootTests");
+            SceneManager.SetActiveScene(scene);
+
+            var uiRoot = new GameObject(ProjectShell.UiRootName);
+            var marketPanel = new GameObject(ProjectShell.MarketAreaMarketPanelName, typeof(RectTransform));
+            marketPanel.transform.SetParent(uiRoot.transform, false);
+            CreateChild(marketPanel.transform, ProjectShell.ReservationPanelName);
+            CreateChild(marketPanel.transform, ProjectShell.CentralBankButtonName);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var updatedUiRoot = GameObject.Find(ProjectShell.UiRootName).transform;
+            var updatedMarketPanel = updatedUiRoot.Find(ProjectShell.MarketAreaMarketPanelName);
+
+            Assert.That(updatedUiRoot.Find(ProjectShell.ReservationPanelName), Is.Not.Null);
+            Assert.That(updatedUiRoot.Find(ProjectShell.CentralBankButtonName), Is.Not.Null);
+            Assert.That(updatedMarketPanel.Find(ProjectShell.ReservationPanelName), Is.Null);
+            Assert.That(updatedMarketPanel.Find(ProjectShell.CentralBankButtonName), Is.Null);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapKeepsResourcesOutOfTopStatusAndShowsObjectChoices()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapResourceObjectTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var statusText = FindUiObject(ProjectShell.RunStatusTextName).GetComponent<Text>().text;
+            Assert.That(statusText, Does.Not.Contain("현금"));
+            Assert.That(statusText, Does.Not.Contain("리서치"));
+            Assert.That(statusText, Does.Not.Contain("신용"));
+            Assert.That(statusText, Does.Not.Contain("원자재"));
+            Assert.That(statusText, Does.Not.Contain("딜"));
+
+            FindUiObject(ProjectShell.CentralBankButtonName).GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.LiquidityActionCashButtonName).GetComponentInChildren<Text>().text, Does.Contain("지폐다발"));
+            Assert.That(FindUiObject(ProjectShell.LiquidityActionResearchButtonName).GetComponentInChildren<Text>().text, Does.Contain("칩"));
+            Assert.That(FindUiObject(ProjectShell.LiquidityActionCreditButtonName).GetComponentInChildren<Text>().text, Does.Contain("칩"));
+            Assert.That(FindUiObject(ProjectShell.LiquidityActionCommodityButtonName).GetComponentInChildren<Text>().text, Does.Contain("칩"));
+            Assert.That(
+                FindChild(GameObject.Find(ProjectShell.UiRootName).transform, "Liquidity Action Deal Button"),
+                Is.Null);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -167,26 +347,32 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            var sellImminentText = GameObject.Find(ProjectShell.MarketTapeSellImminentTextName);
-            var currentMarketText = GameObject.Find(ProjectShell.MarketTapeCurrentMarketTextName);
-            var upcomingMarketText = GameObject.Find(ProjectShell.MarketTapeUpcomingMarketTextName);
+            var marketPanel = FindUiObject(ProjectShell.MarketAreaMarketPanelName).transform;
 
-            Assert.That(sellImminentText, Is.Not.Null);
-            Assert.That(currentMarketText, Is.Not.Null);
-            Assert.That(upcomingMarketText, Is.Not.Null);
+            Assert.That(marketPanel.Find(ProjectShell.MarketTapeSellImminentPanelName), Is.Not.Null);
+            Assert.That(marketPanel.Find(ProjectShell.MarketTapeCurrentMarketPanelName), Is.Not.Null);
+            Assert.That(marketPanel.Find(ProjectShell.MarketTapeUpcomingMarketPanelName), Is.Not.Null);
+            Assert.That(FindChild(marketPanel, ProjectShell.MarketTapeSellImminentTextName), Is.Null);
+            Assert.That(FindChild(marketPanel, ProjectShell.MarketTapeCurrentMarketTextName), Is.Null);
+            Assert.That(FindChild(marketPanel, ProjectShell.MarketTapeUpcomingMarketTextName), Is.Null);
 
             var firstSellImminentCard = bootstrap.CurrentRun.MarketTape.SellImminentCards[0].Card;
-            var firstSellImminentButtonText = FindUiObject(ProjectShell.MarketTapeSellImminentCardButtonPrefix + "1")
-                .GetComponentInChildren<Text>()
-                .text;
+            var firstSellImminentButton = FindUiObject(ProjectShell.MarketTapeSellImminentCardButtonPrefix + "1");
+            var firstUpcomingMarketButton = FindUiObject(ProjectShell.MarketTapeUpcomingMarketCardButtonPrefix + "1");
+            var firstSellImminentButtonText = firstSellImminentButton.GetComponentInChildren<Text>().text;
 
-            Assert.That(sellImminentText.GetComponent<Text>().text, Is.Not.Empty);
-            Assert.That(currentMarketText.GetComponent<Text>().text, Is.Not.Empty);
-            Assert.That(upcomingMarketText.GetComponent<Text>().text, Is.Not.Empty);
             Assert.That(firstSellImminentButtonText, Does.Contain(firstSellImminentCard.DisplayName));
-            Assert.That(firstSellImminentButtonText, Does.Contain(firstSellImminentCard.CashCost.ToString()));
-            Assert.That(firstSellImminentButtonText, Does.Contain(firstSellImminentCard.ManagementValue.ToString()));
-            Assert.That(firstSellImminentButtonText, Does.Contain(firstSellImminentCard.Income.ToString()));
+            Assert.That(firstSellImminentButtonText, Does.Contain("₩" + firstSellImminentCard.CashCost));
+            Assert.That(firstSellImminentButtonText, Does.Contain("R1"));
+            Assert.That(firstSellImminentButtonText, Does.Contain("↗" + firstSellImminentCard.Income));
+            Assert.That(firstSellImminentButtonText, Does.Contain("◆" + firstSellImminentCard.ManagementValue));
+            Assert.That(firstSellImminentButtonText, Does.Not.Contain("현금"));
+            Assert.That(firstSellImminentButtonText, Does.Not.Contain("전문자원"));
+            Assert.That(firstSellImminentButtonText, Does.Not.Contain("운용가치"));
+            Assert.That(firstSellImminentButtonText, Does.Not.Contain("운용 수익"));
+            Assert.That(
+                firstSellImminentButton.GetComponent<RectTransform>().rect.height,
+                Is.GreaterThan(firstUpcomingMarketButton.GetComponent<RectTransform>().rect.height));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -242,6 +428,43 @@ namespace AssetManager.Tests
             Assert.That(marketPanel.activeSelf, Is.True);
             Assert.That(cardDetailPanel.activeSelf, Is.False);
             Assert.That(nextBusinessDayButton.interactable, Is.True);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapUpcomingMarketCardOpensPreviewWithoutTransactionActions()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapUpcomingPreviewTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedCard = bootstrap.CurrentRun.MarketTape.UpcomingMarketCards[0].Card;
+
+            FindUiObject(ProjectShell.MarketTapeUpcomingMarketCardButtonPrefix + "1")
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
+            Assert.That(bootstrap.CurrentRun.CardDetail.SelectedCard.Card.Id, Is.EqualTo(selectedCard.Id));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.True);
+            Assert.That(FindUiObject(ProjectShell.CardDetailNameTextName).GetComponent<Text>().text, Does.Contain(selectedCard.DisplayName));
+            Assert.That(FindUiObject(ProjectShell.CardDetailBuyButtonName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailReserveButtonName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).activeSelf, Is.False);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -329,6 +552,45 @@ namespace AssetManager.Tests
             Assert.That(
                 FindUiObject(ProjectShell.PortfolioOwnedCardsTextName).GetComponent<Text>().text,
                 Does.Contain(selectedCard.Card.DisplayName));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapCardDetailShowsPaymentPotForProfessionalCostSlotsOnly()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPaymentPotTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+
+            yield return null;
+
+            var paymentPot = FindUiObject(ProjectShell.CardDetailPaymentPotBackgroundName);
+            var paymentSlotsText = FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text;
+            var slotButtonText = FindUiObject(ProjectShell.CardDetailPaymentSlotButtonPrefix + "1")
+                .GetComponentInChildren<Text>()
+                .text;
+
+            Assert.That(paymentPot.activeSelf, Is.True);
+            Assert.That(paymentPot.GetComponent<Image>(), Is.Not.Null);
+            Assert.That(paymentSlotsText, Does.Contain("Payment Pot"));
+            Assert.That(paymentSlotsText, Does.Not.Contain("현금:"));
+            Assert.That(slotButtonText, Does.Contain("리서치"));
+            Assert.That(slotButtonText, Does.Contain("비어 있음"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -980,6 +1242,13 @@ namespace AssetManager.Tests
             return null;
         }
 
+        private static GameObject CreateChild(Transform parent, string name)
+        {
+            var child = new GameObject(name, typeof(RectTransform));
+            child.transform.SetParent(parent, false);
+            return child;
+        }
+
         private static RunSessionState WithRedemptionPressure(RunSessionState run, int currentPressure)
         {
             return new RunSessionState(
@@ -1082,6 +1351,21 @@ namespace AssetManager.Tests
             typeof(MainGameShellBootstrap)
                 .GetMethod("RefreshRunUi", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(bootstrap, new object[0]);
+        }
+
+        private static Sprite CreateTestSprite()
+        {
+            var texture = new Texture2D(2, 2);
+            texture.SetPixels(new[] { Color.white, Color.white, Color.white, Color.white });
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0f, 0f, 2f, 2f), new Vector2(0.5f, 0.5f));
+        }
+
+        private static void SetPrivateSprite(object target, string fieldName, Sprite sprite)
+        {
+            target.GetType()
+                .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(target, sprite);
         }
 
         private static System.Collections.Generic.List<string> CollectCardIds(

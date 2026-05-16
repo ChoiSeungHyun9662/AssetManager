@@ -18,6 +18,30 @@ namespace AssetManager
             return OpenCardDetail(run, selectedCard, PurchaseSource.Reserved);
         }
 
+        public static RunSessionState OpenMarketPreviewCardDetail(
+            RunSessionState run,
+            AssetCardRuntimeData selectedCard)
+        {
+            if (run == null)
+            {
+                throw new ArgumentNullException(nameof(run));
+            }
+
+            if (selectedCard == null)
+            {
+                throw new ArgumentNullException(nameof(selectedCard));
+            }
+
+            if (run.BusinessDay.Phase != BusinessDayPhase.AwaitingAction
+                || run.BusinessDay.MarketArea != MarketAreaState.Market
+                || run.BusinessDay.IsAwaitingExtraBuyChoice)
+            {
+                return run;
+            }
+
+            return WithMarketArea(run, MarketAreaState.CardDetail, CardDetailState.OpenPreview(selectedCard));
+        }
+
         public static RunSessionState CloseCardDetail(RunSessionState run)
         {
             if (run == null)

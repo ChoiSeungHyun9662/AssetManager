@@ -53,6 +53,32 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void IncompatibleProfessionalResourceChipPlacementIsRejectedAndLeavesSlotEmpty()
+        {
+            var card = new AssetCardData(
+                "research-only-payment-test-card",
+                "리서치 전용 테스트 카드",
+                "호환되지 않는 칩 거부를 확인하는 카드",
+                AssetRarity.Common,
+                1,
+                new[] { new ProfessionalResourceCost(ResourceType.Research, 1) },
+                1,
+                0,
+                new TagData[0]);
+            var runtimeCard = new AssetCardRuntimeData(card, AssetCardRuntimeState.Available, PurchaseSource.MarketTape);
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 1).Run;
+            run = WithCurrentMarketCard(run, runtimeCard, 0);
+            run = MarketAreaFlow.OpenMarketCardDetail(run, runtimeCard);
+
+            var result = PurchasePayment.PlaceChip(run, ResourceType.Credit);
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Run.CardDetail.PendingPayment.Slots[0].PlacedResourceType, Is.Null);
+            Assert.That(result.Run.Resources.Credit, Is.EqualTo(1));
+        }
+
+        [Test]
         public void DealChipPlacementCanFillAnyProfessionalSlotAndDiscountsCashCost()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
@@ -426,6 +452,33 @@ namespace AssetManager.Tests
                 run.Resources,
                 run.Performance,
                 ReplaceCard(run.AssetCards, grantRuntimeCard),
+                new MarketTapeState(
+                    run.MarketTape.SellImminentCards,
+                    currentMarketCards,
+                    run.MarketTape.UpcomingMarketCards),
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction);
+        }
+
+        private static RunSessionState WithCurrentMarketCard(
+            RunSessionState run,
+            AssetCardRuntimeData runtimeCard,
+            int slotIndex)
+        {
+            var currentMarketCards = new System.Collections.Generic.List<AssetCardRuntimeData>(run.MarketTape.CurrentMarketCards);
+            currentMarketCards[slotIndex] = runtimeCard;
+
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                ReplaceCard(run.AssetCards, runtimeCard),
                 new MarketTapeState(
                     run.MarketTape.SellImminentCards,
                     currentMarketCards,

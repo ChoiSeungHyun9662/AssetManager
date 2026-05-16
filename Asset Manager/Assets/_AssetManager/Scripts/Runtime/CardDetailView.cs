@@ -35,6 +35,9 @@ namespace AssetManager
         private Text paymentSlotsText;
 
         [SerializeField]
+        private GameObject paymentPotBackground;
+
+        [SerializeField]
         private Text finalCashCostText;
 
         [SerializeField]
@@ -82,6 +85,7 @@ namespace AssetManager
             Text tags,
             Text rarity,
             Text paymentSlots,
+            GameObject paymentPot,
             Text finalCashCost,
             IReadOnlyList<Button> slotButtons,
             Button placeResearch,
@@ -101,6 +105,7 @@ namespace AssetManager
             tagsText = tags;
             rarityText = rarity;
             paymentSlotsText = paymentSlots;
+            paymentPotBackground = paymentPot;
             finalCashCostText = finalCashCost;
             paymentSlotButtons = new List<Button>(slotButtons);
             placeResearchButton = placeResearch;
@@ -124,6 +129,7 @@ namespace AssetManager
 
             var display = run.CardDetail.DisplayData;
             var payment = run.CardDetail.PendingPayment;
+            var isTransactionDetail = run.CardDetail.ShouldShowBuyButton && payment != null;
             SetText(nameText, display.DisplayName);
             SetText(descriptionText, display.Description);
             SetText(costText, FormatCosts(display));
@@ -131,12 +137,19 @@ namespace AssetManager
             SetText(incomeText, "단기\n운용 수익 " + display.Income);
             SetText(tagsText, FormatTags(display));
             SetText(rarityText, "희귀도 " + display.Rarity);
-            SetText(paymentSlotsText, "비용 슬롯\n" + FormatPaymentSlots(payment));
-            SetText(finalCashCostText, FormatFinalCashCost(payment));
-            SetActive(buyButton != null ? buyButton.gameObject : null, true);
+            SetActive(paymentPotBackground, isTransactionDetail);
+            SetActive(paymentSlotsText != null ? paymentSlotsText.gameObject : null, isTransactionDetail);
+            SetActive(finalCashCostText != null ? finalCashCostText.gameObject : null, isTransactionDetail);
+            if (isTransactionDetail)
+            {
+                SetText(paymentSlotsText, "Payment Pot\n" + FormatPaymentSlots(payment));
+                SetText(finalCashCostText, FormatFinalCashCost(payment));
+            }
+
+            SetActive(buyButton != null ? buyButton.gameObject : null, isTransactionDetail);
             if (buyButton != null)
             {
-                buyButton.interactable = PurchasePayment.CanConfirmPurchase(run);
+                buyButton.interactable = isTransactionDetail && PurchasePayment.CanConfirmPurchase(run);
             }
 
             SetActive(reserveButton != null ? reserveButton.gameObject : null, run.CardDetail.ShouldShowReserveButton);
@@ -145,10 +158,10 @@ namespace AssetManager
                 reserveButton.interactable = ReservationAction.CanReserve(run);
             }
 
-            SetActive(placeResearchButton != null ? placeResearchButton.gameObject : null, true);
-            SetActive(placeCreditButton != null ? placeCreditButton.gameObject : null, true);
-            SetActive(placeCommodityButton != null ? placeCommodityButton.gameObject : null, true);
-            SetActive(placeDealButton != null ? placeDealButton.gameObject : null, true);
+            SetActive(placeResearchButton != null ? placeResearchButton.gameObject : null, isTransactionDetail);
+            SetActive(placeCreditButton != null ? placeCreditButton.gameObject : null, isTransactionDetail);
+            SetActive(placeCommodityButton != null ? placeCommodityButton.gameObject : null, isTransactionDetail);
+            SetActive(placeDealButton != null ? placeDealButton.gameObject : null, isTransactionDetail);
             ShowPaymentSlotButtons(payment);
         }
 
@@ -273,7 +286,7 @@ namespace AssetManager
             for (var i = 0; i < paymentSlotButtons.Count; i++)
             {
                 var button = paymentSlotButtons[i];
-                var hasSlot = i < payment.Slots.Count;
+                var hasSlot = payment != null && i < payment.Slots.Count;
                 SetActive(button != null ? button.gameObject : null, hasSlot);
 
                 if (button == null || !hasSlot)

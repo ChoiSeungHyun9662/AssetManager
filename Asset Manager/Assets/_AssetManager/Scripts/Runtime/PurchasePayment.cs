@@ -271,7 +271,8 @@ namespace AssetManager
                     run.CardDetail.PurchaseSource,
                     run.CardDetail.DisplayData,
                     payment,
-                    run.CardDetail.IsOpenedDuringExtraBuy));
+                    run.CardDetail.IsOpenedDuringExtraBuy,
+                    run.CardDetail.IsPreview));
         }
 
         private static IReadOnlyList<AssetCardRuntimeData> MarkCardOwned(

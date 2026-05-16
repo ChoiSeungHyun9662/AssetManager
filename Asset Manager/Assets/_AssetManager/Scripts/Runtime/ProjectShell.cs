@@ -76,6 +76,7 @@ namespace AssetManager
         public const string CardDetailTagsTextName = "Card Detail Tags Text";
         public const string CardDetailRarityTextName = "Card Detail Rarity Text";
         public const string CardDetailPaymentSlotsTextName = "Card Detail Payment Slots Text";
+        public const string CardDetailPaymentPotBackgroundName = "Card Detail Payment Pot Background";
         public const string CardDetailFinalCashCostTextName = "Card Detail Final Cash Cost Text";
         public const string CardDetailPaymentSlotButtonPrefix = "Card Detail Payment Slot Button ";
         public const string CardDetailPlaceResearchButtonName = "Card Detail Place Research Button";
@@ -88,6 +89,11 @@ namespace AssetManager
         public const string ResourceHudPanelName = "Resource Hud Panel";
         public const string ResourceHudTextName = "Resource Hud Text";
         public const string ResourceMessageTextName = "Resource Message Text";
+        public const string ResourceHudCashTextName = "Resource Hud Cash Text";
+        public const string ResourceHudResearchTextName = "Resource Hud Research Text";
+        public const string ResourceHudCreditTextName = "Resource Hud Credit Text";
+        public const string ResourceHudCommodityTextName = "Resource Hud Commodity Text";
+        public const string ResourceHudDealTextName = "Resource Hud Deal Text";
         public const string PortfolioSummaryPanelName = "Portfolio Summary Panel";
         public const string PortfolioSummaryTextName = "Portfolio Summary Text";
         public const string PortfolioOwnedCardsTextName = "Portfolio Owned Cards Text";
@@ -99,9 +105,12 @@ namespace AssetManager
         public const string ResourceDevDealButtonName = "Resource Dev Deal Button";
 
         public static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
+        private static readonly HashSet<GameObject> CreatedLayoutObjects = new HashSet<GameObject>();
 
         public static ProjectShellRoots EnsureMainGameRoots()
         {
+            CreatedLayoutObjects.Clear();
+
             var gameRoot = FindOrCreateRoot(GameRootName);
             var uiRoot = FindOrCreateRoot(UiRootName);
 
@@ -161,20 +170,35 @@ namespace AssetManager
             return new GameObject(name);
         }
 
+        private static GameObject CreateLayoutObject(string name)
+        {
+            var gameObject = new GameObject(name, typeof(RectTransform));
+            CreatedLayoutObjects.Add(gameObject);
+            return gameObject;
+        }
+
+        private static bool WasCreatedThisPass(GameObject gameObject)
+        {
+            return gameObject != null && CreatedLayoutObjects.Contains(gameObject);
+        }
+
         private static void EnsureReadyStatusText(Transform uiRoot)
         {
             var existing = uiRoot.Find(ReadyStatusTextName);
             var textObject = existing != null
                 ? existing.gameObject
-                : new GameObject(ReadyStatusTextName, typeof(RectTransform));
+                : CreateLayoutObject(ReadyStatusTextName);
 
             textObject.transform.SetParent(uiRoot, false);
 
             var rectTransform = textObject.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            rectTransform.anchoredPosition = Vector2.zero;
-            rectTransform.sizeDelta = new Vector2(640f, 80f);
+            if (WasCreatedThisPass(textObject))
+            {
+                rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+                rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                rectTransform.anchoredPosition = Vector2.zero;
+                rectTransform.sizeDelta = new Vector2(640f, 80f);
+            }
 
             var text = textObject.GetComponent<Text>();
             if (text == null)
@@ -183,9 +207,12 @@ namespace AssetManager
             }
 
             text.text = ReadyStatusText;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.fontSize = 32;
-            text.color = Color.white;
+            if (WasCreatedThisPass(textObject))
+            {
+                text.alignment = TextAnchor.MiddleCenter;
+                text.fontSize = 32;
+                text.color = Color.white;
+            }
 
             if (text.font == null)
             {
@@ -272,27 +299,87 @@ namespace AssetManager
             var panel = EnsurePanel(
                 uiRoot,
                 ResourceHudPanelName,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(32f, -84f),
-                new Vector2(820f, 92f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 24f),
+                new Vector2(1500f, 136f),
                 new Color(0.06f, 0.08f, 0.10f, 0.92f));
 
             var resourceText = EnsurePanelText(
                 panel.transform,
                 ResourceHudTextName,
-                new Vector2(18f, -12f),
-                new Vector2(784f, 36f),
-                20,
+                new Vector2(18f, -10f),
+                new Vector2(760f, 28f),
+                18,
                 TextAnchor.MiddleLeft);
             var messageText = EnsurePanelText(
                 panel.transform,
                 ResourceMessageTextName,
-                new Vector2(18f, -52f),
-                new Vector2(784f, 30f),
-                17,
+                new Vector2(830f, -10f),
+                new Vector2(630f, 28f),
+                16,
                 TextAnchor.MiddleLeft);
+            var cashText = EnsurePanelText(
+                panel.transform,
+                ResourceHudCashTextName,
+                new Vector2(18f, -46f),
+                new Vector2(250f, 74f),
+                18,
+                TextAnchor.UpperLeft);
+            var researchText = EnsurePanelText(
+                panel.transform,
+                ResourceHudResearchTextName,
+                new Vector2(288f, -46f),
+                new Vector2(250f, 74f),
+                18,
+                TextAnchor.UpperLeft);
+            var creditText = EnsurePanelText(
+                panel.transform,
+                ResourceHudCreditTextName,
+                new Vector2(558f, -46f),
+                new Vector2(250f, 74f),
+                18,
+                TextAnchor.UpperLeft);
+            var commodityText = EnsurePanelText(
+                panel.transform,
+                ResourceHudCommodityTextName,
+                new Vector2(828f, -46f),
+                new Vector2(250f, 74f),
+                18,
+                TextAnchor.UpperLeft);
+            var dealText = EnsurePanelText(
+                panel.transform,
+                ResourceHudDealTextName,
+                new Vector2(1098f, -46f),
+                new Vector2(250f, 74f),
+                18,
+                TextAnchor.UpperLeft);
+            var cashImage = EnsureResourceObjectImage(
+                panel.transform,
+                "Resource Hud Cash Image",
+                new Vector2(178f, -50f),
+                new Vector2(70f, 58f));
+            var researchImage = EnsureResourceObjectImage(
+                panel.transform,
+                "Resource Hud Research Image",
+                new Vector2(448f, -50f),
+                new Vector2(58f, 58f));
+            var creditImage = EnsureResourceObjectImage(
+                panel.transform,
+                "Resource Hud Credit Image",
+                new Vector2(718f, -50f),
+                new Vector2(58f, 58f));
+            var commodityImage = EnsureResourceObjectImage(
+                panel.transform,
+                "Resource Hud Commodity Image",
+                new Vector2(988f, -50f),
+                new Vector2(58f, 58f));
+            var dealImage = EnsureResourceObjectImage(
+                panel.transform,
+                "Resource Hud Deal Image",
+                new Vector2(1258f, -50f),
+                new Vector2(58f, 58f));
 
             var hud = uiRoot.GetComponent<ResourceHud>();
             if (hud == null)
@@ -300,7 +387,20 @@ namespace AssetManager
                 hud = uiRoot.gameObject.AddComponent<ResourceHud>();
             }
 
-            hud.Bind(panel, resourceText, messageText);
+            hud.Bind(
+                panel,
+                resourceText,
+                messageText,
+                cashText,
+                researchText,
+                creditText,
+                commodityText,
+                dealText,
+                cashImage,
+                researchImage,
+                creditImage,
+                commodityImage,
+                dealImage);
             return hud;
         }
 
@@ -344,39 +444,44 @@ namespace AssetManager
         public static MarketTapeView EnsureMarketTapeView(Transform uiRoot)
         {
             var marketPanel = EnsureMarketPanel(uiRoot);
-            var sellImminentText = EnsureMarketTapeZoneText(
+            MoveOrRemoveRootMarketTapeZone(uiRoot, marketPanel.transform, MarketTapeSellImminentPanelName);
+            MoveOrRemoveRootMarketTapeZone(uiRoot, marketPanel.transform, MarketTapeCurrentMarketPanelName);
+            MoveOrRemoveRootMarketTapeZone(uiRoot, marketPanel.transform, MarketTapeUpcomingMarketPanelName);
+
+            var sellImminentPanel = EnsureMarketTapeZonePanel(
                 marketPanel.transform,
                 MarketTapeSellImminentPanelName,
-                MarketTapeSellImminentTextName,
                 new Vector2(-440f, -220f));
 
-            var currentMarketText = EnsureMarketTapeZoneText(
+            var currentMarketPanel = EnsureMarketTapeZonePanel(
                 marketPanel.transform,
                 MarketTapeCurrentMarketPanelName,
-                MarketTapeCurrentMarketTextName,
                 new Vector2(0f, -220f));
 
-            var upcomingMarketText = EnsureMarketTapeZoneText(
+            var upcomingMarketPanel = EnsureMarketTapeZonePanel(
                 marketPanel.transform,
                 MarketTapeUpcomingMarketPanelName,
-                MarketTapeUpcomingMarketTextName,
                 new Vector2(440f, -220f));
 
+            RemoveChildIfPresent(sellImminentPanel.transform, MarketTapeSellImminentTextName);
+            RemoveChildIfPresent(currentMarketPanel.transform, MarketTapeCurrentMarketTextName);
+            RemoveChildIfPresent(upcomingMarketPanel.transform, MarketTapeUpcomingMarketTextName);
+
             var sellImminentButtons = EnsureMarketTapeCardButtons(
-                sellImminentText.transform.parent,
+                sellImminentPanel.transform,
                 MarketTapeSellImminentCardButtonPrefix);
             var currentMarketButtons = EnsureMarketTapeCardButtons(
-                currentMarketText.transform.parent,
+                currentMarketPanel.transform,
                 MarketTapeCurrentMarketCardButtonPrefix);
             var upcomingMarketButtons = EnsureMarketTapeCardButtons(
-                upcomingMarketText.transform.parent,
+                upcomingMarketPanel.transform,
                 MarketTapeUpcomingMarketCardButtonPrefix);
 
             ApplyMarketTapeLayout(
                 marketPanel,
-                sellImminentText,
-                currentMarketText,
-                upcomingMarketText,
+                sellImminentPanel,
+                currentMarketPanel,
+                upcomingMarketPanel,
                 sellImminentButtons,
                 currentMarketButtons,
                 upcomingMarketButtons);
@@ -389,9 +494,6 @@ namespace AssetManager
 
             view.Bind(
                 marketPanel,
-                sellImminentText,
-                currentMarketText,
-                upcomingMarketText,
                 sellImminentButtons,
                 currentMarketButtons,
                 upcomingMarketButtons);
@@ -459,6 +561,7 @@ namespace AssetManager
                 new Vector2(260f, 36f),
                 18,
                 TextAnchor.MiddleLeft);
+            var paymentPotBackground = EnsurePaymentPotBackground(panel.transform);
             var paymentSlotsText = EnsurePanelText(
                 panel.transform,
                 CardDetailPaymentSlotsTextName,
@@ -549,6 +652,7 @@ namespace AssetManager
                 tagsText,
                 rarityText,
                 paymentSlotsText,
+                paymentPotBackground,
                 finalCashCostText,
                 paymentSlotButtons,
                 placeResearchButton,
@@ -575,6 +679,7 @@ namespace AssetManager
                 tagsText,
                 rarityText,
                 paymentSlotsText,
+                paymentPotBackground,
                 finalCashCostText,
                 paymentSlotButtons,
                 placeResearchButton,
@@ -591,8 +696,10 @@ namespace AssetManager
         public static ReservationView EnsureReservationView(Transform uiRoot)
         {
             var marketPanel = EnsureMarketPanel(uiRoot);
+            MoveOrRemoveMarketAreaChild(uiRoot, marketPanel.transform, ReservationPanelName);
+
             var panel = EnsurePanel(
-                marketPanel.transform,
+                uiRoot,
                 ReservationPanelName,
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
@@ -626,8 +733,10 @@ namespace AssetManager
         public static LiquidityActionView EnsureLiquidityActionView(Transform uiRoot)
         {
             var marketPanel = EnsureMarketPanel(uiRoot);
+            MoveOrRemoveMarketAreaChild(uiRoot, marketPanel.transform, CentralBankButtonName);
+
             var centralBankButton = EnsureButton(
-                marketPanel.transform,
+                uiRoot,
                 CentralBankButtonName,
                 "중앙 은행",
                 new Vector2(0.5f, 1f),
@@ -643,7 +752,7 @@ namespace AssetManager
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0f, -220f),
-                new Vector2(960f, 300f),
+                new Vector2(960f, 320f),
                 new Color(0.07f, 0.09f, 0.11f, 0.96f));
 
             var selectionText = EnsurePanelText(
@@ -663,39 +772,59 @@ namespace AssetManager
             var cashButton = EnsureButton(
                 panel.transform,
                 LiquidityActionCashButtonName,
-                "현금",
+                "현금\n지폐다발 +1",
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(24f, -140f),
-                new Vector2(144f, 48f));
+                new Vector2(176f, 92f));
             var researchButton = EnsureButton(
                 panel.transform,
                 LiquidityActionResearchButtonName,
-                "리서치",
+                "리서치\n칩 +1",
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
-                new Vector2(184f, -140f),
-                new Vector2(144f, 48f));
+                new Vector2(220f, -140f),
+                new Vector2(176f, 92f));
             var creditButton = EnsureButton(
                 panel.transform,
                 LiquidityActionCreditButtonName,
-                "신용",
+                "신용\n칩 +1",
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
-                new Vector2(344f, -140f),
-                new Vector2(144f, 48f));
+                new Vector2(416f, -140f),
+                new Vector2(176f, 92f));
             var commodityButton = EnsureButton(
                 panel.transform,
                 LiquidityActionCommodityButtonName,
-                "원자재",
+                "원자재\n칩 +1",
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
-                new Vector2(504f, -140f),
-                new Vector2(144f, 48f));
+                new Vector2(612f, -140f),
+                new Vector2(176f, 92f));
+            var cashImage = EnsureResourceObjectImage(
+                cashButton.transform,
+                "Liquidity Action Cash Image",
+                new Vector2(52f, -12f),
+                new Vector2(62f, 48f));
+            var researchImage = EnsureResourceObjectImage(
+                researchButton.transform,
+                "Liquidity Action Research Image",
+                new Vector2(52f, -12f),
+                new Vector2(48f, 48f));
+            var creditImage = EnsureResourceObjectImage(
+                creditButton.transform,
+                "Liquidity Action Credit Image",
+                new Vector2(52f, -12f),
+                new Vector2(48f, 48f));
+            var commodityImage = EnsureResourceObjectImage(
+                commodityButton.transform,
+                "Liquidity Action Commodity Image",
+                new Vector2(52f, -12f),
+                new Vector2(48f, 48f));
             var closeButton = EnsureButton(
                 panel.transform,
                 LiquidityActionCloseButtonName,
@@ -721,7 +850,11 @@ namespace AssetManager
                 cashButton,
                 researchButton,
                 creditButton,
-                commodityButton);
+                commodityButton,
+                cashImage,
+                researchImage,
+                creditImage,
+                commodityImage);
             panel.SetActive(false);
             return view;
         }
@@ -831,9 +964,9 @@ namespace AssetManager
 
         private static void ApplyMarketTapeLayout(
             GameObject marketPanel,
-            Text sellImminentText,
-            Text currentMarketText,
-            Text upcomingMarketText,
+            GameObject sellImminentPanel,
+            GameObject currentMarketPanel,
+            GameObject upcomingMarketPanel,
             IReadOnlyList<Button> sellImminentButtons,
             IReadOnlyList<Button> currentMarketButtons,
             IReadOnlyList<Button> upcomingMarketButtons)
@@ -846,32 +979,31 @@ namespace AssetManager
                 Vector2.zero,
                 new Vector2(1500f, 720f));
 
-            ApplyMarketTapeZoneLayout(sellImminentText, new Vector2(-470f, -220f));
-            ApplyMarketTapeZoneLayout(currentMarketText, new Vector2(0f, -220f));
-            ApplyMarketTapeZoneLayout(upcomingMarketText, new Vector2(470f, -220f));
-            ApplyMarketTapeCardLayout(sellImminentButtons);
-            ApplyMarketTapeCardLayout(currentMarketButtons);
-            ApplyMarketTapeCardLayout(upcomingMarketButtons);
+            ApplyMarketTapeZoneLayout(sellImminentPanel, new Vector2(-470f, -220f));
+            ApplyMarketTapeZoneLayout(currentMarketPanel, new Vector2(0f, -220f));
+            ApplyMarketTapeZoneLayout(upcomingMarketPanel, new Vector2(470f, -220f));
+            ApplyMarketTapeCardLayout(sellImminentButtons, false);
+            ApplyMarketTapeCardLayout(currentMarketButtons, false);
+            ApplyMarketTapeCardLayout(upcomingMarketButtons, true);
         }
 
-        private static void ApplyMarketTapeZoneLayout(Text title, Vector2 anchoredPosition)
+        private static void ApplyMarketTapeZoneLayout(GameObject zonePanel, Vector2 anchoredPosition)
         {
-            if (title == null || title.transform.parent == null)
+            if (zonePanel == null)
             {
                 return;
             }
 
             SetRect(
-                title.transform.parent.gameObject,
+                zonePanel,
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 anchoredPosition,
                 new Vector2(420f, 500f));
-            SetTextRect(title, new Vector2(18f, -14f), new Vector2(384f, 54f), 19, TextAnchor.MiddleLeft);
         }
 
-        private static void ApplyMarketTapeCardLayout(IReadOnlyList<Button> buttons)
+        private static void ApplyMarketTapeCardLayout(IReadOnlyList<Button> buttons, bool isPreviewColumn)
         {
             for (var i = 0; i < buttons.Count; i++)
             {
@@ -886,9 +1018,14 @@ namespace AssetManager
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
-                    new Vector2(0f, -92f - (i * 140f)),
-                    new Vector2(372f, 124f));
-                SetButtonTextInset(button, new Vector2(14f, 10f), new Vector2(14f, 10f), 16, TextAnchor.UpperLeft);
+                    new Vector2(0f, isPreviewColumn ? -96f - (i * 112f) : -92f - (i * 140f)),
+                    isPreviewColumn ? new Vector2(324f, 94f) : new Vector2(372f, 124f));
+                SetButtonTextInset(
+                    button,
+                    new Vector2(14f, 10f),
+                    new Vector2(14f, 10f),
+                    isPreviewColumn ? 14 : 16,
+                    TextAnchor.UpperLeft);
             }
         }
 
@@ -935,6 +1072,7 @@ namespace AssetManager
             Text tagsText,
             Text rarityText,
             Text paymentSlotsText,
+            GameObject paymentPotBackground,
             Text finalCashCostText,
             IReadOnlyList<Button> paymentSlotButtons,
             Button placeResearchButton,
@@ -962,6 +1100,13 @@ namespace AssetManager
             SetTextRect(incomeText, new Vector2(560f, -156f), new Vector2(270f, 88f), 26, TextAnchor.MiddleCenter);
             SetTextRect(finalCashCostText, new Vector2(560f, -274f), new Vector2(270f, 92f), 19, TextAnchor.MiddleCenter);
             SetTextRect(paymentSlotsText, new Vector2(880f, -48f), new Vector2(360f, 72f), 17, TextAnchor.UpperLeft);
+            SetRect(
+                paymentPotBackground,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(856f, -34f),
+                new Vector2(408f, 304f));
 
             for (var i = 0; i < paymentSlotButtons.Count; i++)
             {
@@ -1022,6 +1167,83 @@ namespace AssetManager
                 new Color(0f, 0f, 0f, 0f));
         }
 
+        private static void MoveOrRemoveRootMarketTapeZone(
+            Transform uiRoot,
+            Transform marketPanel,
+            string panelName)
+        {
+            var rootPanel = uiRoot.Find(panelName);
+            if (rootPanel == null)
+            {
+                return;
+            }
+
+            var nestedPanel = marketPanel.Find(panelName);
+            if (nestedPanel == null)
+            {
+                rootPanel.SetParent(marketPanel, false);
+                return;
+            }
+
+            rootPanel.gameObject.SetActive(false);
+            if (Application.isPlaying)
+            {
+                Object.Destroy(rootPanel.gameObject);
+            }
+            else
+            {
+                Object.DestroyImmediate(rootPanel.gameObject);
+            }
+        }
+
+        private static void MoveOrRemoveMarketAreaChild(
+            Transform uiRoot,
+            Transform marketPanel,
+            string objectName)
+        {
+            var nestedObject = marketPanel.Find(objectName);
+            if (nestedObject == null)
+            {
+                return;
+            }
+
+            var rootObject = uiRoot.Find(objectName);
+            if (rootObject == null)
+            {
+                nestedObject.SetParent(uiRoot, false);
+                return;
+            }
+
+            nestedObject.gameObject.SetActive(false);
+            if (Application.isPlaying)
+            {
+                Object.Destroy(nestedObject.gameObject);
+            }
+            else
+            {
+                Object.DestroyImmediate(nestedObject.gameObject);
+            }
+        }
+
+        private static void RemoveChildIfPresent(Transform parent, string childName)
+        {
+            var child = parent.Find(childName);
+            if (child == null)
+            {
+                return;
+            }
+
+            child.gameObject.SetActive(false);
+            if (Application.isPlaying)
+            {
+                Object.Destroy(child.gameObject);
+            }
+            else
+            {
+                Object.DestroyImmediate(child.gameObject);
+            }
+        }
+
         private static void SetRect(
             GameObject gameObject,
             Vector2 anchorMin,
@@ -1031,6 +1253,11 @@ namespace AssetManager
             Vector2 sizeDelta)
         {
             if (gameObject == null)
+            {
+                return;
+            }
+
+            if (!WasCreatedThisPass(gameObject))
             {
                 return;
             }
@@ -1056,6 +1283,11 @@ namespace AssetManager
             TextAnchor alignment)
         {
             if (text == null)
+            {
+                return;
+            }
+
+            if (!WasCreatedThisPass(text.gameObject))
             {
                 return;
             }
@@ -1090,6 +1322,11 @@ namespace AssetManager
 
             var text = button.GetComponentInChildren<Text>();
             if (text == null)
+            {
+                return;
+            }
+
+            if (!WasCreatedThisPass(text.gameObject))
             {
                 return;
             }
@@ -1135,25 +1372,33 @@ namespace AssetManager
             var existing = parent.Find(panelName);
             var panel = existing != null
                 ? existing.gameObject
-                : new GameObject(panelName, typeof(RectTransform));
+                : CreateLayoutObject(panelName);
 
             panel.transform.SetParent(parent, false);
 
             var rectTransform = panel.GetComponent<RectTransform>();
-            rectTransform.anchorMin = anchorMin;
-            rectTransform.anchorMax = anchorMax;
-            rectTransform.pivot = pivot;
-            rectTransform.anchoredPosition = anchoredPosition;
-            rectTransform.sizeDelta = sizeDelta;
+            if (WasCreatedThisPass(panel))
+            {
+                rectTransform.anchorMin = anchorMin;
+                rectTransform.anchorMax = anchorMax;
+                rectTransform.pivot = pivot;
+                rectTransform.anchoredPosition = anchoredPosition;
+                rectTransform.sizeDelta = sizeDelta;
+            }
 
             var image = panel.GetComponent<Image>();
+            var shouldApplyImageDefaults = WasCreatedThisPass(panel) || image == null;
             if (image == null)
             {
                 image = panel.AddComponent<Image>();
             }
 
-            image.color = color;
-            image.raycastTarget = color.a > 0f;
+            if (shouldApplyImageDefaults)
+            {
+                image.color = color;
+                image.raycastTarget = color.a > 0f;
+            }
+
             return panel;
         }
 
@@ -1173,8 +1418,12 @@ namespace AssetManager
                     new Vector2(360f, 52f));
 
                 var text = button.GetComponentInChildren<Text>();
-                text.alignment = TextAnchor.MiddleLeft;
-                text.fontSize = 16;
+                if (WasCreatedThisPass(text.gameObject))
+                {
+                    text.alignment = TextAnchor.MiddleLeft;
+                    text.fontSize = 16;
+                }
+
                 buttons.Add(button);
             }
 
@@ -1197,11 +1446,47 @@ namespace AssetManager
                     new Vector2(124f, 36f));
 
                 var text = button.GetComponentInChildren<Text>();
-                text.fontSize = 15;
+                if (WasCreatedThisPass(text.gameObject))
+                {
+                    text.fontSize = 15;
+                }
+
                 buttons.Add(button);
             }
 
             return buttons;
+        }
+
+        private static GameObject EnsurePaymentPotBackground(Transform panel)
+        {
+            var existing = panel.Find(CardDetailPaymentPotBackgroundName);
+            var background = existing != null
+                ? existing.gameObject
+                : CreateLayoutObject(CardDetailPaymentPotBackgroundName);
+
+            background.transform.SetParent(panel, false);
+            if (WasCreatedThisPass(background))
+            {
+                background.transform.SetAsFirstSibling();
+            }
+
+            var image = background.GetComponent<Image>();
+            var shouldApplyImageDefaults = WasCreatedThisPass(background) || image == null;
+            if (image == null)
+            {
+                image = background.AddComponent<Image>();
+            }
+
+            if (shouldApplyImageDefaults)
+            {
+                image.sprite = Resources.Load<Sprite>("PaymentPot_Background_Default");
+                image.color = image.sprite != null
+                    ? Color.white
+                    : new Color(0.13f, 0.11f, 0.08f, 0.92f);
+                image.raycastTarget = false;
+            }
+
+            return background;
         }
 
         private static IReadOnlyList<Button> EnsureReservationCardButtons(Transform panel)
@@ -1220,8 +1505,12 @@ namespace AssetManager
                     new Vector2(188f, 76f));
 
                 var text = button.GetComponentInChildren<Text>();
-                text.alignment = TextAnchor.MiddleLeft;
-                text.fontSize = 14;
+                if (WasCreatedThisPass(text.gameObject))
+                {
+                    text.alignment = TextAnchor.MiddleLeft;
+                    text.fontSize = 14;
+                }
+
                 buttons.Add(button);
             }
 
@@ -1233,16 +1522,19 @@ namespace AssetManager
             var existing = uiRoot.Find(RunStatusTextName);
             var textObject = existing != null
                 ? existing.gameObject
-                : new GameObject(RunStatusTextName, typeof(RectTransform));
+                : CreateLayoutObject(RunStatusTextName);
 
             textObject.transform.SetParent(uiRoot, false);
 
             var rectTransform = textObject.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0f, 1f);
-            rectTransform.anchorMax = new Vector2(1f, 1f);
-            rectTransform.pivot = new Vector2(0.5f, 1f);
-            rectTransform.anchoredPosition = new Vector2(0f, -24f);
-            rectTransform.sizeDelta = new Vector2(-64f, 58f);
+            if (WasCreatedThisPass(textObject))
+            {
+                rectTransform.anchorMin = new Vector2(0f, 1f);
+                rectTransform.anchorMax = new Vector2(1f, 1f);
+                rectTransform.pivot = new Vector2(0.5f, 1f);
+                rectTransform.anchoredPosition = new Vector2(0f, -24f);
+                rectTransform.sizeDelta = new Vector2(-64f, 58f);
+            }
 
             var text = textObject.GetComponent<Text>();
             if (text == null)
@@ -1251,14 +1543,17 @@ namespace AssetManager
             }
 
             text.text = RunStatusPlaceholderText;
-            text.alignment = TextAnchor.MiddleLeft;
-            text.fontSize = 23;
-            text.color = Color.white;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = 16;
-            text.resizeTextMaxSize = 23;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+            if (WasCreatedThisPass(textObject))
+            {
+                text.alignment = TextAnchor.MiddleLeft;
+                text.fontSize = 23;
+                text.color = Color.white;
+                text.resizeTextForBestFit = true;
+                text.resizeTextMinSize = 16;
+                text.resizeTextMaxSize = 23;
+                text.horizontalOverflow = HorizontalWrapMode.Wrap;
+                text.verticalOverflow = VerticalWrapMode.Truncate;
+            }
 
             if (text.font == null)
             {
@@ -1268,46 +1563,41 @@ namespace AssetManager
             return text;
         }
 
-        private static Text EnsureMarketTapeZoneText(
+        private static GameObject EnsureMarketTapeZonePanel(
             Transform uiRoot,
             string panelName,
-            string textName,
             Vector2 anchoredPosition)
         {
             var existing = uiRoot.Find(panelName);
             var panel = existing != null
                 ? existing.gameObject
-                : new GameObject(panelName, typeof(RectTransform));
+                : CreateLayoutObject(panelName);
 
             panel.transform.SetParent(uiRoot, false);
 
             var rectTransform = panel.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.5f, 1f);
-            rectTransform.anchorMax = new Vector2(0.5f, 1f);
-            rectTransform.pivot = new Vector2(0.5f, 1f);
-            rectTransform.anchoredPosition = anchoredPosition;
-            rectTransform.sizeDelta = new Vector2(400f, 280f);
+            if (WasCreatedThisPass(panel))
+            {
+                rectTransform.anchorMin = new Vector2(0.5f, 1f);
+                rectTransform.anchorMax = new Vector2(0.5f, 1f);
+                rectTransform.pivot = new Vector2(0.5f, 1f);
+                rectTransform.anchoredPosition = anchoredPosition;
+                rectTransform.sizeDelta = new Vector2(400f, 280f);
+            }
 
             var image = panel.GetComponent<Image>();
+            var shouldApplyImageDefaults = WasCreatedThisPass(panel) || image == null;
             if (image == null)
             {
                 image = panel.AddComponent<Image>();
             }
 
-            image.color = new Color(0.08f, 0.11f, 0.14f, 0.92f);
+            if (shouldApplyImageDefaults)
+            {
+                image.color = new Color(0.08f, 0.11f, 0.14f, 0.92f);
+            }
 
-            var text = EnsureChildText(panel.transform, textName, string.Empty);
-            var textTransform = text.GetComponent<RectTransform>();
-            textTransform.anchorMin = new Vector2(0f, 1f);
-            textTransform.anchorMax = new Vector2(1f, 1f);
-            textTransform.pivot = new Vector2(0.5f, 1f);
-            textTransform.anchoredPosition = new Vector2(0f, -16f);
-            textTransform.sizeDelta = new Vector2(-32f, 40f);
-            text.alignment = TextAnchor.MiddleLeft;
-            text.fontSize = 20;
-            text.color = Color.white;
-
-            return text;
+            return panel;
         }
 
         private static Button EnsureButton(
@@ -1323,24 +1613,31 @@ namespace AssetManager
             var existing = uiRoot.Find(name);
             var buttonObject = existing != null
                 ? existing.gameObject
-                : new GameObject(name, typeof(RectTransform));
+                : CreateLayoutObject(name);
 
             buttonObject.transform.SetParent(uiRoot, false);
 
             var rectTransform = buttonObject.GetComponent<RectTransform>();
-            rectTransform.anchorMin = anchorMin;
-            rectTransform.anchorMax = anchorMax;
-            rectTransform.pivot = pivot;
-            rectTransform.anchoredPosition = anchoredPosition;
-            rectTransform.sizeDelta = sizeDelta ?? new Vector2(240f, 56f);
+            if (WasCreatedThisPass(buttonObject))
+            {
+                rectTransform.anchorMin = anchorMin;
+                rectTransform.anchorMax = anchorMax;
+                rectTransform.pivot = pivot;
+                rectTransform.anchoredPosition = anchoredPosition;
+                rectTransform.sizeDelta = sizeDelta ?? new Vector2(240f, 56f);
+            }
 
             var image = buttonObject.GetComponent<Image>();
+            var shouldApplyImageDefaults = WasCreatedThisPass(buttonObject) || image == null;
             if (image == null)
             {
                 image = buttonObject.AddComponent<Image>();
             }
 
-            image.color = new Color(0.11f, 0.16f, 0.20f, 0.94f);
+            if (shouldApplyImageDefaults)
+            {
+                image.color = new Color(0.11f, 0.16f, 0.20f, 0.94f);
+            }
 
             var button = buttonObject.GetComponent<Button>();
             if (button == null)
@@ -1349,9 +1646,12 @@ namespace AssetManager
             }
 
             var text = EnsureChildText(buttonObject.transform, name + " Text", label);
-            text.alignment = TextAnchor.MiddleCenter;
-            text.fontSize = 22;
-            text.color = Color.white;
+            if (WasCreatedThisPass(text.gameObject))
+            {
+                text.alignment = TextAnchor.MiddleCenter;
+                text.fontSize = 22;
+                text.color = Color.white;
+            }
 
             return button;
         }
@@ -1366,15 +1666,48 @@ namespace AssetManager
         {
             var text = EnsureChildText(parent, name, string.Empty);
             var rectTransform = text.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0f, 1f);
-            rectTransform.anchorMax = new Vector2(0f, 1f);
-            rectTransform.pivot = new Vector2(0f, 1f);
-            rectTransform.anchoredPosition = anchoredPosition;
-            rectTransform.sizeDelta = sizeDelta;
-            text.alignment = alignment;
-            text.fontSize = fontSize;
-            text.color = Color.white;
+            if (WasCreatedThisPass(text.gameObject))
+            {
+                rectTransform.anchorMin = new Vector2(0f, 1f);
+                rectTransform.anchorMax = new Vector2(0f, 1f);
+                rectTransform.pivot = new Vector2(0f, 1f);
+                rectTransform.anchoredPosition = anchoredPosition;
+                rectTransform.sizeDelta = sizeDelta;
+                text.alignment = alignment;
+                text.fontSize = fontSize;
+                text.color = Color.white;
+            }
+
             return text;
+        }
+
+        private static Image EnsureResourceObjectImage(
+            Transform parent,
+            string name,
+            Vector2 anchoredPosition,
+            Vector2 sizeDelta)
+        {
+            var image = EnsureChildImage(parent, name);
+            if (WasCreatedThisPass(image.gameObject))
+            {
+                image.transform.SetAsFirstSibling();
+            }
+
+            var rectTransform = image.GetComponent<RectTransform>();
+            if (WasCreatedThisPass(image.gameObject))
+            {
+                rectTransform.anchorMin = new Vector2(0f, 1f);
+                rectTransform.anchorMax = new Vector2(0f, 1f);
+                rectTransform.pivot = new Vector2(0f, 1f);
+                rectTransform.anchoredPosition = anchoredPosition;
+                rectTransform.sizeDelta = sizeDelta;
+            }
+
+            image.enabled = image.sprite != null;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            image.color = Color.white;
+            return image;
         }
 
         private static PlaceholderPanel EnsurePlaceholderPanel(Transform uiRoot, string panelName, string textName)
@@ -1382,29 +1715,39 @@ namespace AssetManager
             var existing = uiRoot.Find(panelName);
             var panel = existing != null
                 ? existing.gameObject
-                : new GameObject(panelName, typeof(RectTransform));
+                : CreateLayoutObject(panelName);
 
             panel.transform.SetParent(uiRoot, false);
 
             var rectTransform = panel.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            rectTransform.anchoredPosition = Vector2.zero;
-            rectTransform.sizeDelta = new Vector2(520f, 180f);
+            if (WasCreatedThisPass(panel))
+            {
+                rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+                rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                rectTransform.anchoredPosition = Vector2.zero;
+                rectTransform.sizeDelta = new Vector2(520f, 180f);
+            }
 
             var image = panel.GetComponent<Image>();
+            var shouldApplyImageDefaults = WasCreatedThisPass(panel) || image == null;
             if (image == null)
             {
                 image = panel.AddComponent<Image>();
             }
 
-            image.color = new Color(0.06f, 0.08f, 0.10f, 0.92f);
+            if (shouldApplyImageDefaults)
+            {
+                image.color = new Color(0.06f, 0.08f, 0.10f, 0.92f);
+            }
 
             var text = EnsureChildText(panel.transform, textName, string.Empty);
-            text.alignment = TextAnchor.MiddleCenter;
-            text.fontSize = 26;
-            text.color = Color.white;
+            if (WasCreatedThisPass(text.gameObject))
+            {
+                text.alignment = TextAnchor.MiddleCenter;
+                text.fontSize = 26;
+                text.color = Color.white;
+            }
 
             panel.SetActive(false);
             return new PlaceholderPanel(panel, text);
@@ -1415,15 +1758,18 @@ namespace AssetManager
             var existing = parent.Find(name);
             var textObject = existing != null
                 ? existing.gameObject
-                : new GameObject(name, typeof(RectTransform));
+                : CreateLayoutObject(name);
 
             textObject.transform.SetParent(parent, false);
 
             var rectTransform = textObject.GetComponent<RectTransform>();
-            rectTransform.anchorMin = Vector2.zero;
-            rectTransform.anchorMax = Vector2.one;
-            rectTransform.offsetMin = Vector2.zero;
-            rectTransform.offsetMax = Vector2.zero;
+            if (WasCreatedThisPass(textObject))
+            {
+                rectTransform.anchorMin = Vector2.zero;
+                rectTransform.anchorMax = Vector2.one;
+                rectTransform.offsetMin = Vector2.zero;
+                rectTransform.offsetMax = Vector2.zero;
+            }
 
             var text = textObject.GetComponent<Text>();
             if (text == null)
@@ -1440,6 +1786,24 @@ namespace AssetManager
             }
 
             return text;
+        }
+
+        private static Image EnsureChildImage(Transform parent, string name)
+        {
+            var existing = parent.Find(name);
+            var imageObject = existing != null
+                ? existing.gameObject
+                : CreateLayoutObject(name);
+
+            imageObject.transform.SetParent(parent, false);
+
+            var image = imageObject.GetComponent<Image>();
+            if (image == null)
+            {
+                image = imageObject.AddComponent<Image>();
+            }
+
+            return image;
         }
 
         private static void EnsureEventSystem()
