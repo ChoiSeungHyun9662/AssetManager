@@ -1,905 +1,366 @@
-# 06. 자산 카드 구조
+# 06. 주식 카드 구조
 
 ## 1. 목적
 
-이 문서는 자산 카드의 데이터 구조와 게임 내 상태 변화를 정의한다.
+이 문서는 주식 카드와 소모형 자원 카드의 데이터 구조, 런타임 상태, 포트폴리오/호일 규칙을 정의한다.
 
-자산 카드는 본 게임의 핵심 오브젝트이다.
-플레이어는 시장 카드 또는 예약 카드를 매수해 자산을 보유하고, 보유 자산이 영업일 시작에 제공하는 현금과 분기 마감 정산을 통해 운용 수익을 만든다.
-
-자산 카드는 최종 평가의 기준이 되는 `운용가치`를 가진다.
-
-```text
-최종 운용가치
-= 보유 자산 카드들의 운용가치 합계
-```
-
-현금, 리서치, 신용, 원자재, 딜은 운용가치에 포함되지 않는다.
+이 게임의 포트폴리오에는 주식만 들어간다.
+채권, 원자재, 부동산 등 다른 자산군은 사용하지 않는다.
 
 ---
 
-## 2. 자산 카드의 역할
+## 2. 카드 종류
 
-자산 카드는 다음 역할을 가진다.
+시장에 등장하는 카드는 두 종류이다.
 
 ```text
-- 매수 대상
-- 예약 대상
-- 보유 자산
-- 운용 수익 발생원
-- 분기 마감 정산 대상
-- 최종 운용가치 제공원
-- 태그 기반 효과 조건
+1. 주식 카드
+2. 소모형 자원 카드
 ```
 
-플레이어는 제한된 영업일과 자원을 사용해 자산 카드를 매수한다.
-매수한 카드는 포트폴리오에 추가되며, 이후 영업일 시작과 분기 마감에서 효과를 발휘할 수 있다.
+주식 카드는 포트폴리오에 등록되는 카드이다.
+소모형 자원 카드는 매수 시 효과를 발동하고 사라지는 카드이다.
 
 ---
 
-## 3. 자산 카드 기본 정보
+## 3. 주식 카드 표시 정보
 
-자산 카드는 최소한 다음 정보를 가진다.
+주식 카드는 다음 정보를 표시한다.
 
 ```text
-- 카드 ID
-- 카드 이름
-- 카드 이미지
-- 카드 설명
-- 자산군 태그
-- 일반 태그
-- 희귀도
+- 이미지
+- 이름
+- 등급
+- 가치
+- 코스트
+- 배당금
+```
+
+시장에 있을 때와 호버 확대 상태에서 제공하는 정보는 동일하다.
+스케일만 다르다.
+
+---
+
+## 4. 소모형 자원 카드 표시 정보
+
+소모형 자원 카드는 다음 정보를 표시한다.
+
+```text
+- 이미지
+- 등급
+- 제공 자원
+- 코스트
+```
+
+소모형 자원 카드에는 이름을 표시하지 않는다.
+소모형 자원 카드의 등급은 효율과 출현 빈도를 나타낸다.
+
+소모형 자원 카드는 다음 값을 가지지 않는다.
+
+```text
+- 가치
+- 배당금
+- 호일 상태
+- 포트폴리오 슬롯
+```
+
+---
+
+## 5. 주식 기본 데이터
+
+주식은 기본 상태와 호일 상태 수치를 모두 가진다.
+
+```text
+- 주식 ID
+- 이름
+- 이미지
+- 등급
 - 현금 비용
-- 전문 자원 비용
-- 운용가치
-- 운용 수익
+- 투자 철학 비용
+- 기본 가치
+- 기본 배당금
+- 호일 가치
+- 호일 배당금
+- 덱 포함 장수 min
+- 덱 포함 장수 max
 ```
 
-구현상 추천 필드는 다음과 같다.
-
-```csharp
-public class AssetCardData
-{
-    public string Id;
-    public string DisplayName;
-    public string Description;
-
-    public string ImageResourcePath;
-
-    public AssetRarity Rarity;
-
-    public int CashCost;
-    public ProfessionalResourceCost ProfessionalCost;
-
-    public int ManagementValue;
-    public int IncomeCash;
-
-    public List<string> AssetClassTagIds;
-    public List<string> TagIds;
-}
-```
+호일 수치는 배율로 계산하지 않는다.
+기획자가 직접 지정한다.
 
 ---
 
-## 4. 카드 ID
+## 6. 가치
 
-카드 ID는 데이터 테이블에서 카드를 식별하기 위한 고유값이다.
-
-```text
-예:
-asset_growth_tech_001
-asset_bond_safe_001
-asset_commodity_oil_001
-```
-
-카드 ID는 런 중 동일 카드의 중복 생성 여부, 보유 상태, 시장 슬롯 상태 등을 추적하는 기준이 된다.
-
----
-
-## 5. 카드 이름
-
-카드 이름은 유저-facing 텍스트이다.
-
-예시:
+가치는 최종 평가의 기준이 되는 주식 카드 점수이다.
 
 ```text
-성장 기술주
-국채 ETF
-원자재 펀드
-리츠 포트폴리오
-사모 크레딧
+최종 가치
+= 보유 주식 가치 합계
 ```
 
-카드 이름은 카드 상세보기와 보유 자산 목록에서 사용한다.
-
----
-
-## 6. 카드 이미지
-
-카드 이미지는 카드의 시각적 정체성을 표현한다.
-
-MVP에서는 임시 이미지 또는 플레이스홀더를 사용할 수 있다.
-구현상 카드 데이터에는 이미지 리소스 경로를 둔다.
-
-```csharp
-public string ImageResourcePath;
-```
-
-카드 상세보기에서는 카드 이미지를 크게 표시한다.
-시장 테이프에서는 카드 이미지 또는 축약 카드 UI를 사용한다.
-
----
-
-## 7. 희귀도
-
-카드는 희귀도를 가진다.
-
-희귀도는 다음 용도로 사용된다.
+포함:
 
 ```text
-- 카드의 가치 체감
-- 카드 정렬
-- 카드 테이블 밸런싱
-- 카드 UI 연출
+- 보유 중인 일반 주식의 기본 가치
+- 보유 중인 호일 주식의 호일 가치
 ```
 
-희귀도 enum 예시:
-
-```csharp
-public enum AssetRarity
-{
-    Common,
-    Uncommon,
-    Rare,
-    Epic,
-    Legendary
-}
-```
-
-희귀도 단계명은 최종 UI 톤에 맞춰 변경할 수 있다.
-
----
-
-## 8. 운용가치
-
-운용가치는 자산 카드가 가진 고유 점수이다.
-
-```text
-운용가치
-= 스플렌더의 승점과 같은 개념
-```
-
-최종 평가는 보유 자산 카드들의 운용가치 합계로 산정한다.
-
-```text
-최종 운용가치
-= 보유 자산 카드 운용가치 합계
-```
-
-운용가치에 포함되지 않는 것:
+포함하지 않음:
 
 ```text
 - 현금
-- 리서치
-- 신용
-- 원자재
+- 독서 / 명상 / 인내
 - 딜
-- 예약 카드
-- 시장 카드
+- 시장에 있는 주식
+- 예약된 주식
+- 소모형 자원 카드
+- 수익
 ```
-
-예약 카드는 아직 매수한 자산이 아니므로 운용가치에 포함하지 않는다.
-시장 카드도 당연히 운용가치에 포함하지 않는다.
 
 ---
 
-## 9. 운용 수익
+## 7. 배당금과 수익
 
-자산 카드는 영업일 시작 시 현금 운용 수익을 제공할 수 있다.
+배당금은 보유 주식이 영업일 시작에 제공하는 현금이다.
 
 ```text
 영업일 시작
-→ 보유 자산의 영업일 시작 현금 발생
+→ 보유 주식 배당금 합산
+→ 현금 증가
+→ 분기 수익 증가
 ```
 
-보유 자산이 영업일 시작에 제공한 현금은 운용 수익으로 기록한다.
+매수한 주식은 매수한 영업일에는 배당금을 지급하지 않는다.
+다음 영업일부터 배당금을 지급한다.
 
 ```text
-보유 자산의 영업일 시작 현금
-→ CurrentCash 증가
-→ CurrentQuarterEarnedCash 증가
-→ CurrentFiscalYearEarnedCash 증가
-→ TotalEarnedCash 증가
+주식 매수
+→ 해당 영업일 배당금 없음
+→ 다음 영업일 시작부터 배당금 발생
 ```
 
-운용 수익은 매수 즉시 발생하지 않는다.
-
-```text
-자산 매수
-→ 해당 영업일에는 운용 수익 없음
-→ 다음 영업일 시작부터 운용 수익 발생
-```
-
-구현 필드:
-
-```csharp
-public int IncomeCash;
-```
-
-운용 수익이 없는 자산은 0으로 둔다.
+동일 주식 2장을 보유 중이면 각 카드의 기본 배당금이 각각 발생한다.
+호일로 합쳐진 뒤에는 호일 배당금만 발생한다.
 
 ---
 
-## 10. 현금 비용
+## 8. 포트폴리오
 
-현금 비용은 자산 매수 시 지불해야 하는 기본 현금 비용이다.
-
-```csharp
-public int CashCost;
-```
-
-현금 비용은 매수 확정 시 차감된다.
+포트폴리오는 최대 8칸이다.
 
 ```text
-매수 확정
-→ 최종 현금 비용 계산
-→ CurrentCash 차감
+포트폴리오 최대 보유: 8주식
 ```
 
-최종 현금 비용은 딜과 인플레이션 규칙을 반영해 계산한다.
+동일 주식 2장은 2칸을 차지한다.
 
 ```text
-기본 현금 비용
-→ 딜 할인 적용
-→ 인플레이션 적용
-→ 최종 현금 비용
+동일 주식 2장 보유
+→ 포트폴리오 2칸 점유
+→ 각 카드의 기본 가치 합산
+→ 각 카드의 기본 배당금 발생
 ```
 
-딜 1개는 기본 현금 비용을 1 낮춘다.
+새 주식은 가장 왼쪽의 빈 포트폴리오 칸에 들어간다.
 
 ---
 
-## 11. 전문 자원 비용
+## 9. 포트폴리오 가득 참 처리
 
-자산 카드는 전문 자원 비용을 가질 수 있다.
-
-전문 자원 비용은 다음 3종으로 구성된다.
+포트폴리오 8칸이 모두 점유된 상태에서 신규 주식 매수를 시도하면 실패한다.
 
 ```text
-- 리서치 비용
-- 신용 비용
-- 원자재 비용
+포트폴리오 8 / 8
+동일 주식 2장 보유 상황이 아님
+→ 매수 불가
+→ "주식 매도가 필요합니다" 알림
+→ 비용 소비 없음
+→ 영업일 소비 없음
 ```
 
-구현 구조 예시:
+예외:
+
+```text
+포트폴리오 8 / 8
+동일 주식 2장을 이미 보유
+3번째 동일 주식 매수 시도
+→ 비용 지불 가능하면 매수 허용
+→ 즉시 호일 처리
+→ 포트폴리오 점유 8칸 → 7칸
+→ 영업일 종료
+```
+
+---
+
+## 10. 호일 규칙
+
+동일 주식 3장을 보유하면 즉시 1장 호일 주식으로 합쳐진다.
+
+```text
+동일 주식 3장 보유
+→ 가장 먼저 보유한 동일 주식 칸이 호일 주식으로 변함
+→ 나머지 동일 주식 2장은 제거
+→ 포트폴리오 빈칸 2개는 그대로 빈칸으로 남김
+```
+
+호일 주식:
+
+```text
+- 등급은 기본 주식과 동일
+- 가치는 호일 가치 사용
+- 배당금은 호일 배당금 사용
+- 무지개 호일 테두리로 표시
+```
+
+호일 완성 시 같은 종목은 이번 게임에서 더 이상 등장하지 않는다.
+
+제거 대상:
+
+```text
+- 주식 덱의 같은 종목
+- 시장의 같은 종목
+- 예약된 같은 종목
+```
+
+시장 또는 예약된 같은 종목 제거로 생긴 빈칸은 시장 테이프 당김으로 처리한다.
+
+---
+
+## 11. 주식 종목 장수
+
+각 주식 종목은 덱에 여러 장 포함될 수 있다.
+종목별 포함 장수는 데이터 테이블의 min~max 값으로 컨트롤한다.
+
+```text
+StockId: calm_reader
+MinCopiesInDeck: 2
+MaxCopiesInDeck: 5
+```
+
+호일 주식은 별도 카드로 덱에 존재하지 않는다.
+호일 주식은 동일 종목 3장 보유의 결과 상태이다.
+
+---
+
+## 12. 주식 매도
+
+주식 매도는 영업일을 소비하지 않는다.
+하루 횟수 제한이 없다.
+
+매도 보상:
+
+```text
+일반 주식 매도
+→ 현금 1 * 인플레이션 획득
+
+호일 주식 매도
+→ 현금 3 * 인플레이션 획득
+```
+
+매도 수익은 분기 수익에 포함한다.
+
+매도한 주식은 이번 게임에서 제거된다.
+덱/시장에 다시 등장하지 않는다.
+
+---
+
+## 13. 카드 상태
+
+추천 런타임 상태:
 
 ```csharp
-public class ProfessionalResourceCost
+public enum MarketCardType
 {
-    public int Research;
-    public int Credit;
-    public int Commodity;
+    Stock,
+    ConsumableResource
 }
 ```
 
-전문 자원 비용이 없는 자산은 세 값이 모두 0이다.
-
-```text
-리서치 0
-신용 0
-원자재 0
-```
-
-전문 자원 비용이 존재하는 자산은 카드 상세보기에서 비용 슬롯을 표시한다.
-
-```text
-리서치 2
-신용 1
-→ 리서치 슬롯 2개
-→ 신용 슬롯 1개
-```
-
----
-
-## 12. 비용 슬롯
-
-전문 자원 비용은 카드 상세보기에서 슬롯으로 표현한다.
-
-```text
-리서치 비용 2
-→ 리서치 슬롯 2개
-
-신용 비용 1
-→ 신용 슬롯 1개
-```
-
-각 슬롯은 다음 상태를 가진다.
-
-```text
-- 비어 있음
-- 해당 전문 자원 칩 배치됨
-- 딜 배치됨
-```
-
-슬롯에 딜이 배치되면 해당 슬롯은 결제 완료로 본다.
-
-```text
-딜이 배치된 슬롯
-= 결제 완료
-```
-
----
-
-## 13. 태그 구조
-
-자산 카드는 태그를 가진다.
-
-태그는 크게 다음 두 종류로 나눈다.
-
-```text
-- 자산군 태그
-- 일반 태그
-```
-
-자산군 태그는 보유 자산을 큰 카테고리로 분류하는 용도이다.
-
-예시:
-
-```text
-주식
-채권
-원자재
-부동산
-대체투자
-```
-
-일반 태그는 정산, 효과, 시장 국면, 시너지 등에 사용한다.
-
-예시:
-
-```text
-성장
-방어
-운용 수익
-변동성
-친환경
-기술
-금리민감
-```
-
-구현상 태그는 ID로 관리한다.
-
 ```csharp
-public List<string> AssetClassTagIds;
-public List<string> TagIds;
-```
-
----
-
-## 14. 태그 데이터
-
-태그는 별도 데이터 테이블로 관리한다.
-
-```csharp
-public class TagData
+public enum StockRuntimeState
 {
-    public string Id;
-    public string DisplayName;
-    public TagType Type;
-    public int SortOrder;
-}
-```
-
-태그 타입:
-
-```csharp
-public enum TagType
-{
-    AssetClass,
-    General
-}
-```
-
-태그 정렬은 `sort_order`를 기준으로 한다.
-
-```text
-sort_order 오름차순
-→ 동률이면 id 오름차순
-```
-
----
-
-## 15. 자산군 태그 정렬
-
-보유 자산 요약에서 자산군 태그는 태그 정의 테이블의 정렬값을 따른다.
-
-정렬 규칙:
-
-```text
-1. 태그 테이블의 sort_order 오름차순
-2. sort_order가 같으면 id 오름차순
-```
-
-예시:
-
-```text
-주식
-채권
-원자재
-부동산
-대체투자
-```
-
-이 순서는 하드코딩하지 않고 태그 테이블에서 관리한다.
-
----
-
-## 16. 보유 자산 정렬
-
-보유 자산은 다음 기준으로 정렬한다.
-
-```text
-1. 자산군 태그별로 묶는다.
-2. 각 묶음 내부에서는 희귀도 순으로 정렬한다.
-3. 희귀도가 같으면 먼저 산 자산을 위로 올린다.
-```
-
-즉:
-
-```text
-자산군 태그
-→ 희귀도
-→ 획득 순서
-```
-
-획득 순서는 자산을 매수한 시점에 부여한다.
-
-```csharp
-public int AcquiredOrder;
-```
-
-획득 순서는 오름차순으로 정렬한다.
-
-```text
-먼저 산 자산
-→ 위쪽 표시
-```
-
----
-
-## 17. 카드 출처
-
-카드는 현재 위치에 따라 출처를 가진다.
-
-```csharp
-public enum PurchaseSource
-{
-    MarketTape,
-    Reserved
-}
-```
-
-시장 카드와 예약 카드는 모두 매수할 수 있다.
-예약 카드 매수도 일반 자산 매수로 판정한다.
-
-```text
-예약 카드 매수
-= 자산 매수
-= OnBuyAsset 발동
-```
-
-단, 매수 출처는 별도로 남긴다.
-
-```text
-시장 카드 매수
-→ PurchaseSource.MarketTape
-
-예약 카드 매수
-→ PurchaseSource.Reserved
-```
-
-매수 출처는 규칙 판정에 사용할 수 있다.
-
----
-
-## 18. 카드 상태
-
-자산 카드는 런 중 다음 상태 중 하나에 있을 수 있다.
-
-```csharp
-public enum AssetCardRuntimeState
-{
-    Deck,
-    MarketTape,
-    Reserved,
+    StockDeck,
+    Market,
     Owned,
     Removed
 }
 ```
 
-상태 의미:
-
-| 상태 | 의미 |
-|---|---|
-| Deck | 아직 시장에 나오지 않은 카드 |
-| MarketTape | 시장 테이프에 표시 중인 카드 |
-| Reserved | 예약 구역에 보관 중인 카드 |
-| Owned | 플레이어가 매수 완료한 카드 |
-| Removed | 시장에서 제거되었거나 더 이상 사용하지 않는 카드 |
-
----
-
-## 19. 시장 카드
-
-시장 테이프에 표시된 카드를 시장 카드라고 한다.
-
-시장 카드의 가능 행동:
-
-```text
-- 카드 상세보기
-- 매수
-- 예약
-```
-
-시장 카드를 매수하면 해당 시장 슬롯만 새 카드로 보충한다.
-
-```text
-시장 카드 매수
-→ 산 자리만 새 카드로 보충
-→ 시장 테이프 진행 없음
-```
-
-시장 카드를 예약하면 다음 순서로 처리한다.
-
-```text
-시장 카드 예약
-→ 예약 구역으로 이동
-→ 예약한 자리 새 카드 보충
-→ 시장 테이프 진행
-→ 딜 +1
-→ 환매 압력 +1
-→ 영업일 종료
-```
-
----
-
-## 20. 예약 카드
-
-예약 카드는 시장에서 빼내 예약 구역에 장기 보관한 카드이다.
-
-예약 카드의 가능 행동:
-
-```text
-- 카드 상세보기
-- 매수
-```
-
-예약 카드에는 예약 버튼을 표시하지 않는다.
-
-```text
-예약 카드 상세보기
-→ 예약 버튼 숨김
-```
-
-예약 카드를 매수하면 예약 구역만 비운다.
-
-```text
-예약 카드 매수
-→ 예약 구역 비움
-→ 시장 테이프 변화 없음
-```
-
-예약 카드는 분기와 회계년도 전환 후에도 유지된다.
-
-```text
-분기 전환
-→ 예약 카드 유지
-
-회계년도 전환
-→ 예약 카드 유지
-```
-
-예약 카드는 매수 전까지 운용가치에 포함되지 않는다.
-
----
-
-## 21. 보유 자산
-
-매수 완료된 카드는 보유 자산이 된다.
-
-보유 자산의 역할:
-
-```text
-- 운용가치 합산
-- 영업일 시작 운용 수익 발생
-- 분기 마감 정산 대상
-- 태그 기반 효과 조건
-```
-
-보유 자산은 시장에 다시 등장하지 않는다.
-
-```text
-보유 중인 자산
-→ 시장 재등장 불가
-```
-
-MVP에서는 보유 자산 매각 기능은 다루지 않는다.
-
----
-
-## 22. 카드 상세보기 표시 정보
-
-카드 상세보기에는 다음 정보를 표시한다.
-
-```text
-- 카드 이미지
-- 카드 이름
-- 카드 설명
-- 운용가치
-- 운용 수익
-- 현금 비용
-- 전문 자원 비용
-- 태그
-- 희귀도
-- 닫기 버튼
-- 매수 버튼
-- 예약 버튼
-```
-
-예약 버튼은 시장 카드 상세보기에서만 표시한다.
-
-카드 상세보기는 시장 영역을 대체한다.
-
----
-
-## 23. 카드 매수 처리와 카드 데이터
-
-매수 확정 시 다음 정보를 사용한다.
-
-```text
-- CashCost
-- ProfessionalCost
-- ManagementValue
-- IncomeCash
-- TagIds
-- AssetClassTagIds
-- PurchaseSource
-```
-
-매수 확정 후 처리:
-
-```text
-자원 소비
-→ 현금 차감
-→ 카드 상태 Owned로 변경
-→ 보유 자산 목록에 추가
-→ AcquiredOrder 부여
-→ 시장 카드면 산 자리 보충
-→ 예약 카드면 예약 구역 비움
-```
-
----
-
-## 24. 카드 예약 처리와 카드 데이터
-
-예약은 시장 카드에만 가능하다.
-
-예약 처리:
-
-```text
-시장 카드 선택
-→ 예약 버튼 클릭
-→ 카드 상태 Reserved로 변경
-→ 예약 구역에 배치
-→ 예약한 시장 슬롯 새 카드로 보충
-→ 시장 테이프 진행
-→ 딜 +1
-→ 환매 압력 +1
-→ 영업일 종료
-```
-
-예약 구역이 가득 차면 예약 버튼은 비활성화한다.
-
-```text
-예약 구역 3 / 3
-→ 예약 버튼 비활성화
-```
-
----
-
-## 25. 운용가치와 최종 평가
-
-최종 평가 기준은 운용가치이다.
-
-```text
-최종 운용가치
-= 보유 자산 카드들의 ManagementValue 합계
-```
-
-최종 평가 테이블은 다음 필드를 사용한다.
+예약은 별도 상태나 구역이 아니라 시장 슬롯의 잠금 상태로 관리한다.
 
 ```csharp
-public class FinalRatingData
+public class MarketSlot
 {
-    public string Id;
-    public string Grade;
-    public string Title;
-    public int MinManagementValue;
+    public int SlotIndex;
+    public MarketCardRuntimeData Card;
+    public bool IsReserved;
 }
 ```
 
-초기 임시 기준:
-
-| 등급 | 칭호 | 임시 운용가치 기준 |
-|---|---|---:|
-| D | 생존한 운용자 | 0+ |
-| C | 신중한 운용자 | 50+ |
-| B | 유능한 펀드매니저 | 100+ |
-| A | 스타 펀드매니저 | 150+ |
-| S | 전설적인 펀드매니저 | 200+ |
-
-기준값은 밸런스 테이블에서 조정 가능하게 둔다.
-
 ---
 
-## 26. 데이터 구조 예시
-
-### 26.1 AssetCardData
+## 14. 데이터 구조 제안
 
 ```csharp
-public class AssetCardData
+public class InvestmentPhilosophyCost
 {
-    public string Id;
-    public string DisplayName;
-    public string Description;
+    public int Reading;
+    public int Meditation;
+    public int Patience;
+}
+```
 
+```csharp
+public class StockCardData
+{
+    public string StockId;
+    public string DisplayName;
     public string ImageResourcePath;
 
-    public AssetRarity Rarity;
+    public CardRarity Rarity;
 
     public int CashCost;
-    public ProfessionalResourceCost ProfessionalCost;
+    public InvestmentPhilosophyCost PhilosophyCost;
 
-    public int ManagementValue;
-    public int IncomeCash;
+    public int BaseValue;
+    public int BaseDividend;
+    public int FoilValue;
+    public int FoilDividend;
 
-    public List<string> AssetClassTagIds;
-    public List<string> TagIds;
+    public int MinCopiesInDeck;
+    public int MaxCopiesInDeck;
 }
 ```
 
----
-
-### 26.2 AssetCardRuntimeData
-
 ```csharp
-public class AssetCardRuntimeData
+public class StockRuntimeData
 {
-    public AssetCardData BaseData;
+    public StockCardData BaseData;
+    public StockRuntimeState RuntimeState;
 
-    public AssetCardRuntimeState RuntimeState;
-
-    public PurchaseSource? PurchaseSource;
-
-    public int? MarketTapeZoneIndex;
+    public bool IsFoil;
     public int? MarketSlotIndex;
-    public int? ReservedSlotIndex;
-
+    public int? PortfolioSlotIndex;
     public int? AcquiredOrder;
 }
 ```
 
 ---
 
-### 26.3 ProfessionalResourceCost
-
-```csharp
-public class ProfessionalResourceCost
-{
-    public int Research;
-    public int Credit;
-    public int Commodity;
-}
-```
-
----
-
-### 26.4 TagData
-
-```csharp
-public class TagData
-{
-    public string Id;
-    public string DisplayName;
-    public TagType Type;
-    public int SortOrder;
-}
-```
-
----
-
-### 26.5 TagType
-
-```csharp
-public enum TagType
-{
-    AssetClass,
-    General
-}
-```
-
----
-
-## 27. 구현 함수 예시
-
-### 27.1 운용가치 계산
-
-```csharp
-int CalculateTotalManagementValue()
-{
-    return OwnedAssets.Sum(asset =>
-        asset.BaseData.ManagementValue
-    );
-}
-```
-
----
-
-### 27.2 보유 자산 수
-
-```csharp
-int GetOwnedAssetCount()
-{
-    return OwnedAssets.Count;
-}
-```
-
----
-
-### 27.3 보유 자산의 영업일 시작 현금 적용
-
-```csharp
-void ApplyOwnedAssetIncome()
-{
-    int totalIncome = OwnedAssets.Sum(asset =>
-        asset.BaseData.IncomeCash
-    );
-
-    AddPerformanceCash(totalIncome);
-}
-```
-
----
-
-### 27.4 보유 자산 정렬
-
-```csharp
-IEnumerable<AssetCardRuntimeData> SortOwnedAssets(
-    IEnumerable<AssetCardRuntimeData> assets
-)
-{
-    return assets
-        .OrderBy(asset => GetPrimaryAssetClassSortOrder(asset))
-        .ThenBy(asset => GetRaritySortOrder(asset.BaseData.Rarity))
-        .ThenBy(asset => asset.AcquiredOrder);
-}
-```
-
----
-
-## 28. 구현 시 주의사항
+## 15. 구현 시 주의사항
 
 ```text
-- AUM이라는 용어를 사용하지 않는다.
-- 카드 점수 개념은 운용가치로 통일한다.
-- 운용가치는 현금과 무관하다.
-- 예약 카드는 운용가치에 포함하지 않는다.
-- 시장 카드는 운용가치에 포함하지 않는다.
-- 보유 자산만 운용가치 합산 대상이다.
-- 예약 카드 매수도 일반 자산 매수로 판정한다.
-- 매수 출처는 별도로 기록한다.
-- 보유 자산은 시장에 다시 등장하지 않는다.
-- 자산군 태그 정렬은 태그 테이블의 sort_order를 따른다.
-- sort_order 동률이면 id 오름차순으로 정렬한다.
-- 보유 자산 내부 정렬은 자산군 태그 → 희귀도 → 획득 순서이다.
+- 포트폴리오에는 주식만 들어간다.
+- 자산이라는 용어 대신 주식을 사용한다.
+- 운용가치 대신 가치를 사용한다.
+- 운용 수익은 배당금/수익으로 구분한다.
+- 포트폴리오는 최대 8칸이다.
+- 포트폴리오가 가득 찬 경우 기본적으로 신규 매수는 불가능하다.
+- 동일 주식 2장 보유 상태에서 3번째 동일 주식 매수는 호일 예외로 허용한다.
+- 동일 주식 3장은 즉시 1장 호일로 합쳐진다.
+- 호일 수치는 기획자가 직접 지정한다.
+- 호일 완성 시 같은 종목의 덱/시장/예약 주식을 제거한다.
+- 소모형 자원 카드는 포트폴리오에 들어가지 않는다.
+- 주식 매도는 영업일을 소비하지 않고 수익을 발생시킨다.
 ```

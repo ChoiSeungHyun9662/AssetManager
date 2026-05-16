@@ -2,71 +2,71 @@
 
 ## 1. 목적
 
-이 문서는 런 완료 시 표시되는 최종 정산 화면과 최종 평가 규칙을 정의한다.
+이 문서는 런 완료 후 표시되는 최종 정산 화면과 최종 평가 규칙을 정의한다.
 
-최종 정산은 플레이어가 3회계년도 4Q까지 완료하고, 환매 압력으로 인한 런 실패가 발생하지 않았을 때 진입하는 결과 화면이다.
+최종 정산은 플레이어가 3회계연도 4Q까지 완료하고 파산하지 않았을 때 진입하는 결과 화면이다.
 
 ```text
-3회계년도 4Q 마감
-→ 환매 압력 실패 없음
-→ 최종 정산
+3회계연도 4Q 마감
+-> 월세 밀림 10 미만
+-> 최종 정산
 ```
 
 최종 정산의 목적은 다음과 같다.
 
 ```text
-- 최종 운용가치 표시
+- 최종 가치 표시
 - 최종 평가 등급 표시
-- 총 운용 수익 표시
-- 보유 자산 수 표시
-- 환매 압력 표시
+- 총 수익 표시
+- 보유 주식 수 표시
+- 월세 밀림 표시
 - 운용 코멘트 표시
 ```
 
 ---
 
-## 2. 최종 정산 진입 조건
+## 2. 진입 조건
 
-최종 정산은 다음 조건을 만족할 때 진입한다.
+최종 정산은 다음 조건을 모두 만족할 때 진입한다.
 
 ```text
-- 3회계년도 4Q를 완료했다.
+- 3회계연도 4Q를 완료했다.
 - 분기 마감 처리가 끝났다.
-- 환매 압력이 10 미만이다.
-- 런 실패가 발생하지 않았다.
+- 월세 밀림이 10 미만이다.
+- 파산이 발생하지 않았다.
 ```
 
 진입 흐름:
 
 ```text
-3회계년도 4Q 마지막 영업일 종료
-→ 분기 마감 정산
-→ 분기 목표 달성률 계산
-→ 환매 압력 처리
-→ 환매 압력 10 미만
-→ 최종 정산
+3회계연도 4Q 마지막 영업일 종료
+-> 분기 마감 정산
+-> 분기 목표 달성률 계산
+-> 월세 밀림 처리
+-> 월세 밀림 10 미만
+-> 최종 정산
 ```
 
-환매 압력이 10 이상이면 최종 정산으로 가지 않는다.
+월세 밀림이 10 이상이면 최종 정산으로 가지 않는다.
 
 ```text
-환매 압력 10 이상
-→ 대규모 환매 발생
-→ 런 실패
+월세 밀림 10 이상
+-> 파산
+-> 게임 오버
 ```
 
 ---
 
-## 3. 최종 정산 화면 표시 정보
+## 3. 화면 표시 정보
 
 최종 정산 화면에는 다음 정보를 표시한다.
 
 ```text
-- 최종 운용가치
+- 최종 가치
 - 최종 평가
-- 총 운용 수익
-- 보유 자산 수
-- 환매 압력
+- 총 수익
+- 보유 주식 수
+- 월세 밀림
 - 운용 코멘트
 ```
 
@@ -75,85 +75,83 @@
 ```text
 최종 정산
 
-최종 운용가치: 180
-최종 평가: A · 스타 펀드매니저
+최종 가치: 180
+최종 평가: A · 슈퍼 개미
 
-총 운용 수익: 92
-보유 자산: 24장
-환매 압력: 7 / 10
+총 수익: 92
+보유 주식: 7 / 8
+월세 밀림: 7 / 10
 
-운용 코멘트:
-높은 환매 압력을 감수하며 스타급 성과를 낸 공격적인 운용입니다.
+운용 코멘트
+높은 월세 밀림을 감수하면서도 강한 포트폴리오를 완성했습니다.
 ```
 
 최종 화면은 긴 리포트가 아니라 결과 발표에 가깝게 구성한다.
-회계년도별/분기별 상세 리포트는 최종 정산 화면에서 표시하지 않는다.
+회계연도별, 분기별 상세 리포트는 MVP 최종 정산 화면에서는 생략한다.
 
 ---
 
-## 4. 최종 운용가치
+## 4. 최종 가치
 
-최종 운용가치는 보유 자산 카드들의 운용가치 합계이다.
-
-```text
-최종 운용가치
-= 보유 자산 카드들의 운용가치 합계
-```
-
-운용가치는 자산 카드가 가진 고유 점수이다.
-스플렌더의 승점과 같은 개념이다.
-
-최종 운용가치에 포함하는 것:
+최종 가치는 보유 주식 가치의 합계다.
 
 ```text
-- 보유 자산 카드의 운용가치
+최종 가치 = 보유 주식의 가치 합계
 ```
 
-포함하지 않는 것:
+최종 가치에 포함되는 것:
+
+```text
+- 보유 중인 일반 주식의 가치
+- 보유 중인 호일 주식의 가치
+```
+
+최종 가치에 포함되지 않는 것:
 
 ```text
 - 현금
-- 리서치
-- 신용
-- 원자재
+- 독서
+- 명상
+- 인내
 - 딜
-- 예약 카드
+- 총 수익
 - 시장 카드
-- 운용 수익
+- 예약된 주식
 ```
+
+현금이 많아도 최종 가치에는 포함하지 않는다.
+평가는 플레이어가 끝까지 들고 간 주식 포트폴리오의 힘을 기준으로 한다.
 
 예시:
 
 ```text
-보유 자산:
-성장 기술주 운용가치 5
-국채 ETF 운용가치 3
-원자재 펀드 운용가치 4
+보유 주식:
+성장 기술주 가치 5
+국밥 ETF 가치 3
+호일 배당 귀족주 가치 9
 
-최종 운용가치 = 12
+최종 가치 = 17
 ```
-
-현재 현금이 많아도 최종 운용가치에는 포함하지 않는다.
 
 ---
 
 ## 5. 최종 평가
 
-최종 평가는 최종 운용가치 기준으로 산정한다.
+최종 평가는 최종 가치 기준으로 결정한다.
 
 ```text
 최종 평가
-= 최종 운용가치 기준
+= 최종 가치 기준
 ```
 
-환매 압력은 최종 평가 등급을 낮추지 않는다.
+월세 밀림은 최종 평가 등급을 낮추지 않는다.
 
 ```text
-환매 압력 높음
-→ 최종 등급 하락 없음
+월세 밀림 높음
+-> 최종 등급 하락 없음
 ```
 
-환매 압력은 별도의 운용 코멘트에 사용한다.
+월세 밀림은 별도의 운용 코멘트에 사용한다.
 
 ---
 
@@ -162,147 +160,139 @@
 최종 평가는 `등급 문자 + 칭호` 조합의 5단계로 구성한다.
 
 ```text
-D · 생존한 운용자
-C · 신중한 운용자
-B · 유능한 펀드매니저
-A · 스타 펀드매니저
-S · 전설적인 펀드매니저
+D · 생존형 투자자
+C · 신중한 투자자
+B · 유능한 포트폴리오 매니저
+A · 슈퍼 개미
+S · 전설적인 투자자
 ```
 
-기준값은 테이블 조정형으로 둔다.
+기준값은 데이터 테이블 조정 대상으로 둔다.
 
-초기 임시 기준값:
+초기 테스트용 기준값:
 
-| 등급 | 칭호 | 임시 운용가치 기준 |
+| 등급 | 칭호 | 임시 최종 가치 기준 |
 |---|---|---:|
-| D | 생존한 운용자 | 0+ |
-| C | 신중한 운용자 | 50+ |
-| B | 유능한 펀드매니저 | 100+ |
-| A | 스타 펀드매니저 | 150+ |
-| S | 전설적인 펀드매니저 | 200+ |
+| D | 생존형 투자자 | 0+ |
+| C | 신중한 투자자 | 50+ |
+| B | 유능한 포트폴리오 매니저 | 100+ |
+| A | 슈퍼 개미 | 150+ |
+| S | 전설적인 투자자 | 200+ |
 
-이 수치는 최종 밸런스 값이 아니라 초기 테스트용 기본값이다.
+수치는 최종 밸런스 값이 아니라 초기 테스트용 기본값이다.
 
 ---
 
 ## 7. 최종 평가 판정 방식
 
-최종 운용가치가 각 등급의 최소 기준값 이상이면 해당 등급 후보가 된다.
+최종 가치가 각 등급의 최소 기준값 이상이면 해당 등급 후보가 된다.
 그중 가장 높은 등급을 최종 평가로 사용한다.
 
 예시:
 
 ```text
-최종 운용가치 137
-→ B · 유능한 펀드매니저
+최종 가치 137
+-> B · 유능한 포트폴리오 매니저
 
-최종 운용가치 180
-→ A · 스타 펀드매니저
+최종 가치 180
+-> A · 슈퍼 개미
 
-최종 운용가치 211
-→ S · 전설적인 펀드매니저
+최종 가치 211
+-> S · 전설적인 투자자
 ```
 
 판정 방식:
 
 ```text
 FinalRatingTable에서
-MinManagementValue <= FinalManagementValue인 항목 중
-MinManagementValue가 가장 높은 항목 선택
+MinFinalValue <= FinalValue인 항목 중
+MinFinalValue가 가장 높은 항목 선택
 ```
 
 ---
 
-## 8. 총 운용 수익
+## 8. 총 수익
 
-총 운용 수익은 전체 런 동안 발생한 운용 성과 현금 합계이다.
+총 수익은 전체 런 동안 수익으로 분류된 현금의 합계다.
 
 포함:
 
 ```text
-- 보유 자산의 영업일 시작 현금
+- 배당금
+- 주식 매도 수익
 - 분기 마감 정산 수익
-- 기타 운용 성과로 분류된 현금
+- 그 밖에 수익으로 명시된 현금
 ```
 
 제외:
 
 ```text
-- 자원 확보로 얻은 현금
+- 소모형 자원 카드로 획득한 현금
+- 시작 현금
+- 단순 환급 또는 비용 취소
 ```
 
-자원 확보로 얻은 현금은 조달 현금이므로 총 운용 수익에 포함하지 않는다.
+총 수익 계산:
 
 ```text
-조달 현금
-= 조달 현금
-≠ 운용 수익
+총 수익
+= 1회계연도 수익
++ 2회계연도 수익
++ 3회계연도 수익
 ```
 
-총 운용 수익 계산:
-
-```text
-총 운용 수익
-= 1회계년도 운용 수익
-+ 2회계년도 운용 수익
-+ 3회계년도 운용 수익
-```
+총 수익은 최종 등급 판정 기준이 아니다.
+플레이어가 런 동안 얼마나 많은 현금 흐름을 만들었는지 보여주는 보조 지표다.
 
 ---
 
-## 9. 보유 자산 수
+## 9. 보유 주식 수
 
-보유 자산 수는 매수 완료된 자산 카드 수이다.
-
-```text
-보유 자산 수
-= Owned 상태의 자산 카드 수
-```
-
-포함:
+보유 주식 수는 최종 시점에 포트폴리오 슬롯을 점유한 주식 수다.
 
 ```text
-- 시장에서 매수한 자산
-- 예약 카드에서 매수한 자산
+보유 주식 수 = 포트폴리오에서 점유된 슬롯 수
 ```
 
-제외:
+일반 주식 1장은 1칸을 차지한다.
+호일 주식 1장은 1칸을 차지한다.
+
+표시 예시:
 
 ```text
-- 예약 구역에 아직 남아 있는 카드
-- 시장 테이프 카드
-- 제거된 카드
+보유 주식: 7 / 8
 ```
+
+예약된 주식과 시장 카드는 보유 주식 수에 포함하지 않는다.
 
 ---
 
-## 10. 환매 압력 표시
+## 10. 월세 밀림 표시
 
-최종 정산 화면에는 최종 환매 압력을 표시한다.
+최종 정산 화면에는 최종 월세 밀림을 표시한다.
 
 예시:
 
 ```text
-환매 압력: 7 / 10
+월세 밀림: 7 / 10
 ```
 
-환매 압력이 10 이상이면 이미 런 실패가 발생했어야 하므로 최종 정산에 진입할 수 없다.
+월세 밀림이 10 이상이면 이미 파산이 발생했으므로 최종 정산에 진입할 수 없다.
 
 ```text
-환매 압력 10 이상
-→ 런 실패
-→ 최종 정산 없음
+월세 밀림 10 이상
+-> 파산
+-> 최종 정산 없음
 ```
 
 ---
 
 ## 11. 운용 코멘트
 
-운용 코멘트는 최종 등급과 환매 압력 단계를 함께 기준으로 결정한다.
+운용 코멘트는 최종 등급과 월세 밀림 단계를 함께 기준으로 결정한다.
 
 ```text
-운용 코멘트
-= 최종 평가 등급 × 환매 압력 단계
+운용 코멘트 = 최종 평가 등급 x 월세 밀림 단계
 ```
 
 최종 평가 등급:
@@ -311,28 +301,28 @@ MinManagementValue가 가장 높은 항목 선택
 D / C / B / A / S
 ```
 
-환매 압력 단계:
+월세 밀림 단계:
 
 ```text
 Low / Medium / High
 ```
 
-총 15개 코멘트를 준비할 수 있다.
+총 15개의 코멘트를 준비할 수 있다.
 
 ```text
-5등급 × 3단계 = 15개 코멘트
+5등급 x 3단계 = 15개 코멘트
 ```
 
 운용 코멘트는 최종 등급을 바꾸지 않는다.
-플레이어가 어떤 리스크 성향으로 운용했는지 해석해주는 역할이다.
+플레이어가 어떤 리스크 성향으로 투자했는지 해석해주는 역할이다.
 
 ---
 
-## 12. 환매 압력 단계
+## 12. 월세 밀림 단계
 
-환매 압력 단계는 테이블 조정형으로 둔다.
+월세 밀림 단계는 데이터 테이블 조정 대상으로 둔다.
 
-초기 임시값:
+초기 테스트용 값:
 
 ```text
 낮음: 0~2
@@ -343,7 +333,7 @@ Low / Medium / High
 구현 enum 예시:
 
 ```csharp
-public enum RedemptionPressureLevel
+public enum RentArrearsLevel
 {
     Low,
     Medium,
@@ -355,13 +345,13 @@ public enum RedemptionPressureLevel
 
 ```text
 Low
-min_redemption_pressure: 0
+min_rent_arrears: 0
 
 Medium
-min_redemption_pressure: 3
+min_rent_arrears: 3
 
 High
-min_redemption_pressure: 6
+min_rent_arrears: 6
 ```
 
 ---
@@ -372,140 +362,129 @@ min_redemption_pressure: 6
 
 ```text
 S + Low
-→ 압도적인 성과와 안정성을 모두 달성한 운용입니다.
+-> 압도적인 가치와 안정성을 모두 달성한 투자입니다.
 
 S + Medium
-→ 적절한 리스크를 감수해 전설적인 성과를 낸 운용입니다.
+-> 적절한 리스크를 감수해 전설적인 성과를 냈습니다.
 
 S + High
-→ 높은 환매 압력을 감수하고도 전설적인 성과를 낸 공격적 운용입니다.
+-> 월세가 턱밑까지 왔지만, 결과만큼은 전설적입니다.
 ```
-
----
 
 ### 13.2 A 등급
 
 ```text
 A + Low
-→ 안정적으로 큰 성과를 낸 우수한 운용입니다.
+-> 안정적으로 강한 포트폴리오를 완성했습니다.
 
 A + Medium
-→ 균형 잡힌 리스크 관리로 스타급 성과를 달성한 운용입니다.
+-> 균형 잡힌 리스크 관리로 뛰어난 성과를 냈습니다.
 
 A + High
-→ 높은 환매 압력을 감수하며 스타급 성과를 낸 공격적인 운용입니다.
+-> 아슬아슬한 생활감 속에서도 슈퍼 개미의 체급을 증명했습니다.
 ```
-
----
 
 ### 13.3 B 등급
 
 ```text
 B + Low
-→ 안정적인 관리 속에서 준수한 성과를 낸 운용입니다.
+-> 안정적인 관리 속에 준수한 성과를 냈습니다.
 
 B + Medium
-→ 적절한 리스크와 성장 추구가 균형을 이룬 운용입니다.
+-> 리스크와 성장 추구가 균형을 이룬 투자였습니다.
 
 B + High
-→ 리스크를 적극적으로 감수해 유의미한 성과를 만든 운용입니다.
+-> 월세 독촉을 견디며 의미 있는 포트폴리오를 만들었습니다.
 ```
-
----
 
 ### 13.4 C 등급
 
 ```text
 C + Low
-→ 신중했지만 성장 동력이 부족했던 운용입니다.
+-> 조심스럽게 버텼지만 성장 동력은 부족했습니다.
 
 C + Medium
-→ 리스크와 성과 모두 제한적인 보수적 운용입니다.
+-> 성과와 리스크 모두 제한적인 보수적 투자였습니다.
 
 C + High
-→ 리스크는 컸지만 성과로 충분히 이어지지 못한 운용입니다.
+-> 생활 압박은 커졌지만 성과가 충분히 따라오지는 못했습니다.
 ```
-
----
 
 ### 13.5 D 등급
 
 ```text
 D + Low
-→ 손실은 억제했지만 성장 기회를 살리지 못한 운용입니다.
+-> 잃지는 않았지만 큰 기회도 만들지 못했습니다.
 
 D + Medium
-→ 일정한 리스크를 감수했지만 성과가 부족했던 운용입니다.
+-> 일정한 리스크를 감수했지만 성과가 부족했습니다.
 
 D + High
-→ 높은 환매 압력에도 성과가 부족했던 위태로운 운용입니다.
+-> 월세도 밀리고 성과도 부족한 위태로운 투자였습니다.
 ```
 
 문구는 최종 톤 조정 단계에서 변경할 수 있다.
-구조는 `등급 × 환매 압력 단계`로 유지한다.
+구조는 `등급 x 월세 밀림 단계`로 유지한다.
 
 ---
 
 ## 14. 최종 정산에서 표시하지 않는 것
 
-최종 정산 화면은 전체 런 결과를 짧게 보여주는 화면이다.
+최종 정산 화면은 전체 런 결과를 간단히 보여주는 화면이다.
 
 표시하지 않는 것:
 
 ```text
-- 회계년도별 운용 수익 상세
-- 분기별 운용 수익 상세
+- 회계연도별 수익 상세
+- 분기별 수익 상세
 - 각 분기별 마감 시나리오 목록
 - 카드별 수익 기여도
-- 전체 자산 목록 상세
+- 전체 주식 목록 상세
 ```
 
-이 정보들은 필요하다면 별도 상세 리포트 화면에서 후순위로 제공할 수 있다.
+이 정보가 필요하다면 별도 상세 리포트 화면에서 우선순위로 제공할 수 있다.
 MVP 최종 정산 화면에서는 생략한다.
 
 ---
 
-## 15. 최종 정산 처리 순서
+## 15. 처리 순서
 
-최종 정산 진입 시 처리 순서는 다음과 같다.
+최종 정산 진입 후 처리 순서는 다음과 같다.
 
 ```text
-1. 최종 운용가치 계산
-2. 최종 평가 등급 산정
-3. 총 운용 수익 조회
-4. 보유 자산 수 조회
-5. 최종 환매 압력 조회
-6. 환매 압력 단계 산정
-7. 운용 코멘트 산정
+1. 최종 가치 계산
+2. 최종 평가 등급 결정
+3. 총 수익 조회
+4. 보유 주식 수 조회
+5. 최종 월세 밀림 조회
+6. 월세 밀림 단계 결정
+7. 운용 코멘트 결정
 8. 최종 정산 UI 표시
 ```
 
 ---
 
-## 16. FinalRunSummaryData
+## 16. 상태 데이터 예시
 
-최종 정산 화면 데이터 예시:
+최종 정산 화면 데이터:
 
 ```csharp
 public class FinalRunSummaryData
 {
-    public int FinalManagementValue;
+    public int FinalValue;
     public FinalRatingData FinalRating;
 
-    public int TotalEarnedCash;
-    public int OwnedAssetCount;
-    public int RedemptionPressure;
+    public int TotalRevenue;
+    public int OwnedStockSlotCount;
+    public int MaxStockSlotCount;
+    public int RentArrears;
 
-    public RedemptionPressureLevel RedemptionPressureLevel;
+    public RentArrearsLevel RentArrearsLevel;
     public FinalManagementCommentData ManagementComment;
 }
 ```
 
----
-
-## 17. FinalRatingData
-
-최종 평가 데이터 예시:
+최종 평가 데이터:
 
 ```csharp
 public class FinalRatingData
@@ -513,44 +492,11 @@ public class FinalRatingData
     public string Id;
     public string Grade;
     public string Title;
-    public int MinManagementValue;
+    public int MinFinalValue;
 }
 ```
 
-예시 데이터:
-
-```text
-id: rating_d
-grade: D
-title: 생존한 운용자
-min_management_value: 0
-
-id: rating_c
-grade: C
-title: 신중한 운용자
-min_management_value: 50
-
-id: rating_b
-grade: B
-title: 유능한 펀드매니저
-min_management_value: 100
-
-id: rating_a
-grade: A
-title: 스타 펀드매니저
-min_management_value: 150
-
-id: rating_s
-grade: S
-title: 전설적인 펀드매니저
-min_management_value: 200
-```
-
----
-
-## 18. FinalManagementCommentData
-
-운용 코멘트 데이터 예시:
+운용 코멘트 데이터:
 
 ```csharp
 public class FinalManagementCommentData
@@ -558,138 +504,71 @@ public class FinalManagementCommentData
     public string Id;
 
     public string FinalRatingGrade;
-    public RedemptionPressureLevel RedemptionPressureLevel;
+    public RentArrearsLevel RentArrearsLevel;
 
     public string Comment;
 }
 ```
 
-예시 데이터:
-
-```text
-id: comment_a_high
-final_rating_grade: A
-redemption_pressure_level: High
-comment: 높은 환매 압력을 감수하며 스타급 성과를 낸 공격적인 운용입니다.
-```
-
 ---
 
-## 19. 최종 운용가치 계산 함수
+## 17. 처리 예시
 
 ```csharp
-int CalculateFinalManagementValue()
+int CalculateFinalValue()
 {
-    return OwnedAssets.Sum(asset =>
-        asset.BaseData.ManagementValue
+    return Portfolio.Stocks.Sum(stock =>
+        stock.CurrentValue
     );
 }
 ```
 
-보유 자산만 계산 대상이다.
-
-```text
-OwnedAssets만 포함
-ReservedAssets 제외
-MarketCards 제외
-```
-
----
-
-## 20. 최종 평가 판정 함수
-
 ```csharp
-FinalRatingData GetFinalRating(int finalManagementValue)
+FinalRatingData GetFinalRating(int finalValue)
 {
     return FinalRatingTable
         .Where(rating =>
-            finalManagementValue >= rating.MinManagementValue
+            finalValue >= rating.MinFinalValue
         )
         .OrderByDescending(rating =>
-            rating.MinManagementValue
+            rating.MinFinalValue
         )
         .First();
 }
 ```
 
----
-
-## 21. 환매 압력 단계 판정 함수
-
-```csharp
-RedemptionPressureLevel GetRedemptionPressureLevel(
-    int redemptionPressure
-)
-{
-    return RedemptionPressureLevelTable
-        .Where(data =>
-            redemptionPressure >= data.MinRedemptionPressure
-        )
-        .OrderByDescending(data =>
-            data.MinRedemptionPressure
-        )
-        .First()
-        .Level;
-}
-```
-
----
-
-## 22. 운용 코멘트 판정 함수
-
-```csharp
-FinalManagementCommentData GetManagementComment(
-    string finalRatingGrade,
-    RedemptionPressureLevel pressureLevel
-)
-{
-    return FinalManagementCommentTable
-        .First(comment =>
-            comment.FinalRatingGrade == finalRatingGrade
-            && comment.RedemptionPressureLevel == pressureLevel
-        );
-}
-```
-
----
-
-## 23. 최종 정산 데이터 생성 함수
-
 ```csharp
 FinalRunSummaryData BuildFinalRunSummary()
 {
-    int finalManagementValue = CalculateFinalManagementValue();
+    int finalValue = CalculateFinalValue();
 
     FinalRatingData finalRating =
-        GetFinalRating(finalManagementValue);
+        GetFinalRating(finalValue);
 
-    RedemptionPressureLevel pressureLevel =
-        GetRedemptionPressureLevel(CurrentRedemptionPressure);
+    RentArrearsLevel rentArrearsLevel =
+        GetRentArrearsLevel(CurrentRentArrears);
 
     FinalManagementCommentData comment =
         GetManagementComment(
             finalRating.Grade,
-            pressureLevel
+            rentArrearsLevel
         );
 
     return new FinalRunSummaryData
     {
-        FinalManagementValue = finalManagementValue,
+        FinalValue = finalValue,
         FinalRating = finalRating,
 
-        TotalEarnedCash = TotalEarnedCash,
-        OwnedAssetCount = OwnedAssets.Count,
-        RedemptionPressure = CurrentRedemptionPressure,
+        TotalRevenue = TotalRevenue,
+        OwnedStockSlotCount = Portfolio.OccupiedSlotCount,
+        MaxStockSlotCount = Portfolio.MaxSlotCount,
+        RentArrears = CurrentRentArrears,
 
-        RedemptionPressureLevel = pressureLevel,
+        RentArrearsLevel = rentArrearsLevel,
         ManagementComment = comment
     };
 }
 ```
-
----
-
-## 24. 최종 정산 화면 표시 예시
 
 ```csharp
 void ShowFinalSettlement()
@@ -702,60 +581,44 @@ void ShowFinalSettlement()
 }
 ```
 
-UI 예시:
+---
+
+## 18. 파산 화면과의 차이
+
+월세 밀림으로 파산이 발생하면 최종 정산 화면으로 가지 않는다.
 
 ```text
-최종 정산
+월세 밀림 10 이상
+-> 파산 화면
+```
 
-최종 운용가치: 180
-최종 평가: A · 스타 펀드매니저
+파산 화면은 별도 화면이다.
+파산 화면에서는 최종 평가 등급을 표시하지 않는다.
 
-총 운용 수익: 92
-보유 자산: 24장
-환매 압력: 7 / 10
+파산 화면에서 표시할 수 있는 정보:
 
-운용 코멘트:
-높은 환매 압력을 감수하며 스타급 성과를 낸 공격적인 운용입니다.
+```text
+- 실패 사유: 월세 밀림
+- 도달 회계연도 / 분기
+- 현재 가치
+- 총 수익
+- 보유 주식 수
+- 월세 밀림
 ```
 
 ---
 
-## 25. 실패 화면과의 차이
-
-환매 압력으로 런 실패가 발생하면 최종 정산 화면으로 가지 않는다.
+## 19. 구현 시 주의사항
 
 ```text
-환매 압력 10 이상
-→ 런 실패 화면
+- 최종 정산은 3회계연도 4Q 완료 뒤에만 진입한다.
+- 월세 밀림이 10 이상이면 최종 정산으로 가지 않는다.
+- 최종 가치는 보유 주식 가치의 합계다.
+- 현금은 최종 가치에 포함하지 않는다.
+- 예약된 주식은 최종 가치에 포함하지 않는다.
+- 최종 평가는 최종 가치 기준이다.
+- 월세 밀림은 최종 등급을 낮추지 않는다.
+- 월세 밀림은 운용 코멘트 결정에 사용한다.
+- 총 수익에는 소모형 자원 카드로 얻은 현금을 포함하지 않는다.
+- 등급 기준값과 코멘트 문구는 데이터 테이블로 조정 가능하게 둔다.
 ```
-
-실패 화면은 별도 화면이다.
-실패 화면에서는 최종 평가 등급을 표시하지 않는다.
-
-실패 화면에 표시할 수 있는 정보:
-
-```text
-- 실패 사유: 대규모 환매 발생
-- 도달 회계년도 / 분기
-- 현재 운용가치
-- 총 운용 수익
-- 보유 자산 수
-- 환매 압력
-```
-
----
-
-## 26. 구현 시 주의사항
-
-```text
-- 최종 정산은 3회계년도 4Q 완료 후에만 진입한다.
-- 환매 압력 10 이상이면 최종 정산으로 가지 않는다.
-- 최종 운용가치는 보유 자산 카드의 운용가치 합계이다.
-- 현금은 최종 운용가치에 포함하지 않는다.
-- 예약 카드는 최종 운용가치에 포함하지 않는다.
-- 최종 평가는 운용가치 기준이다.
-- 환매 압력은 최종 등급을 낮추지 않는다.
-- 환매 압력은 운용 코멘트 산정에 사용한다.
-- 총 운용 수익에는 조달 현금을 포함하지 않는다.
-- 최종 정산 화면에서는 회계년도별/분기별 상세 리포트를 표시하지 않는다.
-- 등급 기준값과 운용 코멘트 문구는 데이터 테이블로 조정 가능하게 둔다.

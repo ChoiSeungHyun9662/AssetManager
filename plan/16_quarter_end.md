@@ -2,320 +2,210 @@
 
 ## 1. 목적
 
-이 문서는 분기 마지막 영업일 종료 후 진행되는 분기 마감 처리 흐름을 정의한다.
+이 문서는 분기의 마지막 영업일이 끝난 뒤 처리되는 분기 마감 흐름을 정의한다.
 
-분기 마감은 해당 분기의 운용 성과를 확정하고, 목표 달성 여부에 따라 환매 압력을 처리하는 구간이다.
-
-분기 마감의 핵심 목적은 다음과 같다.
+분기 마감의 역할은 다음과 같다.
 
 ```text
-- 보유 자산의 태그별 정산 수익 계산
-- 분기 운용 수익 확정
+- 이번 분기 수익 확정
 - 분기 목표 달성률 계산
-- 목표 미달 시 환매 압력 증가
-- 환매 압력 한도 도달 여부 검사
-- 분기 정산 UI 표시
-- 다음 분기 / 휴가 / 최종 정산으로 진행
+- 목표 미달 시 월세 밀림 증가
+- 월세 밀림 한도 도달 여부 확인
+- 분기 마감 요약 표시
+- 다음 분기, 휴가, 또는 최종 정산으로 진행
+```
+
+분기 마감은 플레이어가 이번 분기 동안 얼마나 안정적으로 수익을 만들었는지 확인하는 구간이다.
+
+---
+
+## 2. 진입 조건
+
+분기 마감은 현재 분기의 마지막 영업일이 종료되면 발생한다.
+
+```text
+마지막 영업일 종료
+-> 남은 영업일 0
+-> 분기 마감 진입
+```
+
+마지막 영업일 종료 뒤에는 새 영업일 시작 처리를 하지 않는다.
+
+```text
+마지막 영업일 종료
+-> 다음 영업일 없음
+-> 배당금 발생 없음
+-> 시장 테이프 진행 없음
+-> 분기 마감
 ```
 
 ---
 
-## 2. 분기 마감 진입 조건
+## 3. 분기 수익
 
-분기 마감은 해당 분기의 마지막 영업일이 종료되었을 때 발생한다.
+분기 수익은 해당 분기 동안 수익으로 분류된 현금의 합계다.
 
-```text
-마지막 영업일 종료
-→ 남은 영업일 0
-→ 분기 마감 진입
-```
-
-마지막 영업일 종료 후에는 다음 영업일 시작 운용 수익이 발생하지 않는다.
+분기 수익에 포함되는 항목:
 
 ```text
-마지막 영업일 종료
-→ 다음 영업일 없음
-→ 운용 수익 없음
-→ 분기 마감
+- 보유 주식의 영업일 시작 배당금
+- 주식 매도 수익
+- 분기 마감 정산 수익
+- 그 밖에 수익으로 명시된 현금
 ```
+
+분기 수익에 포함되지 않는 항목:
+
+```text
+- 소모형 자원 카드로 획득한 현금
+- 시작 현금
+- 단순 환급 또는 비용 취소
+```
+
+소모형 자원 카드로 획득한 현금은 투자 재원이며, 분기 목표 달성에 직접 반영되는 수익이 아니다.
 
 ---
 
-## 3. 분기 마감 전체 흐름
+## 4. 분기 마감 순서
 
 분기 마감 처리 순서는 다음과 같다.
 
 ```text
 1. 분기 마감 진입
-2. 태그별 정산 애니메이션 순차 재생
+2. 보유 주식별 정산 연출 표시
 3. 분기 마감 정산 수익 반영
-4. 분기 운용 수익 확정
+4. 최종 분기 수익 확정
 5. 분기 목표 달성률 계산
-6. 환매 압력 증가량 계산
-7. 환매 압력 증가 적용
-8. 환매 압력 한도 검사
-9. 실패하지 않았으면 분기 정산 UI 표시
+6. 월세 밀림 증가량 계산
+7. 월세 밀림 증가 적용
+8. 파산 여부 확인
+9. 파산하지 않았다면 분기 마감 요약 표시
 10. 플레이어가 다음 진행 입력
-11. 다음 분기 / 휴가 / 회계년도 / 최종 정산으로 이동
+11. 다음 분기 / 휴가 / 최종 정산으로 이동
 ```
 
-중요한 점은 정산 수익이 목표 달성률 계산 전에 반영되어야 한다는 것이다.
+분기 마감 정산 수익은 달성률 계산 전에 먼저 반영한다.
 
 ```text
-분기 마감 정산 수익
-→ 분기 운용 수익에 포함
-→ 목표 달성률 계산에 반영
+분기 마감 정산 수익 반영
+-> 분기 수익 확정
+-> 분기 목표 달성률 계산
 ```
 
 ---
 
-## 4. 분기 운용 수익
+## 5. 정산 수익
 
-분기 운용 수익은 해당 분기 동안 발생한 운용 성과 현금이다.
+분기 마감에서는 보유 주식의 정산 수익을 시각적으로 보여줄 수 있다.
 
-포함 대상:
-
-```text
-- 보유 자산의 영업일 시작 현금
-- 분기 마감 정산 수익
-- 기타 운용 성과로 분류된 현금
-```
-
-제외 대상:
+정산 수익은 수익으로 분류된다.
 
 ```text
-- 자원 확보로 얻은 현금
+정산 수익
+-> 현재 현금 증가
+-> 현재 분기 수익 증가
+-> 현재 회계연도 수익 증가
+-> 총 수익 증가
 ```
 
-자원 확보로 얻은 현금은 조달 현금이다.
-
-```text
-조달 현금
-= 조달 현금
-= 분기 운용 수익에 포함하지 않음
-```
+정산 수익의 구체 계산식과 주식별 기여 규칙은 별도 데이터 테이블에서 조정할 수 있다.
 
 ---
 
-## 5. 태그별 정산 애니메이션
+## 6. 분기 목표
 
-분기 마감 시 보유 자산의 태그를 기준으로 정산 애니메이션을 순차 재생한다.
-
-```text
-분기 마지막 영업일 종료
-→ 태그별 정산 애니메이션 순차 재생
-```
-
-태그별 정산은 분기 마감 정산 수익을 시각적으로 보여주는 단계이다.
-
-예시:
-
-```text
-성장 태그 정산
-→ +3 현금
-
-운용 수익 태그 정산
-→ +2 현금
-
-방어 태그 정산
-→ +1 현금
-```
-
-각 정산 애니메이션은 순차적으로 재생한다.
-
-```text
-성장 정산
-→ 운용 수익 정산
-→ 방어 정산
-→ 정산 UI 표시
-```
-
----
-
-## 6. 정산 애니메이션 스킵 규칙
-
-정산 애니메이션은 플레이어 입력으로 스킵할 수 있다.
-
-다만 하나의 입력은 하나의 태그별 정산 애니메이션만 스킵한다.
-
-```text
-클릭 1회
-→ 현재 재생 중인 태그 정산 애니메이션만 스킵
-→ 다음 태그 정산 애니메이션으로 이동
-```
-
-모든 정산 애니메이션을 한 번에 스킵하지 않는다.
-
-```text
-클릭 1회
-≠ 전체 정산 스킵
-```
-
-예시:
-
-```text
-정산 애니메이션 5개 대기
-
-클릭 1회
-→ 1번째 애니메이션만 스킵
-
-클릭 2회
-→ 2번째 애니메이션만 스킵
-```
-
----
-
-## 7. 분기 마감 정산 수익 반영
-
-태그별 정산 애니메이션이 끝나면 정산 수익을 반영한다.
-
-```text
-태그별 정산 애니메이션 완료
-→ 정산 수익 반영
-```
-
-정산 수익은 운용 수익으로 기록한다.
-
-```text
-분기 마감 정산 수익
-→ CurrentCash 증가
-→ CurrentQuarterEarnedCash 증가
-→ CurrentFiscalYearEarnedCash 증가
-→ TotalEarnedCash 증가
-```
-
-정산 수익은 조달 현금과 다르다.
-
-```text
-분기 마감 정산 수익
-= 운용 성과 현금
-```
-
----
-
-## 8. 분기 목표
-
-각 분기는 목표 운용 수익을 가진다.
+각 분기는 목표 수익을 가진다.
 
 ```text
 분기 목표
-= 해당 분기에서 달성해야 하는 운용 수익 기준
+= 해당 분기에서 달성해야 하는 수익 기준
 ```
 
-분기 목표는 현재 현금 보유량 기준이 아니다.
+분기 성공 여부는 현재 보유 현금이 아니라 분기 수익으로 판정한다.
 
 ```text
 현재 현금 >= 분기 목표
-→ 성공 판정 아님
-```
+-> 성공 판정 아님
 
-분기 성공 여부는 분기 운용 수익 기준이다.
-
-```text
-분기 운용 수익 >= 분기 목표
-→ 분기 성공
+분기 수익 >= 분기 목표
+-> 분기 성공
 ```
 
 ---
 
-## 9. 분기 성공 판정
-
-분기 운용 수익이 분기 목표 이상이면 성공이다.
-
-```text
-CurrentQuarterEarnedCash >= CurrentQuarterTargetCash
-→ 분기 성공
-```
-
-분기 성공 시 처리:
-
-```text
-- 환매 압력 증가 없음
-- 별도 보상 없음
-- 다음 일정 진행
-```
-
-성공 보상은 따로 없다.
-
-```text
-분기 성공
-= 환매 압력 증가를 피하는 것 자체가 보상
-```
-
----
-
-## 10. 분기 실패 판정
-
-분기 운용 수익이 분기 목표보다 낮으면 실패이다.
-
-```text
-CurrentQuarterEarnedCash < CurrentQuarterTargetCash
-→ 분기 실패
-```
-
-분기 실패 시에는 목표 달성률에 따라 환매 압력이 증가한다.
-
-```text
-목표의 50% 미만
-→ 환매 압력 +3
-
-목표의 75% 미만
-→ 환매 압력 +2
-
-목표의 100% 미만
-→ 환매 압력 +1
-```
-
-분기 실패가 즉시 런 실패를 의미하지는 않는다.
-다만 환매 압력이 10 이상이 되면 런 실패가 발생한다.
-
----
-
-## 11. 목표 달성률 계산
+## 7. 목표 달성률
 
 목표 달성률은 다음 방식으로 계산한다.
 
 ```text
-목표 달성률 = 분기 운용 수익 / 분기 목표
+목표 달성률 = 분기 수익 / 분기 목표
 ```
 
 예시:
 
 ```text
 분기 목표: 20
-분기 운용 수익: 14
+분기 수익: 14
 
-달성률 = 14 / 20 = 70%
+목표 달성률 = 14 / 20 = 70%
 ```
 
-분기 목표가 0 이하인 특수 상황은 발생하지 않도록 데이터에서 관리한다.
-안전 코드에서는 목표가 0 이하일 경우 성공으로 처리해 0 나누기 오류를 방지한다.
+분기 목표가 0 이하인 데이터는 만들지 않는 것을 원칙으로 한다.
+방어 코드에서는 목표가 0 이하일 경우 성공으로 처리해 0 나누기 오류를 막는다.
 
 ---
 
-## 12. 환매 압력 증가량 계산
+## 8. 성공 판정
 
-환매 압력 증가량은 목표 달성률로 결정한다.
+분기 수익이 분기 목표 이상이면 성공이다.
 
 ```text
-운용 수익 >= 목표
-→ +0
+CurrentQuarterRevenue >= CurrentQuarterTargetRevenue
+-> 분기 성공
+```
 
-운용 수익 < 목표
+성공 시 처리:
+
+```text
+- 월세 밀림 증가 없음
+- 별도 보상 없음
+- 다음 일정 진행
+```
+
+분기 성공은 월세가 더 밀리지 않는 것 자체가 보상이다.
+
+---
+
+## 9. 실패 판정과 월세 밀림 증가
+
+분기 수익이 분기 목표보다 낮으면 실패다.
+
+```text
+CurrentQuarterRevenue < CurrentQuarterTargetRevenue
+-> 분기 실패
+```
+
+분기 실패 시 목표 달성률에 따라 월세 밀림이 증가한다.
+
+```text
+수익 >= 목표
+-> +0
+
+수익 < 목표
 그리고 달성률 >= 75%
-→ +1
+-> +1
 
 달성률 < 75%
 그리고 달성률 >= 50%
-→ +2
+-> +2
 
 달성률 < 50%
-→ +3
+-> +3
 ```
 
 표로 정리하면 다음과 같다.
 
-| 달성률 | 환매 압력 증가 |
+| 목표 달성률 | 월세 밀림 증가 |
 |---:|---:|
 | 100% 이상 | +0 |
 | 75% 이상 100% 미만 | +1 |
@@ -324,47 +214,39 @@ CurrentQuarterEarnedCash < CurrentQuarterTargetCash
 
 ---
 
-## 13. 환매 압력 한도 검사
+## 10. 파산 판정
 
-분기 마감에서 환매 압력이 증가하면 즉시 한도 검사를 한다.
-
-```text
-환매 압력 증가
-→ 즉시 한도 검사
-```
-
-환매 압력 한도는 10이다.
+분기 마감에서 월세 밀림이 증가하면 즉시 한도를 확인한다.
 
 ```text
-환매 압력 >= 10
-→ 대규모 환매 발생
-→ 런 실패
+월세 밀림 증가
+-> 즉시 한도 확인
 ```
 
-분기 마감으로 환매 압력이 10 이상이 되면 다음 분기로 넘어가지 않는다.
+월세 밀림 한도는 10이다.
 
 ```text
-분기 마감
-→ 환매 압력 증가
-→ 환매 압력 10 도달
-→ 런 실패
-→ 다음 분기 진행 없음
+월세 밀림 >= 10
+-> 파산
+-> 게임 오버
 ```
+
+파산이 발생하면 분기 마감 요약을 표시하지 않고 파산 화면으로 이동한다.
 
 ---
 
-## 14. 분기 정산 UI
+## 11. 분기 마감 요약 UI
 
-환매 압력 한도 검사 후, 런 실패가 발생하지 않았다면 분기 정산 UI를 표시한다.
+파산하지 않았다면 분기 마감 요약 UI를 표시한다.
 
-분기 정산 UI에는 다음 정보를 표시한다.
+표시 정보:
 
 ```text
-- 분기 운용 수익
+- 분기 수익
 - 분기 목표
 - 목표 달성률
-- 환매 압력 증가량
-- 현재 환매 압력
+- 월세 밀림 증가량
+- 현재 월세 밀림
 ```
 
 성공 예시:
@@ -372,12 +254,12 @@ CurrentQuarterEarnedCash < CurrentQuarterTargetCash
 ```text
 분기 마감
 
-분기 운용 수익: 24
+분기 수익: 24
 분기 목표: 20
 달성률: 120%
 
-환매 압력 증가: 없음
-현재 환매 압력: 4 / 10
+월세 밀림 증가: 없음
+현재 월세 밀림: 4 / 10
 ```
 
 실패 예시:
@@ -385,79 +267,40 @@ CurrentQuarterEarnedCash < CurrentQuarterTargetCash
 ```text
 분기 마감
 
-분기 운용 수익: 14
+분기 수익: 14
 분기 목표: 20
 달성률: 70%
 
-환매 압력 증가: +2
-현재 환매 압력: 6 / 10
+월세 밀림 증가: +2
+현재 월세 밀림: 6 / 10
 ```
 
 ---
 
-## 15. 분기 정산 UI 이후 진행
+## 12. 다음 진행
 
-분기 정산 UI에서 다음 진행 버튼을 누르면 현재 위치에 따라 다음 일정으로 이동한다.
-
-```text
-1·2회계년도 1Q / 2Q 마감
-→ 다음 분기 시작
-
-1·2회계년도 3Q 마감
-→ 4Q 휴가 화면
-
-3회계년도 1Q / 2Q / 3Q 마감
-→ 다음 분기 시작
-
-3회계년도 4Q 마감
-→ 최종 정산
-```
-
-다음 분기 시작 시에는 시장 테이프를 진행한다.
+분기 마감 요약에서 계속 버튼을 누르면 현재 위치에 따라 다음 일정으로 이동한다.
 
 ```text
-같은 회계년도 내 다음 분기 시작
-→ 시장 테이프 진행
+1, 2회계연도 1Q / 2Q 마감
+-> 다음 분기 시작
+
+1, 2회계연도 3Q 마감
+-> 4Q 휴가 화면
+
+3회계연도 1Q / 2Q / 3Q 마감
+-> 다음 분기 시작
+
+3회계연도 4Q 마감
+-> 최종 정산
 ```
 
-다음 회계년도 시작 시에는 시장 테이프를 갱신한다.
-
-```text
-회계년도 시작
-→ 시장 테이프 갱신
-```
+새 분기가 시작되면 시장 테이프를 갱신한다.
+새 분기의 첫 영업일은 시장 테이프 진행을 하지 않고 시작한다.
 
 ---
 
-## 16. 회계년도 요약과 분기 수익
-
-1·2회계년도의 4Q 휴가 화면에서는 해당 회계년도의 운용 수익 요약을 표시한다.
-
-회계년도 운용 수익은 해당 회계년도 플레이 분기의 운용 수익 합산이다.
-
-```text
-1회계년도 운용 수익
-= 1Q 운용 수익
-+ 2Q 운용 수익
-+ 3Q 운용 수익
-```
-
-4Q는 휴가이므로 운용 수익이 없다.
-
-휴가 화면에는 분기별 운용 수익도 함께 표시한다.
-
-```text
-올해 운용 수익: 18
-- 1Q +4
-- 2Q +6
-- 3Q +8
-```
-
----
-
-## 17. 분기 마감 상태 데이터
-
-분기 마감 처리를 위한 데이터 예시:
+## 13. 상태 데이터 예시
 
 ```csharp
 public class QuarterEndResult
@@ -465,48 +308,44 @@ public class QuarterEndResult
     public int FiscalYearIndex;
     public int QuarterIndex;
 
-    public int QuarterEarnedCash;
-    public int QuarterTargetCash;
+    public int QuarterRevenue;
+    public int QuarterTarget;
     public float AchievementRate;
 
-    public int QuarterSettlementIncome;
-    public int RedemptionPressureIncrease;
-    public int CurrentRedemptionPressure;
+    public int QuarterSettlementRevenue;
+    public int RentArrearsIncrease;
+    public int CurrentRentArrears;
 
     public bool IsSuccess;
-    public bool IsRunFailed;
+    public bool IsBankrupt;
 }
 ```
 
----
-
-## 18. 분기 운용 수익 상태
-
-운용 수익은 다음 상태로 관리한다.
+수익 상태 예시:
 
 ```csharp
-public class RunPerformanceState
+public class RunRevenueState
 {
-    public int TotalEarnedCash;
-    public int CurrentFiscalYearEarnedCash;
-    public int CurrentQuarterEarnedCash;
+    public int TotalRevenue;
+    public int CurrentFiscalYearRevenue;
+    public int CurrentQuarterRevenue;
 
-    public List<QuarterEarnedCashData> QuarterEarnedCashHistory;
+    public List<QuarterRevenueData> QuarterRevenueHistory;
 }
 ```
 
-분기 시작 시 `CurrentQuarterEarnedCash`를 0으로 초기화한다.
+분기 시작 시 현재 분기 수익을 초기화한다.
 
 ```csharp
 void StartQuarter()
 {
-    CurrentQuarterEarnedCash = 0;
+    CurrentQuarterRevenue = 0;
 }
 ```
 
 ---
 
-## 19. 분기 마감 함수 예시
+## 14. 처리 예시
 
 ```csharp
 void ResolveQuarterEnd()
@@ -522,30 +361,30 @@ void ResolveQuarterEnd()
 ```csharp
 void ResolveQuarterEndAfterAnimations()
 {
-    int settlementIncome = CalculateQuarterSettlementIncome();
+    int settlementRevenue = CalculateQuarterSettlementRevenue();
 
-    AddPerformanceCash(settlementIncome);
+    AddRevenueCash(settlementRevenue);
 
-    QuarterEndResult result = BuildQuarterEndResult(settlementIncome);
+    QuarterEndResult result = BuildQuarterEndResult(settlementRevenue);
 
-    int pressureIncrease =
-        GetRedemptionPressureIncreaseFromQuarterResult(
-            result.QuarterEarnedCash,
-            result.QuarterTargetCash
+    int rentArrearsIncrease =
+        GetRentArrearsIncreaseFromQuarterResult(
+            result.QuarterRevenue,
+            result.QuarterTarget
         );
 
-    result.RedemptionPressureIncrease = pressureIncrease;
+    result.RentArrearsIncrease = rentArrearsIncrease;
 
-    if (pressureIncrease > 0)
+    if (rentArrearsIncrease > 0)
     {
-        AddRedemptionPressure(pressureIncrease);
+        AddRentArrears(rentArrearsIncrease);
 
-        result.CurrentRedemptionPressure = CurrentRedemptionPressure;
+        result.CurrentRentArrears = CurrentRentArrears;
 
-        if (IsRunFailedByRedemption())
+        if (IsBankruptByRentArrears())
         {
-            result.IsRunFailed = true;
-            TriggerRunFailureByRedemption();
+            result.IsBankrupt = true;
+            TriggerBankruptcy();
             return;
         }
     }
@@ -556,127 +395,17 @@ void ResolveQuarterEndAfterAnimations()
 
 ---
 
-## 20. 환매 압력 증가량 함수 예시
-
-```csharp
-int GetRedemptionPressureIncreaseFromQuarterResult(
-    int quarterEarnedCash,
-    int quarterTargetCash
-)
-{
-    if (quarterTargetCash <= 0)
-        return 0;
-
-    if (quarterEarnedCash >= quarterTargetCash)
-        return 0;
-
-    float achievementRate =
-        (float)quarterEarnedCash / quarterTargetCash;
-
-    if (achievementRate < 0.5f)
-        return 3;
-
-    if (achievementRate < 0.75f)
-        return 2;
-
-    return 1;
-}
-```
-
----
-
-## 21. 달성률 표시 함수 예시
-
-```csharp
-int GetAchievementPercent(int earnedCash, int targetCash)
-{
-    if (targetCash <= 0)
-        return 100;
-
-    return Mathf.FloorToInt(
-        ((float)earnedCash / targetCash) * 100f
-    );
-}
-```
-
----
-
-## 22. 정산 애니메이션 스킵 예시
-
-```csharp
-void OnQuarterSettlementSkipInput()
-{
-    if (!IsPlayingSettlementAnimation)
-        return;
-
-    SkipCurrentSettlementAnimationOnly();
-}
-```
-
-```csharp
-void SkipCurrentSettlementAnimationOnly()
-{
-    CompleteCurrentTagSettlementAnimationImmediately();
-
-    PlayNextTagSettlementAnimationOrFinish();
-}
-```
-
----
-
-## 23. 다음 진행 버튼 예시
-
-```csharp
-void OnQuarterEndContinueClicked()
-{
-    if (CurrentRunState == RunState.Failed)
-        return;
-
-    ProceedAfterQuarterEnd();
-}
-```
-
-```csharp
-void ProceedAfterQuarterEnd()
-{
-    if (CurrentFiscalYear == 3 && CurrentQuarter == 4)
-    {
-        ShowFinalSettlement();
-        return;
-    }
-
-    int nextQuarter = CurrentQuarter + 1;
-
-    if (IsVacationQuarter(CurrentFiscalYear, nextQuarter))
-    {
-        ShowVacationQuarterScreen();
-        return;
-    }
-
-    CurrentQuarter = nextQuarter;
-
-    AdvanceMarketTape();
-
-    StartQuarter(CurrentFiscalYear, CurrentQuarter);
-}
-```
-
----
-
-## 24. 구현 시 주의사항
+## 15. 구현 시 주의사항
 
 ```text
-- 분기 마감은 마지막 영업일 종료 후 발생한다.
-- 마지막 영업일 종료 후 다음 영업일 운용 수익은 발생하지 않는다.
-- 분기 마감 정산 수익은 운용 수익에 포함한다.
-- 조달 현금은 분기 운용 수익에 포함하지 않는다.
+- 분기 마감은 마지막 영업일 종료 뒤 발생한다.
+- 마지막 영업일 종료 뒤에는 배당금을 지급하지 않는다.
+- 정산 수익은 분기 수익에 포함한다.
+- 소모형 자원 카드로 얻은 현금은 분기 수익에 포함하지 않는다.
 - 목표 달성률 계산 전에 정산 수익을 먼저 반영한다.
 - 분기 성공 시 별도 보상은 없다.
-- 분기 실패 시 달성률에 따라 환매 압력이 증가한다.
-- 환매 압력 증가 후 즉시 한도 검사를 한다.
-- 환매 압력 10 이상이면 즉시 런 실패다.
-- 런 실패가 발생하면 분기 정산 UI 대신 실패 화면으로 이동한다.
-- 정산 애니메이션 스킵 입력 1회는 현재 태그 애니메이션 1개만 스킵한다.
-- 1·2회계년도 3Q 이후에는 4Q 휴가 화면으로 이동한다.
-- 3회계년도 4Q 이후에는 최종 정산으로 이동한다.
+- 분기 실패 시 달성률에 따라 월세 밀림을 증가시킨다.
+- 월세 밀림이 10 이상이면 즉시 파산한다.
+- 파산하면 다음 분기, 휴가, 최종 정산으로 진행하지 않는다.
+- 새 분기 시작 시 시장 테이프는 진행이 아니라 갱신된다.
 ```
