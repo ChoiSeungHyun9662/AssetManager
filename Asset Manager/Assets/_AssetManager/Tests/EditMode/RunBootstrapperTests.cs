@@ -24,12 +24,9 @@ namespace AssetManager.Tests
 
             var run = RunBootstrapper.CreateNewRun(staticData);
 
-            Assert.That(staticData.MarketConfig.SellImminentSlots, Is.EqualTo(3));
-            Assert.That(staticData.MarketConfig.CurrentMarketSlots, Is.EqualTo(3));
-            Assert.That(staticData.MarketConfig.UpcomingMarketSlots, Is.EqualTo(3));
-            Assert.That(run.MarketTape.SellImminentCards, Has.Count.EqualTo(staticData.MarketConfig.SellImminentSlots));
-            Assert.That(run.MarketTape.CurrentMarketCards, Has.Count.EqualTo(staticData.MarketConfig.CurrentMarketSlots));
-            Assert.That(run.MarketTape.UpcomingMarketCards, Has.Count.EqualTo(staticData.MarketConfig.UpcomingMarketSlots));
+            Assert.That(staticData.MarketConfig.MarketTapeSlots, Is.EqualTo(8));
+            Assert.That(run.MarketTape.Slots, Has.Count.EqualTo(staticData.MarketConfig.MarketTapeSlots));
+            Assert.That(run.MarketTape.CurrentMarketCards, Has.Count.EqualTo(staticData.MarketConfig.MarketTapeSlots));
         }
 
         [Test]
@@ -63,6 +60,30 @@ namespace AssetManager.Tests
 
             Assert.That(firstStock.ProfessionalCosts[0].ResourceType, Is.EqualTo(ResourceType.Reading));
             Assert.That(ResourceLedger.GetResourceDisplayName(firstStock.ProfessionalCosts[0].ResourceType), Is.EqualTo("독서"));
+        }
+
+        [Test]
+        public void MvpDefaultsIncludeConsumableResourceDeckCards()
+        {
+            var staticData = RunStaticDataSet.CreateMvpDefaults();
+
+            Assert.That(ContainsCardDomain(staticData.AssetCards, CardDomain.Stock), Is.True);
+            Assert.That(ContainsCardDomain(staticData.AssetCards, CardDomain.ConsumableResource), Is.True);
+        }
+
+        private static bool ContainsCardDomain(
+            System.Collections.Generic.IEnumerable<AssetCardData> cards,
+            CardDomain cardDomain)
+        {
+            foreach (var card in cards)
+            {
+                if (card.CardDomain == cardDomain)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool ContainsExtraBuyGrant(System.Collections.Generic.IEnumerable<AssetCardData> cards)

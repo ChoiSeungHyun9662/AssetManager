@@ -125,21 +125,21 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void ContinueAfterQuarterSettlementAdvancesMarketTapeInSameFiscalYear()
+        public void ContinueAfterQuarterSettlementRefreshesMarketTapeForNextQuarterFirstBusinessDay()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            var oldSellImminentCardIds = CollectZoneCardIds(run.MarketTape.SellImminentCards);
-            var oldCurrentMarketCardIds = CollectZoneCardIds(run.MarketTape.CurrentMarketCards);
+            var previousQuarterCardIds = CollectVisibleCardIds(run.MarketTape);
             run = CompleteCurrentQuarter(run);
 
             run = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
 
             Assert.That(run.Calendar.FiscalYear, Is.EqualTo(1));
             Assert.That(run.Calendar.Quarter, Is.EqualTo(2));
-            AssertZoneMatches(run.MarketTape.SellImminentCards, oldCurrentMarketCardIds);
-            foreach (var cardId in oldSellImminentCardIds)
+            Assert.That(run.MarketTape.Slots, Has.Count.EqualTo(run.StaticData.MarketConfig.MarketTapeSlots));
+            Assert.That(CollectVisibleCardIds(run.MarketTape), Is.Unique);
+            foreach (var cardId in CollectVisibleCardIds(run.MarketTape))
             {
-                Assert.That(FindCard(run.AssetCards, cardId).State, Is.EqualTo(AssetCardRuntimeState.Removed));
+                Assert.That(previousQuarterCardIds.Contains(cardId), Is.False);
             }
         }
 
@@ -215,9 +215,7 @@ namespace AssetManager.Tests
 
             Assert.That(run.Calendar.FiscalYear, Is.EqualTo(2));
             Assert.That(run.Calendar.Quarter, Is.EqualTo(1));
-            Assert.That(run.MarketTape.SellImminentCards, Has.Count.EqualTo(run.StaticData.MarketConfig.SellImminentSlots));
-            Assert.That(run.MarketTape.CurrentMarketCards, Has.Count.EqualTo(run.StaticData.MarketConfig.CurrentMarketSlots));
-            Assert.That(run.MarketTape.UpcomingMarketCards, Has.Count.EqualTo(run.StaticData.MarketConfig.UpcomingMarketSlots));
+            Assert.That(run.MarketTape.Slots, Has.Count.EqualTo(run.StaticData.MarketConfig.MarketTapeSlots));
             Assert.That(CollectVisibleCardIds(run.MarketTape), Is.Unique);
             foreach (var cardId in CollectVisibleCardIds(run.MarketTape))
             {
@@ -437,17 +435,32 @@ namespace AssetManager.Tests
         private static System.Collections.Generic.HashSet<string> CollectVisibleCardIds(MarketTapeState tape)
         {
             var cardIds = new System.Collections.Generic.HashSet<string>();
-            AddCardIds(cardIds, tape.SellImminentCards);
-            AddCardIds(cardIds, tape.CurrentMarketCards);
-            AddCardIds(cardIds, tape.UpcomingMarketCards);
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty)
+                {
+                    cardIds.Add(slot.Card.Card.Id);
+                }
+            }
+
             return cardIds;
         }
 
         private static void AssertTapeMatches(MarketTapeState actual, MarketTapeState expected)
         {
-            AssertZoneMatches(actual.SellImminentCards, expected.SellImminentCards);
-            AssertZoneMatches(actual.CurrentMarketCards, expected.CurrentMarketCards);
-            AssertZoneMatches(actual.UpcomingMarketCards, expected.UpcomingMarketCards);
+            Assert.That(actual.Slots, Has.Count.EqualTo(expected.Slots.Count));
+            for (var i = 0; i < expected.Slots.Count; i++)
+            {
+                Assert.That(actual.Slots[i].IsReserved, Is.EqualTo(expected.Slots[i].IsReserved));
+                if (expected.Slots[i].IsEmpty)
+                {
+                    Assert.That(actual.Slots[i].IsEmpty, Is.True);
+                }
+                else
+                {
+                    Assert.That(actual.Slots[i].Card.Card.Id, Is.EqualTo(expected.Slots[i].Card.Card.Id));
+                }
+            }
         }
 
         private static void AssertZoneMatches(

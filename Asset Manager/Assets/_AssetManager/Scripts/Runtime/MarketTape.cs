@@ -12,13 +12,14 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
-            var assetCards = MarkCardsRemoved(run.AssetCards, CollectVisibleCardIds(run.MarketTape));
+            var assetCards = MarkCardsRemoved(run.AssetCards, CollectNonReservedVisibleCardIds(run.MarketTape));
             var tape = Refresh(
                 run.StaticData.MarketConfig,
                 assetCards,
-                null,
+                run.MarketTape,
                 run.OwnedAssets,
-                run.Reservation);
+                run.Reservation,
+                null);
 
             return WithMarketTape(run, assetCards, tape);
         }
@@ -30,6 +31,17 @@ namespace AssetManager
             OwnedAssetState ownedAssets,
             ReservationState reservation)
         {
+            return Refresh(marketConfig, cardPool, currentTape, ownedAssets, reservation, null);
+        }
+
+        public static MarketTapeState Refresh(
+            MarketConfigData marketConfig,
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketTapeState currentTape,
+            OwnedAssetState ownedAssets,
+            ReservationState reservation,
+            IEnumerable<double> stockDrawRolls)
+        {
             if (marketConfig == null)
             {
                 throw new ArgumentNullException(nameof(marketConfig));
@@ -40,27 +52,28 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(cardPool));
             }
 
-            var excludedCardIds = new HashSet<string>();
-            AddVisibleCardIds(excludedCardIds, currentTape);
+            var excludedCardIds = CollectVisibleCardIds(currentTape);
             AddCardIds(excludedCardIds, ownedAssets?.OwnedCards);
             AddCardIds(excludedCardIds, reservation?.ReservedCards);
 
-            var candidates = new List<AssetCardRuntimeData>();
-            foreach (var card in cardPool)
+            var drawRolls = new DrawRollSource(stockDrawRolls);
+            var slots = new List<MarketTapeSlotState>();
+            var currentSlots = currentTape?.Slots ?? Array.Empty<MarketTapeSlotState>();
+            for (var i = 0; i < marketConfig.MarketTapeSlots; i++)
             {
-                if (card.State == AssetCardRuntimeState.Available
-                    && !excludedCardIds.Contains(card.Card.Id))
+                if (i < currentSlots.Count && currentSlots[i].IsReserved && !currentSlots[i].IsEmpty)
                 {
-                    candidates.Add(card);
+                    slots.Add(currentSlots[i]);
+                    excludedCardIds.Add(currentSlots[i].Card.Card.Id);
+                    continue;
                 }
+
+                slots.Add(new MarketTapeSlotState(
+                    DrawOne(cardPool, marketConfig, excludedCardIds, drawRolls),
+                    false));
             }
 
-            var visibleCardIds = new HashSet<string>();
-            var sellImminent = DrawCards(candidates, visibleCardIds, marketConfig.SellImminentSlots);
-            var currentMarket = DrawCards(candidates, visibleCardIds, marketConfig.CurrentMarketSlots);
-            var upcomingMarket = DrawCards(candidates, visibleCardIds, marketConfig.UpcomingMarketSlots);
-
-            return new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
+            return new MarketTapeState(slots);
         }
 
         public static RunSessionState Advance(RunSessionState run)
@@ -70,7 +83,7 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
-            var removedCardIds = CollectCardIds(run.MarketTape.SellImminentCards);
+            var removedCardIds = CollectLeftmostNonReservedCardId(run.MarketTape);
             var assetCards = MarkCardsRemoved(run.AssetCards, removedCardIds);
             var tape = Advance(
                 run.StaticData.MarketConfig,
@@ -104,18 +117,36 @@ namespace AssetManager
                 return Refresh(marketConfig, cardPool, null, ownedAssets, reservation);
             }
 
-            var sellImminent = new List<AssetCardRuntimeData>(currentTape.CurrentMarketCards);
-            var currentMarket = new List<AssetCardRuntimeData>(currentTape.UpcomingMarketCards);
-            var upcomingMarket = new List<AssetCardRuntimeData>();
+            var slots = NormalizeSlots(currentTape, marketConfig.MarketTapeSlots);
+            var movingCards = new List<AssetCardRuntimeData>();
+            foreach (var slot in slots)
+            {
+                if (!slot.IsReserved && !slot.IsEmpty)
+                {
+                    movingCards.Add(slot.Card);
+                }
+            }
 
-            var advancedTape = new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
-            var excludedCardIds = CollectVisibleCardIds(advancedTape);
-            AddCardIds(excludedCardIds, currentTape.SellImminentCards);
+            if (movingCards.Count > 0)
+            {
+                movingCards.RemoveAt(0);
+            }
 
-            var candidates = CreateCandidates(cardPool, excludedCardIds, ownedAssets, reservation);
-            FillVisibleCards(upcomingMarket, candidates, marketConfig.UpcomingMarketSlots);
+            var nextMovingCard = 0;
+            for (var i = 0; i < slots.Count; i++)
+            {
+                if (slots[i].IsReserved)
+                {
+                    continue;
+                }
 
-            return new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
+                var card = nextMovingCard < movingCards.Count ? movingCards[nextMovingCard] : null;
+                slots[i] = new MarketTapeSlotState(card, false);
+                nextMovingCard++;
+            }
+
+            FillEmptyNonReservedSlotsFromRight(slots, cardPool, marketConfig, ownedAssets, reservation);
+            return new MarketTapeState(slots);
         }
 
         public static MarketTapeState RefillSlot(
@@ -141,22 +172,9 @@ namespace AssetManager
                 return Refresh(marketConfig, cardPool, null, ownedAssets, reservation);
             }
 
-            var sellImminent = new List<AssetCardRuntimeData>(currentTape.SellImminentCards);
-            var currentMarket = new List<AssetCardRuntimeData>(currentTape.CurrentMarketCards);
-            var upcomingMarket = new List<AssetCardRuntimeData>(currentTape.UpcomingMarketCards);
-            var targetZone = SelectZone(zone, sellImminent, currentMarket, upcomingMarket);
-            var targetSlots = GetZoneSlotCount(marketConfig, zone);
-
-            if (targetZone.Count >= targetSlots)
-            {
-                return currentTape;
-            }
-
-            var excludedCardIds = CollectVisibleCardIds(currentTape);
-            var candidates = CreateCandidates(cardPool, excludedCardIds, ownedAssets, reservation);
-            FillVisibleCards(targetZone, candidates, targetSlots);
-
-            return new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
+            var slots = NormalizeSlots(currentTape, marketConfig.MarketTapeSlots);
+            FillEmptyNonReservedSlotsFromRight(slots, cardPool, marketConfig, ownedAssets, reservation);
+            return new MarketTapeState(slots);
         }
 
         public static MarketTapeState AdvanceSlotAt(
@@ -183,44 +201,122 @@ namespace AssetManager
                 return Refresh(marketConfig, cardPool, null, ownedAssets, reservation);
             }
 
-            var sellImminent = new List<AssetCardRuntimeData>(currentTape.SellImminentCards);
-            var currentMarket = new List<AssetCardRuntimeData>(currentTape.CurrentMarketCards);
-            var upcomingMarket = new List<AssetCardRuntimeData>(currentTape.UpcomingMarketCards);
+            return PullFromEmptySlot(
+                marketConfig,
+                cardPool,
+                ClearSlot(currentTape, slotIndex),
+                ownedAssets,
+                reservation,
+                slotIndex);
+        }
 
-            if (!CanAdvanceColumn(sellImminent, currentMarket, upcomingMarket, zone, slotIndex))
+        public static MarketTapeState PullFromEmptySlot(
+            MarketConfigData marketConfig,
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketTapeState currentTape,
+            OwnedAssetState ownedAssets,
+            ReservationState reservation,
+            int emptySlotIndex)
+        {
+            if (marketConfig == null)
+            {
+                throw new ArgumentNullException(nameof(marketConfig));
+            }
+
+            if (cardPool == null)
+            {
+                throw new ArgumentNullException(nameof(cardPool));
+            }
+
+            if (currentTape == null)
+            {
+                return Refresh(marketConfig, cardPool, null, ownedAssets, reservation);
+            }
+
+            var slots = NormalizeSlots(currentTape, marketConfig.MarketTapeSlots);
+            if (emptySlotIndex < 0 || emptySlotIndex >= slots.Count)
             {
                 return currentTape;
             }
 
-            switch (zone)
+            var pullPositions = new List<int>();
+            var pullCards = new List<AssetCardRuntimeData>();
+            for (var i = emptySlotIndex; i < slots.Count; i++)
             {
-                case MarketTapeZone.SellImminent:
-                    sellImminent[slotIndex] = currentMarket[slotIndex];
-                    currentMarket[slotIndex] = upcomingMarket[slotIndex];
-                    break;
-                case MarketTapeZone.CurrentMarket:
-                    currentMarket[slotIndex] = upcomingMarket[slotIndex];
-                    break;
-                case MarketTapeZone.UpcomingMarket:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(zone), zone, null);
+                if (slots[i].IsReserved)
+                {
+                    continue;
+                }
+
+                pullPositions.Add(i);
+                if (!slots[i].IsEmpty)
+                {
+                    pullCards.Add(slots[i].Card);
+                }
             }
 
-            var shiftedTape = new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
-            var excludedCardIds = CollectVisibleCardIds(shiftedTape);
-            var candidates = CreateCandidates(cardPool, excludedCardIds, ownedAssets, reservation);
-
-            if (candidates.Count > 0)
+            var nextCard = 0;
+            foreach (var position in pullPositions)
             {
-                upcomingMarket[slotIndex] = candidates[0];
-            }
-            else
-            {
-                upcomingMarket.RemoveAt(slotIndex);
+                var card = nextCard < pullCards.Count ? pullCards[nextCard] : null;
+                slots[position] = new MarketTapeSlotState(card, false);
+                nextCard++;
             }
 
-            return new MarketTapeState(sellImminent, currentMarket, upcomingMarket);
+            FillRightmostEmptyNonReservedSlot(slots, cardPool, marketConfig, ownedAssets, reservation);
+            return new MarketTapeState(slots);
+        }
+
+        public static MarketTapeState PullAllEmptySlots(
+            MarketConfigData marketConfig,
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketTapeState currentTape,
+            OwnedAssetState ownedAssets,
+            ReservationState reservation)
+        {
+            if (currentTape == null)
+            {
+                return Refresh(marketConfig, cardPool, null, ownedAssets, reservation);
+            }
+
+            var tape = currentTape;
+            var emptySlotIndex = FindLeftmostEmptyNonReservedSlot(tape);
+            while (emptySlotIndex >= 0)
+            {
+                tape = PullFromEmptySlot(
+                    marketConfig,
+                    cardPool,
+                    tape,
+                    ownedAssets,
+                    reservation,
+                    emptySlotIndex);
+                emptySlotIndex = FindLeftmostEmptyNonReservedSlot(tape);
+            }
+
+            return tape;
+        }
+
+        public static MarketTapeState ReserveSlot(
+            MarketTapeState currentTape,
+            string cardId,
+            AssetCardRuntimeData reservedCard)
+        {
+            if (currentTape == null)
+            {
+                throw new ArgumentNullException(nameof(currentTape));
+            }
+
+            var slots = new List<MarketTapeSlotState>(currentTape.Slots);
+            for (var i = 0; i < slots.Count; i++)
+            {
+                if (!slots[i].IsEmpty && slots[i].Card.Card.Id == cardId)
+                {
+                    slots[i] = new MarketTapeSlotState(reservedCard, true);
+                    return new MarketTapeState(slots);
+                }
+            }
+
+            return currentTape;
         }
 
         private static bool CanAdvanceColumn(
@@ -251,23 +347,127 @@ namespace AssetManager
             }
         }
 
+        private static MarketTapeState ClearSlot(MarketTapeState currentTape, int slotIndex)
+        {
+            var slots = new List<MarketTapeSlotState>(currentTape.Slots);
+            if (slotIndex < 0 || slotIndex >= slots.Count)
+            {
+                return currentTape;
+            }
+
+            slots[slotIndex] = new MarketTapeSlotState(null, false);
+            return new MarketTapeState(slots);
+        }
+
+        private static int FindLeftmostEmptyNonReservedSlot(MarketTapeState tape)
+        {
+            for (var i = 0; i < tape.Slots.Count; i++)
+            {
+                if (!tape.Slots[i].IsReserved && tape.Slots[i].IsEmpty)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static List<MarketTapeSlotState> NormalizeSlots(MarketTapeState tape, int targetSlotCount)
+        {
+            var slots = new List<MarketTapeSlotState>(tape.Slots);
+            while (slots.Count < targetSlotCount)
+            {
+                slots.Add(new MarketTapeSlotState(null, false));
+            }
+
+            if (slots.Count > targetSlotCount)
+            {
+                slots.RemoveRange(targetSlotCount, slots.Count - targetSlotCount);
+            }
+
+            return slots;
+        }
+
+        private static AssetCardRuntimeData DrawOne(
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketConfigData marketConfig,
+            HashSet<string> excludedCardIds,
+            DrawRollSource drawRolls)
+        {
+            var draw = MarketDeck.DrawOne(cardPool, marketConfig, drawRolls.Next(), excludedCardIds);
+            excludedCardIds.Add(draw.Card.Card.Id);
+            return draw.Card;
+        }
+
+        private static void FillEmptyNonReservedSlotsFromRight(
+            List<MarketTapeSlotState> slots,
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketConfigData marketConfig,
+            OwnedAssetState ownedAssets,
+            ReservationState reservation)
+        {
+            while (HasEmptyNonReservedSlot(slots))
+            {
+                FillRightmostEmptyNonReservedSlot(slots, cardPool, marketConfig, ownedAssets, reservation);
+            }
+        }
+
+        private static bool HasEmptyNonReservedSlot(IEnumerable<MarketTapeSlotState> slots)
+        {
+            foreach (var slot in slots)
+            {
+                if (!slot.IsReserved && slot.IsEmpty)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void FillRightmostEmptyNonReservedSlot(
+            List<MarketTapeSlotState> slots,
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketConfigData marketConfig,
+            OwnedAssetState ownedAssets,
+            ReservationState reservation)
+        {
+            var fillIndex = -1;
+            for (var i = slots.Count - 1; i >= 0; i--)
+            {
+                if (!slots[i].IsReserved && slots[i].IsEmpty)
+                {
+                    fillIndex = i;
+                    break;
+                }
+            }
+
+            if (fillIndex < 0)
+            {
+                return;
+            }
+
+            var excludedCardIds = CollectVisibleCardIds(new MarketTapeState(slots));
+            AddCardIds(excludedCardIds, ownedAssets?.OwnedCards);
+            AddCardIds(excludedCardIds, reservation?.ReservedCards);
+            slots[fillIndex] = new MarketTapeSlotState(
+                DrawOne(cardPool, marketConfig, excludedCardIds, new DrawRollSource(null)),
+                false);
+        }
+
         private static List<AssetCardRuntimeData> DrawCards(
-            IReadOnlyList<AssetCardRuntimeData> candidates,
-            HashSet<string> visibleCardIds,
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketConfigData marketConfig,
+            HashSet<string> excludedCardIds,
+            DrawRollSource drawRolls,
             int count)
         {
             var drawnCards = new List<AssetCardRuntimeData>();
-            foreach (var candidate in candidates)
+            while (drawnCards.Count < count)
             {
-                if (drawnCards.Count == count)
-                {
-                    break;
-                }
-
-                if (visibleCardIds.Add(candidate.Card.Id))
-                {
-                    drawnCards.Add(candidate);
-                }
+                var draw = MarketDeck.DrawOne(cardPool, marketConfig, drawRolls.Next(), excludedCardIds);
+                drawnCards.Add(draw.Card);
+                excludedCardIds.Add(draw.Card.Card.Id);
             }
 
             return drawnCards;
@@ -297,21 +497,18 @@ namespace AssetManager
 
         private static void FillVisibleCards(
             List<AssetCardRuntimeData> visibleCards,
-            IReadOnlyList<AssetCardRuntimeData> candidates,
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketConfigData marketConfig,
+            HashSet<string> excludedCardIds,
+            DrawRollSource drawRolls,
             int targetCount)
         {
-            var visibleCardIds = CollectCardIds(visibleCards);
-            foreach (var candidate in candidates)
+            AddCardIds(excludedCardIds, visibleCards);
+            while (visibleCards.Count < targetCount)
             {
-                if (visibleCards.Count == targetCount)
-                {
-                    break;
-                }
-
-                if (visibleCardIds.Add(candidate.Card.Id))
-                {
-                    visibleCards.Add(candidate);
-                }
+                var draw = MarketDeck.DrawOne(cardPool, marketConfig, drawRolls.Next(), excludedCardIds);
+                visibleCards.Add(draw.Card);
+                excludedCardIds.Add(draw.Card.Card.Id);
             }
         }
 
@@ -383,6 +580,14 @@ namespace AssetManager
                 return;
             }
 
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty)
+                {
+                    cardIds.Add(slot.Card.Card.Id);
+                }
+            }
+
             AddCardIds(cardIds, tape.SellImminentCards);
             AddCardIds(cardIds, tape.CurrentMarketCards);
             AddCardIds(cardIds, tape.UpcomingMarketCards);
@@ -392,6 +597,45 @@ namespace AssetManager
         {
             var cardIds = new HashSet<string>();
             AddVisibleCardIds(cardIds, tape);
+            return cardIds;
+        }
+
+        private static HashSet<string> CollectNonReservedVisibleCardIds(MarketTapeState tape)
+        {
+            var cardIds = new HashSet<string>();
+            if (tape == null)
+            {
+                return cardIds;
+            }
+
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsReserved && !slot.IsEmpty)
+                {
+                    cardIds.Add(slot.Card.Card.Id);
+                }
+            }
+
+            return cardIds;
+        }
+
+        private static HashSet<string> CollectLeftmostNonReservedCardId(MarketTapeState tape)
+        {
+            var cardIds = new HashSet<string>();
+            if (tape == null)
+            {
+                return cardIds;
+            }
+
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsReserved && !slot.IsEmpty)
+                {
+                    cardIds.Add(slot.Card.Card.Id);
+                    break;
+                }
+            }
+
             return cardIds;
         }
 
@@ -411,7 +655,26 @@ namespace AssetManager
 
             foreach (var card in cards)
             {
-                cardIds.Add(card.Card.Id);
+                if (card != null)
+                {
+                    cardIds.Add(card.Card.Id);
+                }
+            }
+        }
+
+        private static void AddStockCardIds(HashSet<string> cardIds, IEnumerable<AssetCardRuntimeData> cards)
+        {
+            if (cards == null)
+            {
+                return;
+            }
+
+            foreach (var card in cards)
+            {
+                if (card.Card.CardDomain == CardDomain.Stock)
+                {
+                    cardIds.Add(card.Card.Id);
+                }
             }
         }
 
@@ -462,6 +725,26 @@ namespace AssetManager
                 run.BusinessDay,
                 run.RedemptionPressure,
                 run.CardDetail);
+        }
+
+        private sealed class DrawRollSource
+        {
+            private readonly IEnumerator<double> rolls;
+
+            public DrawRollSource(IEnumerable<double> rolls)
+            {
+                this.rolls = rolls?.GetEnumerator();
+            }
+
+            public double Next()
+            {
+                if (rolls != null && rolls.MoveNext())
+                {
+                    return rolls.Current;
+                }
+
+                return 0.0;
+            }
         }
     }
 }

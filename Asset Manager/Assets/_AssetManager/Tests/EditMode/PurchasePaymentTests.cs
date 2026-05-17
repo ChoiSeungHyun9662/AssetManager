@@ -83,7 +83,7 @@ namespace AssetManager.Tests
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ResourceLedger.AddDeal(run, 1).Run;
-            var selectedCard = run.MarketTape.SellImminentCards[2];
+            var selectedCard = run.MarketTape.CurrentMarketCards[2];
             run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
 
             var placed = PurchasePayment.PlaceChip(run, ResourceType.Deal);
@@ -171,15 +171,13 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void MarketCardPurchaseConsumesPaymentOwnsCardAdvancesOnlyPurchasedColumnAndConsumesBusinessDay()
+        public void MarketCardPurchaseConsumesPaymentOwnsCardPullsMarketTapeAndConsumesBusinessDay()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 1).Run;
             var selectedCard = run.MarketTape.CurrentMarketCards[0];
-            var previousSellImminentIds = CollectCardIds(run.MarketTape.SellImminentCards);
-            var previousCurrentMarketIds = CollectCardIds(run.MarketTape.CurrentMarketCards);
-            var previousUpcomingMarketIds = CollectCardIds(run.MarketTape.UpcomingMarketCards);
+            var previousSlotIds = CollectSlotCardIds(run.MarketTape);
             run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
             run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
             run = PurchasePayment.PlaceChip(run, ResourceType.Credit).Run;
@@ -196,16 +194,10 @@ namespace AssetManager.Tests
             Assert.That(result.Run.OwnedAssets.OwnedCards[0].PurchaseSource, Is.EqualTo(PurchaseSource.MarketTape));
             Assert.That(result.Run.OwnedAssets.OwnedCards[0].AcquiredOrder, Is.EqualTo(1));
             Assert.That(FindCard(result.Run.AssetCards, selectedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Owned));
-            Assert.That(result.Run.MarketTape.SellImminentCards, Has.Count.EqualTo(previousSellImminentIds.Count));
-            AssertZoneMatches(result.Run.MarketTape.SellImminentCards, previousSellImminentIds);
-            Assert.That(result.Run.MarketTape.CurrentMarketCards, Has.Count.EqualTo(previousCurrentMarketIds.Count));
-            Assert.That(result.Run.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(previousUpcomingMarketIds[0]));
-            Assert.That(result.Run.MarketTape.CurrentMarketCards[1].Card.Id, Is.EqualTo(previousCurrentMarketIds[1]));
-            Assert.That(result.Run.MarketTape.CurrentMarketCards[2].Card.Id, Is.EqualTo(previousCurrentMarketIds[2]));
-            Assert.That(result.Run.MarketTape.UpcomingMarketCards, Has.Count.EqualTo(previousUpcomingMarketIds.Count));
-            Assert.That(result.Run.MarketTape.UpcomingMarketCards[0].Card.Id, Is.Not.EqualTo(previousUpcomingMarketIds[0]));
-            Assert.That(result.Run.MarketTape.UpcomingMarketCards[1].Card.Id, Is.EqualTo(previousUpcomingMarketIds[1]));
-            Assert.That(result.Run.MarketTape.UpcomingMarketCards[2].Card.Id, Is.EqualTo(previousUpcomingMarketIds[2]));
+            Assert.That(result.Run.MarketTape.Slots, Has.Count.EqualTo(run.StaticData.MarketConfig.MarketTapeSlots));
+            Assert.That(CollectSlotCardIds(result.Run.MarketTape), Is.Unique);
+            Assert.That(CollectSlotCardIds(result.Run.MarketTape), Does.Not.Contain(selectedCard.Card.Id));
+            Assert.That(CollectSlotCardIds(result.Run.MarketTape), Is.Not.EqualTo(previousSlotIds));
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays - 1));
             Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(result.Run.CardDetail.SelectedCard, Is.Null);
@@ -402,7 +394,7 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void ReservedCardPurchaseOwnsCardClearsPurchasedReservationAndLeavesMarketTapeUnchanged()
+        public void ReservedCardPurchaseOwnsCardClearsPurchasedReservationAndPullsMarketTape()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
@@ -414,9 +406,6 @@ namespace AssetManager.Tests
             run = MarketAreaFlow.OpenMarketCardDetail(run, run.MarketTape.CurrentMarketCards[0]);
             run = ReservationAction.ConfirmReservation(run).Run;
             var otherReservedCard = run.Reservation.ReservedCards[1];
-            var previousSellImminentIds = CollectCardIds(run.MarketTape.SellImminentCards);
-            var previousCurrentMarketIds = CollectCardIds(run.MarketTape.CurrentMarketCards);
-            var previousUpcomingMarketIds = CollectCardIds(run.MarketTape.UpcomingMarketCards);
             run = MarketAreaFlow.OpenReservedCardDetail(run, reservedCard);
             run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
             run = PurchasePayment.PlaceChip(run, ResourceType.Credit).Run;
@@ -430,9 +419,8 @@ namespace AssetManager.Tests
             Assert.That(FindCard(result.Run.AssetCards, reservedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Owned));
             Assert.That(result.Run.Reservation.ReservedCards, Has.Count.EqualTo(1));
             Assert.That(result.Run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(otherReservedCard.Card.Id));
-            AssertZoneMatches(result.Run.MarketTape.SellImminentCards, previousSellImminentIds);
-            AssertZoneMatches(result.Run.MarketTape.CurrentMarketCards, previousCurrentMarketIds);
-            AssertZoneMatches(result.Run.MarketTape.UpcomingMarketCards, previousUpcomingMarketIds);
+            Assert.That(CollectSlotCardIds(result.Run.MarketTape), Does.Not.Contain(reservedCard.Card.Id));
+            Assert.That(CollectSlotCardIds(result.Run.MarketTape), Does.Contain(otherReservedCard.Card.Id));
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays - 1));
         }
 
@@ -488,6 +476,20 @@ namespace AssetManager.Tests
             foreach (var card in cards)
             {
                 cardIds.Add(card.Card.Id);
+            }
+
+            return cardIds;
+        }
+
+        private static System.Collections.Generic.List<string> CollectSlotCardIds(MarketTapeState tape)
+        {
+            var cardIds = new System.Collections.Generic.List<string>();
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty)
+                {
+                    cardIds.Add(slot.Card.Card.Id);
+                }
             }
 
             return cardIds;

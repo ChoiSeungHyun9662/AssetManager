@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-17
-Covered implementation slices: issues 00-17, stock overhaul issues 01-02
+Covered implementation slices: issues 00-17, stock overhaul issues 01-04
 
 ## Update Workflow
 
@@ -90,6 +90,23 @@ Current runtime flow:
 - `ProjectShell` and `MainGameShellBootstrap` no longer create, wire, or refresh the 중앙 은행/GainLiquidity play path; legacy 중앙 은행 and GainLiquidity UI objects are removed during shell ensure.
 - `MarketTapeView` renders consumable resource cards without a display name, dividend, or 운용가치, showing their cash cost, 희귀도, and provided resource instead.
 
+## Stock Overhaul Issue 03 Notes
+
+- `RunStaticDataSet` now seeds both stock cards and consumable resource deck cards so the market can continue after non-returning stocks are exhausted.
+- `MarketConfigData` now carries the stock deck draw weight, defaulting to the PRD's 75% stock / 25% consumable resource split.
+- `MarketDeck` is the public market supply rule service: one draw request chooses the stock or consumable resource deck by weight, falls back to the opposite deck when needed, recycles removed consumable resource cards as available draws, never recycles removed stock cards, and throws an explicit exhaustion exception if neither deck can supply a card.
+- `MarketTape` now asks `MarketDeck` for each new card instead of directly selecting from a single card list. Issue 04 replaces the old 3-zone movement with ordered 1x8 slot movement.
+
+## Stock Overhaul Issue 04 Notes
+
+- `MarketTapeState` now exposes an ordered 1x8 `Slots` list. `MarketTapeSlotState` stores the card in a slot plus whether that slot is reservation-locked.
+- `MarketConfigData` now carries `MarketTapeSlots`, with MVP defaults set to 8; the old 3-zone counts remain as compatibility fields while older callers are migrated.
+- `MarketTape.Advance`, `Refresh`, `PullFromEmptySlot`, and `PullAllEmptySlots` are the public 1x8 tape rules: non-reserved cards move left, reserved slots stay fixed, refresh replaces only non-reserved slots, and empty slots are pulled from the leftmost gap.
+- `ReservationAction` now locks the selected stock in its current market slot instead of replacing it from an upcoming column. The legacy reservation list still tracks capacity and reserved-card detail access during this transition.
+- `PurchasePayment` now routes market and reserved purchases through slot pull behavior after the purchased card leaves the tape. Foil-removal pull integration remains for the later foil issue.
+- `BusinessDayFlow` advances the market tape at the start of a normal next business day and refreshes the tape at new-quarter start without an extra progress step.
+- `ProjectShell` and `MarketTapeView` render the market as one row of 8 current-market slot buttons; reserved slots are marked on the card.
+
 ## Shell And Editor Setup
 
 | Type | File | Purpose |
@@ -114,7 +131,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `FinalRatingData` | `Runtime/RunModels.cs` | Final rating threshold row for later 최종 정산. |
 | `RedemptionPressureLevelData` | `Runtime/RunModels.cs` | 환매 압력 단계 row for later final comments. |
 | `FinalManagementCommentData` | `Runtime/RunModels.cs` | 운용 코멘트 row keyed by final rating and 환매 압력 단계. |
-| `MarketConfigData` | `Runtime/RunModels.cs` | Slot counts for 매도 임박, 현재 시장, and 예비 시장. MVP default is 3/3/3. |
+| `MarketConfigData` | `Runtime/RunModels.cs` | Market tape slot count for the 1x8 tape, legacy 3-zone slot counts kept for compatibility, and the stock deck draw weight. MVP default is 8 slots with 75% stock draw weight. |
 | `ResourceConfigData` | `Runtime/RunModels.cs` | Starting 현금, investment philosophy total/type caps, and 딜 한도. |
 | `RedemptionPressureConfigData` | `Runtime/RunModels.cs` | Starting and maximum 환매 압력. |
 
@@ -127,7 +144,8 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 운용 수익 counters, tracked 조달 현금, and completed 분기 운용 수익 records for 4Q 휴가 summaries. |
 | `QuarterPerformanceRecord` | `Runtime/RunModels.cs` | Completed 회계년도/분기 운용 수익 row recorded at 분기 마감 for later 회계년도 summary display. |
 | `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one 자산 카드 and whether it is available, reserved, owned, or removed; owned cards can carry 매수 출처 and AcquiredOrder. |
-| `MarketTapeState` | `Runtime/RunModels.cs` | Current visible market tape cards by zone. |
+| `MarketTapeSlotState` | `Runtime/RunModels.cs` | One 1x8 market tape slot: optional visible market card plus whether the slot is reservation-locked. |
+| `MarketTapeState` | `Runtime/RunModels.cs` | Current ordered 1x8 market tape slots, with `CurrentMarketCards` projecting visible slot cards for older callers during the migration. |
 | `ReservationState` | `Runtime/RunModels.cs` | 예약 구역 capacity and reserved cards. |
 | `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list plus Owned-only 보유 자산 수, 현재 운용가치, and 영업일 시작 운용 수익 totals. |
 | `BusinessDayState` | `Runtime/RunModels.cs` | Current phase and 시장 영역 state. |
@@ -186,14 +204,16 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `MarketTape` | `Runtime/MarketTape.cs` | Pure rule service for 시장 테이프 갱신, 시장 테이프 진행, 슬롯 보충, single-column advance after purchase/reservation, duplicate prevention, and removed-card marking. |
+| `MarketDeck` | `Runtime/MarketDeck.cs` | Public rule service for one market supply draw from separated stock and consumable resource decks, including weighted deck choice, fallback, consumable recycling, non-returning removed stocks, and explicit exhaustion. |
+| `MarketTape` | `Runtime/MarketTape.cs` | Pure rule service for 1x8 시장 테이프 갱신, 영업일 시작 진행, 빈칸 당김, multiple-gap pull order, reservation slot locking, duplicate prevention, and removed-card marking; delegates each new card supply request to `MarketDeck`. |
 
 Important distinction:
 
-- `Refresh` rebuilds the whole 시장 테이프 and marks previously visible available cards as removed.
-- `Advance` removes 매도 임박 cards, moves 현재 시장 to 매도 임박, moves 예비 시장 to 현재 시장, then refills 예비 시장.
-- `RefillSlot` fills only one zone up to its configured slot count.
-- `AdvanceSlotAt` advances only one vertical market column after purchase/reservation: the selected cell is filled by the card behind it, and the 예비 시장 cell receives a new card.
+- `Refresh` replaces non-reserved 1x8 slots and keeps reservation-locked slots fixed.
+- `Advance` removes the leftmost non-reserved card, moves the remaining non-reserved cards left across non-reserved slots, and supplies new cards on the right.
+- `PullFromEmptySlot` compresses cards to the right of one empty slot leftward while reserved slots stay fixed, then supplies one card to the rightmost non-reserved gap.
+- `PullAllEmptySlots` repeats that pull from the leftmost remaining empty slot.
+- `MarketDeck` owns whether a new card comes from the stock deck or consumable resource deck; `MarketTape` only supplies exclusion context such as visible, owned, reserved, and non-returning stock cards.
 
 ## UI And Presentation
 
@@ -205,7 +225,7 @@ Important distinction:
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, professional resource chip stacks, Deal chip stack, manual Sprite slots, current short resource message, and runtime chip stack instances anchored to the configured base images. |
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary: 보유 자산 수, 현재 운용가치, 이번 분기 운용 수익, and a short ordered 보유 자산 list. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 UI; displays 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 summaries. |
-| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders clickable visible market cards: stock cards show cost, 운용가치, 운용 수익, tags, and action hints, while consumable resource cards show cash cost, 희귀도, and provided resource without a display name. |
+| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders the clickable 1x8 market tape: stock cards show cost, 운용가치, 운용 수익, tags, and reservation state, while consumable resource cards show cash cost, 희귀도, and provided resource without a display name. |
 | `ReservationView` | `Runtime/ReservationView.cs` | Renders the 예약 구역 count and three reserved-card card summaries in the 시장 area, with clickable occupied slots for 예약 카드 상세보기. |
 | `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Legacy GainLiquidity view for 중앙 은행 resource-object choices; no longer created or wired by the new play flow. |
 | `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, Payment Pot professional-cost slots, final cash cost, chip placement/recovery buttons, buy availability, 예약 visibility/availability, and preview-only detail without transaction controls. |

@@ -97,7 +97,16 @@ namespace AssetManager
                 CreateStock("starter-data-broker", "Data Broker", softwareTag, 2, ResourceType.Meditation, null, 3, 1, 5, 2, 2, 4),
                 CreateStock("starter-grid-storage", "Grid Storage", energyTag, 2, ResourceType.Patience, null, 3, 1, 5, 2, 2, 4),
                 CreateStock("starter-streaming-service", "Streaming Service", consumerTag, 1, ResourceType.Reading, null, 2, 0, 4, 1, 2, 5),
-                CreateStock("starter-ai-tools", "AI Tools", softwareTag, 2, ResourceType.Meditation, null, 3, 1, 6, 2, 1, 3, true)
+                CreateStock("starter-ai-tools", "AI Tools", softwareTag, 2, ResourceType.Meditation, null, 3, 1, 6, 2, 1, 3, true),
+                CreateConsumableResource("resource-cash-small", ResourceType.Cash, 2, 1, AssetRarity.Common),
+                CreateConsumableResource("resource-cash-large", ResourceType.Cash, 3, 2, AssetRarity.Uncommon),
+                CreateConsumableResource("resource-reading", ResourceType.Reading, 1, 1, AssetRarity.Common),
+                CreateConsumableResource("resource-reading-plus", ResourceType.Reading, 2, 2, AssetRarity.Uncommon),
+                CreateConsumableResource("resource-meditation", ResourceType.Meditation, 1, 1, AssetRarity.Common),
+                CreateConsumableResource("resource-meditation-plus", ResourceType.Meditation, 2, 2, AssetRarity.Uncommon),
+                CreateConsumableResource("resource-patience", ResourceType.Patience, 1, 1, AssetRarity.Common),
+                CreateConsumableResource("resource-patience-plus", ResourceType.Patience, 2, 2, AssetRarity.Uncommon),
+                CreateConsumableResource("resource-balanced-study", ResourceType.Reading, 1, 0, AssetRarity.Rare)
             };
 
             quarters = new List<QuarterData>
@@ -142,7 +151,7 @@ namespace AssetManager
                 new FinalManagementCommentData("flagship-critical", "flagship", "critical", "Impressive and risky.")
             };
 
-            marketConfig = new MarketConfigData(3, 3, 3);
+            marketConfig = new MarketConfigData(8, 0.75);
             resourceConfig = new ResourceConfigData(3, 10, 5, 3);
             redemptionPressureConfig = new RedemptionPressureConfigData(0, 10);
         }
@@ -188,6 +197,28 @@ namespace AssetManager
                 minDeckCopies,
                 maxDeckCopies,
                 CardDomain.Stock);
+        }
+
+        private static AssetCardData CreateConsumableResource(
+            string id,
+            ResourceType providedResourceType,
+            int providedResourceAmount,
+            int cashCost,
+            AssetRarity rarity)
+        {
+            return new AssetCardData(
+                id,
+                string.Empty,
+                "Consumable market resource card.",
+                rarity,
+                cashCost,
+                new ProfessionalResourceCost[0],
+                0,
+                0,
+                new TagData[0],
+                cardDomain: CardDomain.ConsumableResource,
+                providedResourceType: providedResourceType,
+                providedResourceAmount: providedResourceAmount);
         }
     }
 }

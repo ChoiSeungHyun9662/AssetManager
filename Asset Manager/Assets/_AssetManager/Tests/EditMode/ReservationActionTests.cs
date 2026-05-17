@@ -5,13 +5,13 @@ namespace AssetManager.Tests
     public sealed class ReservationActionTests
     {
         [Test]
-        public void MarketCardReservationMovesCardToReservationGrantsDealAndPressureAdvancesOnlyReservedColumnAndConsumesBusinessDay()
+        public void MarketCardReservationLocksCardInMarketSlotGrantsDealAndPressureAndConsumesBusinessDay()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
             var selectedCard = run.MarketTape.CurrentMarketCards[0];
-            var previousCurrentMarketSecondCardId = run.MarketTape.CurrentMarketCards[1].Card.Id;
-            var previousUpcomingMarketFirstCardId = run.MarketTape.UpcomingMarketCards[0].Card.Id;
+            var selectedSlotIndex = FindSlotIndex(run.MarketTape, selectedCard.Card.Id);
+            var previousSlotIds = CollectSlotCardIds(run.MarketTape);
             run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
             run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
 
@@ -25,8 +25,9 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Resources.Research, Is.EqualTo(1));
             Assert.That(result.Run.Resources.Deal, Is.EqualTo(1));
             Assert.That(result.Run.RedemptionPressure.CurrentPressure, Is.EqualTo(1));
-            Assert.That(result.Run.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(previousUpcomingMarketFirstCardId));
-            Assert.That(result.Run.MarketTape.CurrentMarketCards[1].Card.Id, Is.EqualTo(previousCurrentMarketSecondCardId));
+            Assert.That(result.Run.MarketTape.Slots[selectedSlotIndex].Card.Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(result.Run.MarketTape.Slots[selectedSlotIndex].IsReserved, Is.True);
+            Assert.That(CollectSlotCardIds(result.Run.MarketTape), Is.EqualTo(previousSlotIds));
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays - 1));
             Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(result.Run.CardDetail.SelectedCard, Is.Null);
@@ -108,6 +109,34 @@ namespace AssetManager.Tests
                 new RedemptionPressureState(currentPressure, run.RedemptionPressure.MaxPressure),
                 run.CardDetail,
                 run.LiquidityAction);
+        }
+
+        private static int FindSlotIndex(MarketTapeState tape, string cardId)
+        {
+            for (var i = 0; i < tape.Slots.Count; i++)
+            {
+                if (!tape.Slots[i].IsEmpty && tape.Slots[i].Card.Card.Id == cardId)
+                {
+                    return i;
+                }
+            }
+
+            Assert.Fail("Expected to find market slot for " + cardId + ".");
+            return -1;
+        }
+
+        private static System.Collections.Generic.List<string> CollectSlotCardIds(MarketTapeState tape)
+        {
+            var cardIds = new System.Collections.Generic.List<string>();
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty)
+                {
+                    cardIds.Add(slot.Card.Card.Id);
+                }
+            }
+
+            return cardIds;
         }
 
         private static AssetCardRuntimeData FindCard(System.Collections.Generic.IEnumerable<AssetCardRuntimeData> cards, string cardId)

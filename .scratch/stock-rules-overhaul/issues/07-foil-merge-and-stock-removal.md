@@ -25,7 +25,7 @@ Status: ready-for-agent
 - 주식에는 동일 종목 판정을 위한 안정적인 stock id와 획득 순서를 둔다.
 - 포트폴리오 슬롯 서비스에서 세 번째 동일 주식 구매 후 즉시 병합을 처리한다.
 - 병합 결과는 earliest acquired 슬롯에 남기고, 나머지 슬롯은 비워 둔다.
-- 종목 제거는 주식 덱, 시장 슬롯, 예약 상태를 한 번에 청소하는 규칙으로 만들고, 시장 빈칸은 당김으로 후처리한다.
+- 종목 제거는 주식 덱, 시장 슬롯, 예약 상태를 한 번에 청소하는 규칙으로 만들고, 시장 빈칸은 당김으로 후처리한다. 완료 후 .scratch\stock-rules-overhaul\issues\03-split-market-decks-and-draw-rules.md 를 확인 및 갱신한다.
 
 ## Acceptance criteria
 

@@ -617,9 +617,11 @@ MonoBehaviour:
     pressureLevelId: critical
     comment: Impressive and risky.
   marketConfig:
-    sellImminentSlots: 3
-    currentMarketSlots: 3
-    upcomingMarketSlots: 3
+    marketTapeSlots: 8
+    sellImminentSlots: 0
+    currentMarketSlots: 8
+    upcomingMarketSlots: 0
+    stockDeckDrawWeight: 0.75
   resourceConfig:
     startingCash: 3
     investmentPhilosophyCap: 10

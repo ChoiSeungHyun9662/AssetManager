@@ -60,6 +60,7 @@ namespace AssetManager
 
             if (nextPhase == BusinessDayPhase.AwaitingAction)
             {
+                nextRun = MarketTape.Advance(nextRun);
                 return ResourceLedger.AddEarnedCash(nextRun, nextRun.OwnedAssets.BusinessDayStartIncome);
             }
 
@@ -127,7 +128,7 @@ namespace AssetManager
                 run.RedemptionPressure);
 
             return nextPhase == BusinessDayPhase.AwaitingAction
-                ? MarketTape.Advance(nextRun)
+                ? MarketTape.Refresh(nextRun)
                 : nextRun;
         }
 

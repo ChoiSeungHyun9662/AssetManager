@@ -22,19 +22,10 @@ namespace AssetManager
             }
 
             var selectedCard = run.CardDetail.SelectedCard;
-            var zone = FindMarketTapeZone(run.MarketTape, selectedCard.Card.Id).Value;
-            var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, zone, selectedCard.Card.Id);
             var reservedCard = new AssetCardRuntimeData(selectedCard.Card, AssetCardRuntimeState.Reserved, null);
             var assetCards = MarkCardReserved(run.AssetCards, reservedCard);
             var reservation = AddReservedCard(run.Reservation, reservedCard);
-            var marketTape = MarketTape.AdvanceSlotAt(
-                run.StaticData.MarketConfig,
-                assetCards,
-                run.MarketTape,
-                run.OwnedAssets,
-                reservation,
-                zone,
-                slotIndex);
+            var marketTape = MarketTape.ReserveSlot(run.MarketTape, selectedCard.Card.Id, reservedCard);
 
             var reservedRun = WithReservedCard(run, assetCards, marketTape, reservation);
             var dealResult = ResourceLedger.AddDeal(reservedRun, 1);
@@ -70,6 +61,11 @@ namespace AssetManager
             if (run.Reservation.ReservedCards.Count >= run.Reservation.Capacity)
             {
                 return "예약 구역이 가득 찼습니다.";
+            }
+
+            if (run.CardDetail.SelectedCard.Card.CardDomain != CardDomain.Stock)
+            {
+                return "주식만 예약할 수 있습니다.";
             }
 
             if (run.CardDetail.SelectedCard.State != AssetCardRuntimeState.Available

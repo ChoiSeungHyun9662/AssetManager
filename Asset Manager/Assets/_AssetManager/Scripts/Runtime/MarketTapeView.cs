@@ -43,9 +43,39 @@ namespace AssetManager
         {
             SetActive(marketPanel, run.BusinessDay.MarketArea == MarketAreaState.Market);
 
-            ShowCards(sellImminentButtons, run.MarketTape.SellImminentCards, MarketTapeZone.SellImminent);
-            ShowCards(currentMarketButtons, run.MarketTape.CurrentMarketCards, MarketTapeZone.CurrentMarket);
-            ShowCards(upcomingMarketButtons, run.MarketTape.UpcomingMarketCards, MarketTapeZone.UpcomingMarket);
+            ShowCards(sellImminentButtons, Array.Empty<AssetCardRuntimeData>(), MarketTapeZone.SellImminent);
+            ShowSlots(currentMarketButtons, run.MarketTape.Slots);
+            ShowCards(upcomingMarketButtons, Array.Empty<AssetCardRuntimeData>(), MarketTapeZone.UpcomingMarket);
+        }
+
+        private void ShowSlots(
+            IReadOnlyList<Button> buttons,
+            IReadOnlyList<MarketTapeSlotState> slots)
+        {
+            for (var i = 0; i < buttons.Count; i++)
+            {
+                var button = buttons[i];
+                if (button == null)
+                {
+                    continue;
+                }
+
+                var hasCard = i < slots.Count && !slots[i].IsEmpty;
+                button.gameObject.SetActive(hasCard);
+                button.onClick.RemoveAllListeners();
+
+                if (!hasCard)
+                {
+                    SetButtonText(button, string.Empty);
+                    continue;
+                }
+
+                var slot = slots[i];
+                var card = slot.Card;
+                SetButtonText(button, FormatCard(card, slot.IsReserved));
+                StyleCardButton(button, card, MarketTapeZone.CurrentMarket, slot.IsReserved);
+                button.onClick.AddListener(() => onMarketCardSelected?.Invoke(card, MarketTapeZone.CurrentMarket));
+            }
         }
 
         private void ShowCards(
@@ -72,13 +102,13 @@ namespace AssetManager
                 }
 
                 var card = cards[i];
-                SetButtonText(button, FormatCard(card));
-                StyleCardButton(button, card, zone);
+                SetButtonText(button, FormatCard(card, false));
+                StyleCardButton(button, card, zone, false);
                 button.onClick.AddListener(() => onMarketCardSelected?.Invoke(card, zone));
             }
         }
 
-        private static string FormatCard(AssetCardRuntimeData card)
+        private static string FormatCard(AssetCardRuntimeData card, bool isReserved)
         {
             if (card.Card.CardDomain == CardDomain.ConsumableResource)
             {
@@ -108,6 +138,10 @@ namespace AssetManager
 
             builder.Append("◆");
             builder.Append(card.Card.ManagementValue);
+            if (isReserved)
+            {
+                builder.Append("  예약");
+            }
 
             return builder.ToString();
         }
@@ -189,12 +223,14 @@ namespace AssetManager
             return builder.ToString();
         }
 
-        private static void StyleCardButton(Button button, AssetCardRuntimeData card, MarketTapeZone zone)
+        private static void StyleCardButton(Button button, AssetCardRuntimeData card, MarketTapeZone zone, bool isReserved)
         {
             var image = button.GetComponent<Image>();
             if (image != null)
             {
-                image.color = GetCardColor(card.Card.Rarity, zone);
+                image.color = isReserved
+                    ? new Color(0.22f, 0.20f, 0.10f, 0.98f)
+                    : GetCardColor(card.Card.Rarity, zone);
             }
 
             var text = button.GetComponentInChildren<Text>();

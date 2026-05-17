@@ -469,13 +469,16 @@ namespace AssetManager
 
             var sellImminentButtons = EnsureMarketTapeCardButtons(
                 sellImminentPanel.transform,
-                MarketTapeSellImminentCardButtonPrefix);
+                MarketTapeSellImminentCardButtonPrefix,
+                0);
             var currentMarketButtons = EnsureMarketTapeCardButtons(
                 currentMarketPanel.transform,
-                MarketTapeCurrentMarketCardButtonPrefix);
+                MarketTapeCurrentMarketCardButtonPrefix,
+                8);
             var upcomingMarketButtons = EnsureMarketTapeCardButtons(
                 upcomingMarketPanel.transform,
-                MarketTapeUpcomingMarketCardButtonPrefix);
+                MarketTapeUpcomingMarketCardButtonPrefix,
+                0);
 
             ApplyMarketTapeLayout(
                 marketPanel,
@@ -1022,6 +1025,8 @@ namespace AssetManager
             ApplyMarketTapeZoneLayout(sellImminentPanel, new Vector2(-470f, -220f));
             ApplyMarketTapeZoneLayout(currentMarketPanel, new Vector2(0f, -220f));
             ApplyMarketTapeZoneLayout(upcomingMarketPanel, new Vector2(470f, -220f));
+            sellImminentPanel.SetActive(false);
+            upcomingMarketPanel.SetActive(false);
             ApplyMarketTapeCardLayout(sellImminentButtons, false);
             ApplyMarketTapeCardLayout(currentMarketButtons, false);
             ApplyMarketTapeCardLayout(upcomingMarketButtons, true);
@@ -1040,7 +1045,9 @@ namespace AssetManager
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 anchoredPosition,
-                new Vector2(420f, 500f));
+                    zonePanel.name == MarketTapeCurrentMarketPanelName
+                        ? new Vector2(1380f, 210f)
+                        : new Vector2(420f, 500f));
         }
 
         private static void ApplyMarketTapeCardLayout(IReadOnlyList<Button> buttons, bool isPreviewColumn)
@@ -1053,18 +1060,23 @@ namespace AssetManager
                     continue;
                 }
 
+                var isTapeRow = !isPreviewColumn && buttons.Count == 8;
                 SetRect(
                     button.gameObject,
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
                     new Vector2(0.5f, 1f),
-                    new Vector2(0f, isPreviewColumn ? -96f - (i * 112f) : -92f - (i * 140f)),
-                    isPreviewColumn ? new Vector2(324f, 94f) : new Vector2(372f, 124f));
+                    isTapeRow
+                        ? new Vector2(-595f + (i * 170f), -96f)
+                        : new Vector2(0f, isPreviewColumn ? -96f - (i * 112f) : -92f - (i * 140f)),
+                    isTapeRow
+                        ? new Vector2(156f, 140f)
+                        : isPreviewColumn ? new Vector2(324f, 94f) : new Vector2(372f, 124f));
                 SetButtonTextInset(
                     button,
                     new Vector2(14f, 10f),
                     new Vector2(14f, 10f),
-                    isPreviewColumn ? 14 : 16,
+                    isTapeRow ? 14 : isPreviewColumn ? 14 : 16,
                     TextAnchor.UpperLeft);
             }
         }
@@ -1442,10 +1454,10 @@ namespace AssetManager
             return panel;
         }
 
-        private static IReadOnlyList<Button> EnsureMarketTapeCardButtons(Transform zonePanel, string namePrefix)
+        private static IReadOnlyList<Button> EnsureMarketTapeCardButtons(Transform zonePanel, string namePrefix, int count)
         {
             var buttons = new List<Button>();
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < count; i++)
             {
                 var button = EnsureButton(
                     zonePanel,

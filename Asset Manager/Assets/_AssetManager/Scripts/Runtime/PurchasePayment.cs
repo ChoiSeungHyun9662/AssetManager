@@ -145,6 +145,19 @@ namespace AssetManager
             else if (purchaseSource == PurchaseSource.Reserved)
             {
                 reservation = RemoveReservedCard(run.Reservation, selectedCard.Card.Id);
+                var zone = FindMarketTapeZone(run.MarketTape, selectedCard.Card.Id);
+                if (zone.HasValue)
+                {
+                    var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, zone.Value, selectedCard.Card.Id);
+                    marketTape = MarketTape.AdvanceSlotAt(
+                        run.StaticData.MarketConfig,
+                        assetCards,
+                        run.MarketTape,
+                        ownedAssets,
+                        reservation,
+                        zone.Value,
+                        slotIndex);
+                }
             }
 
             return new PurchasePaymentResult(
@@ -183,6 +196,19 @@ namespace AssetManager
             else if (purchaseSource == PurchaseSource.Reserved)
             {
                 reservation = RemoveReservedCard(run.Reservation, selectedCard.Card.Id);
+                var zone = FindMarketTapeZone(run.MarketTape, selectedCard.Card.Id);
+                if (zone.HasValue)
+                {
+                    var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, zone.Value, selectedCard.Card.Id);
+                    marketTape = MarketTape.AdvanceSlotAt(
+                        run.StaticData.MarketConfig,
+                        assetCards,
+                        run.MarketTape,
+                        run.OwnedAssets,
+                        reservation,
+                        zone.Value,
+                        slotIndex);
+                }
             }
 
             var committedRun = WithConfirmedPurchase(

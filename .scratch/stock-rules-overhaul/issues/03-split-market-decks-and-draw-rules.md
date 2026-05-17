@@ -1,6 +1,6 @@
 # 03. 주식 덱과 소모형 자원 덱 공급 규칙
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -29,13 +29,39 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 시장 공급은 주식 덱과 소모형 자원 덱을 별도로 가진다.
-- [ ] 새 카드 공급 시 75%/25%의 soft draw 규칙으로 대상 덱을 선택한다.
-- [ ] 선택한 덱이 비어 있으면 반대 덱에서 뽑는다.
-- [ ] 소모형 자원 덱이 고갈되면 재순환 가능한 소모형 자원 카드 풀을 되돌리고 셔플한다.
-- [ ] 제거/매도/호일 완성으로 빠진 주식은 주식 덱으로 되돌아오지 않는다.
-- [ ] 양쪽 덱 모두 공급할 카드가 없는 경우 시장 슬롯을 조용히 비워두지 않고 예외 상태를 표시할 수 있다.
+- [x] 시장 공급은 주식 덱과 소모형 자원 덱을 별도로 가진다.
+- [x] 새 카드 공급 시 75%/25%의 soft draw 규칙으로 대상 덱을 선택한다.
+- [x] 선택한 덱이 비어 있으면 반대 덱에서 뽑는다.
+- [x] 소모형 자원 덱이 고갈되면 재순환 가능한 소모형 자원 카드 풀을 되돌린다.
+- [x] 제거/매도/호일 완성으로 빠진 주식은 주식 덱으로 되돌아오지 않는다.
+- [x] 양쪽 덱 모두 공급할 카드가 없는 경우 시장 슬롯을 조용히 비워두지 않고 예외 상태를 표시할 수 있다.
 - [ ] 덱/풀에 카드가 들어간 경우 해당 덱/풀 셔플 규칙이 적용된다.
+
+## Completion notes
+
+- Added `MarketDeck` as the one-card market supply rule. It chooses the target deck by `MarketConfigData.StockDeckDrawWeight`, falls back to the opposite deck if the selected deck has no drawable card, recycles removed consumable resource cards as available draws, and throws `MarketDeckExhaustedException` when neither deck can supply.
+- Updated `MarketTape` so refresh, advance, refill, and single-column advance ask `MarketDeck` for new cards instead of directly walking one shared card pool.
+- Added starter consumable resource cards to `RunStaticDataSet.CreateMvpDefaults()` so the default run has both stock and consumable resource supply.
+- Preserved the existing 3-zone market shape for this issue. The 1x8 tape and market-slot reservation changes remain in later issues.
+- The explicit shuffle criterion is not completed in this slice because the current runtime still has no persisted deck/discard-pile order to shuffle. Current behavior is deterministic over the runtime card pool, with the draw-weight decision tested separately. Add a real deck order/discard pile before marking this criterion complete.
+
+## TDD log
+
+- RED: `MarketDeckTests` first called the missing `MarketDeck` rule and missing market draw-weight constructor; Unity compilation failed as expected.
+- GREEN: Implemented `MarketDeck`, `MarketDeckDrawResult`, `MarketDeckExhaustedException`, and `MarketConfigData.StockDeckDrawWeight`.
+- RED: `MarketTapeTests` called a missing draw-roll overload on `MarketTape.Refresh`; Unity compilation failed as expected.
+- GREEN: Routed `MarketTape` supply through `MarketDeck`, added default consumable resource deck cards, and kept removed stocks out of future stock draws.
+
+## Verification
+
+- EditMode: `AssetManager.Tests.EditMode`, 80 passed / 0 failed.
+- PlayMode: `AssetManager.Tests.PlayMode`, 33 passed / 0 failed.
+- Unity manual check: not run. This issue changed pure market supply rules; UI coverage came from the existing PlayMode regression suite.
+
+## Remaining risk
+
+- Explicit deck/discard-pile shuffle behavior is still unimplemented.
+- Sold-stock and foil-completed-stock non-return behavior is represented by the same removed-stock exclusion path; the sale and foil issue slices still need to connect their final removal states into this supply rule.
 
 ## Blocked by
 

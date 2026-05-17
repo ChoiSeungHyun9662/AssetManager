@@ -395,6 +395,9 @@ namespace AssetManager
     public sealed class MarketConfigData
     {
         [SerializeField]
+        private int marketTapeSlots = 8;
+
+        [SerializeField]
         private int sellImminentSlots = 3;
 
         [SerializeField]
@@ -403,20 +406,41 @@ namespace AssetManager
         [SerializeField]
         private int upcomingMarketSlots = 3;
 
+        [SerializeField]
+        private double stockDeckDrawWeight = 0.75;
+
         public MarketConfigData()
         {
         }
 
-        public MarketConfigData(int sellImminentSlots, int currentMarketSlots, int upcomingMarketSlots)
+        public MarketConfigData(int marketTapeSlots, double stockDeckDrawWeight)
+            : this(0, marketTapeSlots, 0, stockDeckDrawWeight)
         {
+        }
+
+        public MarketConfigData(int sellImminentSlots, int currentMarketSlots, int upcomingMarketSlots)
+            : this(sellImminentSlots, currentMarketSlots, upcomingMarketSlots, 0.75)
+        {
+        }
+
+        public MarketConfigData(
+            int sellImminentSlots,
+            int currentMarketSlots,
+            int upcomingMarketSlots,
+            double stockDeckDrawWeight)
+        {
+            marketTapeSlots = sellImminentSlots + currentMarketSlots + upcomingMarketSlots;
             this.sellImminentSlots = sellImminentSlots;
             this.currentMarketSlots = currentMarketSlots;
             this.upcomingMarketSlots = upcomingMarketSlots;
+            this.stockDeckDrawWeight = stockDeckDrawWeight;
         }
 
+        public int MarketTapeSlots => marketTapeSlots;
         public int SellImminentSlots => sellImminentSlots;
         public int CurrentMarketSlots => currentMarketSlots;
         public int UpcomingMarketSlots => upcomingMarketSlots;
+        public double StockDeckDrawWeight => stockDeckDrawWeight;
     }
 
     [Serializable]
@@ -624,6 +648,19 @@ namespace AssetManager
         public int? AcquiredOrder { get; }
     }
 
+    public sealed class MarketTapeSlotState
+    {
+        public MarketTapeSlotState(AssetCardRuntimeData card, bool isReserved)
+        {
+            Card = card;
+            IsReserved = isReserved;
+        }
+
+        public AssetCardRuntimeData Card { get; }
+        public bool IsReserved { get; }
+        public bool IsEmpty => Card == null;
+    }
+
     public sealed class MarketTapeState
     {
         public MarketTapeState(
@@ -634,11 +671,57 @@ namespace AssetManager
             SellImminentCards = new List<AssetCardRuntimeData>(sellImminentCards).AsReadOnly();
             CurrentMarketCards = new List<AssetCardRuntimeData>(currentMarketCards).AsReadOnly();
             UpcomingMarketCards = new List<AssetCardRuntimeData>(upcomingMarketCards).AsReadOnly();
+            Slots = BuildSlots(SellImminentCards, CurrentMarketCards, UpcomingMarketCards);
         }
 
+        public MarketTapeState(IEnumerable<MarketTapeSlotState> slots)
+        {
+            Slots = new List<MarketTapeSlotState>(slots).AsReadOnly();
+            SellImminentCards = Array.Empty<AssetCardRuntimeData>();
+            CurrentMarketCards = CollectSlotCards(Slots).AsReadOnly();
+            UpcomingMarketCards = Array.Empty<AssetCardRuntimeData>();
+        }
+
+        public IReadOnlyList<MarketTapeSlotState> Slots { get; }
         public IReadOnlyList<AssetCardRuntimeData> SellImminentCards { get; }
         public IReadOnlyList<AssetCardRuntimeData> CurrentMarketCards { get; }
         public IReadOnlyList<AssetCardRuntimeData> UpcomingMarketCards { get; }
+
+        private static IReadOnlyList<MarketTapeSlotState> BuildSlots(
+            IEnumerable<AssetCardRuntimeData> sellImminentCards,
+            IEnumerable<AssetCardRuntimeData> currentMarketCards,
+            IEnumerable<AssetCardRuntimeData> upcomingMarketCards)
+        {
+            var slots = new List<MarketTapeSlotState>();
+            AddSlots(slots, sellImminentCards);
+            AddSlots(slots, currentMarketCards);
+            AddSlots(slots, upcomingMarketCards);
+            return slots.AsReadOnly();
+        }
+
+        private static void AddSlots(
+            List<MarketTapeSlotState> slots,
+            IEnumerable<AssetCardRuntimeData> cards)
+        {
+            foreach (var card in cards)
+            {
+                slots.Add(new MarketTapeSlotState(card, card.State == AssetCardRuntimeState.Reserved));
+            }
+        }
+
+        private static List<AssetCardRuntimeData> CollectSlotCards(IEnumerable<MarketTapeSlotState> slots)
+        {
+            var cards = new List<AssetCardRuntimeData>();
+            foreach (var slot in slots)
+            {
+                if (!slot.IsEmpty)
+                {
+                    cards.Add(slot.Card);
+                }
+            }
+
+            return cards;
+        }
     }
 
     public sealed class ReservationState
