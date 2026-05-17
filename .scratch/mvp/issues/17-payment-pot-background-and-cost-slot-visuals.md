@@ -1,6 +1,13 @@
 # 17. Payment Pot 배경과 비용 슬롯 결제 시각화
 
-Status: ready-for-agent
+Status: superseded
+
+## Superseded by
+
+- `.scratch/stock-rules-overhaul/issues/06-stock-purchase-payment-and-portfolio-cap.md`
+- `.scratch/stock-rules-overhaul/issues/10-hover-card-and-single-market-state.md`
+
+Do not implement this issue as written. The stock rules overhaul removes the card detail screen and the Payment Pot surface. Cost-slot and deal readability still matter, but they must be implemented through the new stock purchase and single-market-state flow.
 
 ## Parent
 
@@ -43,4 +50,3 @@ Status: ready-for-agent
 ## User stories covered
 
 9, 26, 27, 28, 29, 30, 31, 59
-

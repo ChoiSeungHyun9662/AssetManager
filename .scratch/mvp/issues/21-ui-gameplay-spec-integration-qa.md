@@ -1,6 +1,12 @@
 # 21. UI_GAMEPLAY_SPEC 통합 QA와 첫 애셋 적용 검수
 
-Status: ready-for-human
+Status: superseded
+
+## Superseded by
+
+- `.scratch/stock-rules-overhaul/issues/13-stock-overhaul-integration-qa.md`
+
+Do not run this QA issue as written. The validation target is no longer the old UI_GAMEPLAY_SPEC flow with card detail, Payment Pot, 3-zone market, and GainLiquidity. Use the stock overhaul integration QA issue instead.
 
 ## Parent
 
@@ -49,4 +55,3 @@ UI_GAMEPLAY_SPEC 적용 slice들이 Unity Play Mode에서 하나의 플레이 �
 ## User stories covered
 
 7, 13, 15, 22, 26, 29, 30, 40, 49, 52
-

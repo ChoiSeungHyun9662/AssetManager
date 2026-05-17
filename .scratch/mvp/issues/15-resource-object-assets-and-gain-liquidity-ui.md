@@ -1,6 +1,6 @@
 # 15. 자원 오브젝트 애셋과 자원 확보 UI
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -44,4 +44,3 @@ None - can start immediately
 ## User stories covered
 
 2, 11, 13, 26, 40, 41, 42, 43, 44
-
