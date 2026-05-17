@@ -6,11 +6,20 @@ namespace AssetManager
 {
     public enum ResourceType
     {
-        Cash,
-        Research,
-        Credit,
-        Commodity,
-        Deal
+        Cash = 0,
+        Reading = 1,
+        Meditation = 2,
+        Patience = 3,
+        Deal = 4,
+        Research = Reading,
+        Credit = Meditation,
+        Commodity = Patience
+    }
+
+    public enum CardDomain
+    {
+        Stock,
+        ConsumableResource
     }
 
     public enum AssetRarity
@@ -139,6 +148,9 @@ namespace AssetManager
         private AssetRarity rarity;
 
         [SerializeField]
+        private CardDomain cardDomain = CardDomain.Stock;
+
+        [SerializeField]
         private int cashCost;
 
         [SerializeField]
@@ -151,10 +163,28 @@ namespace AssetManager
         private int income;
 
         [SerializeField]
+        private int foilValue;
+
+        [SerializeField]
+        private int foilDividend;
+
+        [SerializeField]
+        private int minDeckCopies = 1;
+
+        [SerializeField]
+        private int maxDeckCopies = 1;
+
+        [SerializeField]
         private List<TagData> tags = new List<TagData>();
 
         [SerializeField]
         private bool grantsExtraBuyAction;
+
+        [SerializeField]
+        private ResourceType providedResourceType = ResourceType.Cash;
+
+        [SerializeField]
+        private int providedResourceAmount;
 
         public AssetCardData()
         {
@@ -170,30 +200,53 @@ namespace AssetManager
             int managementValue,
             int income,
             IEnumerable<TagData> tags,
-            bool grantsExtraBuyAction = false)
+            bool grantsExtraBuyAction = false,
+            int foilValue = 0,
+            int foilDividend = 0,
+            int minDeckCopies = 1,
+            int maxDeckCopies = 1,
+            CardDomain cardDomain = CardDomain.Stock,
+            ResourceType providedResourceType = ResourceType.Cash,
+            int providedResourceAmount = 0)
         {
             this.id = id;
             this.displayName = displayName;
             this.description = description;
             this.rarity = rarity;
+            this.cardDomain = cardDomain;
             this.cashCost = cashCost;
             this.professionalCosts = new List<ProfessionalResourceCost>(professionalCosts);
             this.managementValue = managementValue;
             this.income = income;
+            this.foilValue = foilValue > 0 ? foilValue : managementValue;
+            this.foilDividend = foilDividend >= 0 ? foilDividend : income;
+            this.minDeckCopies = minDeckCopies;
+            this.maxDeckCopies = maxDeckCopies;
             this.tags = new List<TagData>(tags);
             this.grantsExtraBuyAction = grantsExtraBuyAction;
+            this.providedResourceType = providedResourceType;
+            this.providedResourceAmount = providedResourceAmount;
         }
 
         public string Id => id;
         public string DisplayName => displayName;
         public string Description => description;
         public AssetRarity Rarity => rarity;
+        public CardDomain CardDomain => cardDomain;
         public int CashCost => cashCost;
         public IReadOnlyList<ProfessionalResourceCost> ProfessionalCosts => professionalCosts;
+        public int BaseValue => managementValue;
+        public int BaseDividend => income;
         public int ManagementValue => managementValue;
         public int Income => income;
+        public int FoilValue => foilValue;
+        public int FoilDividend => foilDividend;
+        public int MinDeckCopies => minDeckCopies;
+        public int MaxDeckCopies => maxDeckCopies;
         public IReadOnlyList<TagData> Tags => tags;
         public bool GrantsExtraBuyAction => grantsExtraBuyAction;
+        public ResourceType ProvidedResourceType => providedResourceType;
+        public int ProvidedResourceAmount => providedResourceAmount;
     }
 
     [Serializable]
@@ -373,7 +426,10 @@ namespace AssetManager
         private int startingCash = 3;
 
         [SerializeField]
-        private int professionalResourceCap = 10;
+        private int investmentPhilosophyCap = 10;
+
+        [SerializeField]
+        private int investmentPhilosophyTypeCap = 5;
 
         [SerializeField]
         private int maxDeal = 3;
@@ -382,15 +438,27 @@ namespace AssetManager
         {
         }
 
-        public ResourceConfigData(int startingCash, int professionalResourceCap, int maxDeal)
+        public ResourceConfigData(int startingCash, int investmentPhilosophyCap, int maxDeal)
+            : this(startingCash, investmentPhilosophyCap, 5, maxDeal)
+        {
+        }
+
+        public ResourceConfigData(
+            int startingCash,
+            int investmentPhilosophyCap,
+            int investmentPhilosophyTypeCap,
+            int maxDeal)
         {
             this.startingCash = startingCash;
-            this.professionalResourceCap = professionalResourceCap;
+            this.investmentPhilosophyCap = investmentPhilosophyCap;
+            this.investmentPhilosophyTypeCap = investmentPhilosophyTypeCap;
             this.maxDeal = maxDeal;
         }
 
         public int StartingCash => startingCash;
-        public int ProfessionalResourceCap => professionalResourceCap;
+        public int InvestmentPhilosophyCap => investmentPhilosophyCap;
+        public int InvestmentPhilosophyTypeCap => investmentPhilosophyTypeCap;
+        public int ProfessionalResourceCap => investmentPhilosophyCap;
         public int MaxDeal => maxDeal;
     }
 
@@ -419,21 +487,25 @@ namespace AssetManager
 
     public sealed class ResourceState
     {
-        public ResourceState(int cash, int research, int credit, int commodity, int deal)
+        public ResourceState(int cash, int reading, int meditation, int patience, int deal)
         {
             Cash = cash;
-            Research = research;
-            Credit = credit;
-            Commodity = commodity;
+            Reading = reading;
+            Meditation = meditation;
+            Patience = patience;
             Deal = deal;
         }
 
         public int Cash { get; }
-        public int Research { get; }
-        public int Credit { get; }
-        public int Commodity { get; }
+        public int Reading { get; }
+        public int Meditation { get; }
+        public int Patience { get; }
+        public int Research => Reading;
+        public int Credit => Meditation;
+        public int Commodity => Patience;
         public int Deal { get; }
-        public int ProfessionalTotal => Research + Credit + Commodity;
+        public int InvestmentPhilosophyTotal => Reading + Meditation + Patience;
+        public int ProfessionalTotal => InvestmentPhilosophyTotal;
 
         public int Get(ResourceType resourceType)
         {
@@ -441,12 +513,12 @@ namespace AssetManager
             {
                 case ResourceType.Cash:
                     return Cash;
-                case ResourceType.Research:
-                    return Research;
-                case ResourceType.Credit:
-                    return Credit;
-                case ResourceType.Commodity:
-                    return Commodity;
+                case ResourceType.Reading:
+                    return Reading;
+                case ResourceType.Meditation:
+                    return Meditation;
+                case ResourceType.Patience:
+                    return Patience;
                 case ResourceType.Deal:
                     return Deal;
                 default:

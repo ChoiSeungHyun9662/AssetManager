@@ -220,7 +220,7 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MainGameShellBootstrapKeepsMarketOverlaysUnderUiRoot()
+        public IEnumerator MainGameShellBootstrapRemovesLegacyCentralBankOverlay()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapKeepsMarketOverlaysUnderUiRootTests");
             SceneManager.SetActiveScene(scene);
@@ -245,7 +245,7 @@ namespace AssetManager.Tests
             var updatedMarketPanel = updatedUiRoot.Find(ProjectShell.MarketAreaMarketPanelName);
 
             Assert.That(updatedUiRoot.Find(ProjectShell.ReservationPanelName), Is.Not.Null);
-            Assert.That(updatedUiRoot.Find(ProjectShell.CentralBankButtonName), Is.Not.Null);
+            Assert.That(updatedUiRoot.Find(ProjectShell.CentralBankButtonName), Is.Null);
             Assert.That(updatedMarketPanel.Find(ProjectShell.ReservationPanelName), Is.Null);
             Assert.That(updatedMarketPanel.Find(ProjectShell.CentralBankButtonName), Is.Null);
 
@@ -253,7 +253,7 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MainGameShellBootstrapKeepsResourcesOutOfTopStatusAndShowsObjectChoices()
+        public IEnumerator MainGameShellBootstrapKeepsResourcesOutOfTopStatusWithoutGainLiquidity()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapResourceObjectTests");
             SceneManager.SetActiveScene(scene);
@@ -270,22 +270,14 @@ namespace AssetManager.Tests
 
             var statusText = FindUiObject(ProjectShell.RunStatusTextName).GetComponent<Text>().text;
             Assert.That(statusText, Does.Not.Contain("현금"));
-            Assert.That(statusText, Does.Not.Contain("리서치"));
-            Assert.That(statusText, Does.Not.Contain("신용"));
-            Assert.That(statusText, Does.Not.Contain("원자재"));
+            Assert.That(statusText, Does.Not.Contain("독서"));
+            Assert.That(statusText, Does.Not.Contain("명상"));
+            Assert.That(statusText, Does.Not.Contain("인내"));
             Assert.That(statusText, Does.Not.Contain("딜"));
 
-            FindUiObject(ProjectShell.CentralBankButtonName).GetComponent<Button>().onClick.Invoke();
-
-            yield return null;
-
-            Assert.That(FindUiObject(ProjectShell.LiquidityActionCashButtonName).GetComponentInChildren<Text>().text, Does.Contain("지폐다발"));
-            Assert.That(FindUiObject(ProjectShell.LiquidityActionResearchButtonName).GetComponentInChildren<Text>().text, Does.Contain("칩"));
-            Assert.That(FindUiObject(ProjectShell.LiquidityActionCreditButtonName).GetComponentInChildren<Text>().text, Does.Contain("칩"));
-            Assert.That(FindUiObject(ProjectShell.LiquidityActionCommodityButtonName).GetComponentInChildren<Text>().text, Does.Contain("칩"));
-            Assert.That(
-                FindChild(GameObject.Find(ProjectShell.UiRootName).transform, "Liquidity Action Deal Button"),
-                Is.Null);
+            var uiRoot = GameObject.Find(ProjectShell.UiRootName).transform;
+            Assert.That(FindChild(uiRoot, ProjectShell.CentralBankButtonName), Is.Null);
+            Assert.That(FindChild(uiRoot, ProjectShell.LiquidityActionPanelName), Is.Null);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -314,8 +306,8 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(10));
-            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("자원칩 최대 보유: 리서치 +1 폐기"));
+            Assert.That(bootstrap.CurrentRun.Resources.Reading, Is.EqualTo(5));
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("투자 철학 한도: 독서 +1 버림"));
 
             var dealButton = FindUiObject(ProjectShell.ResourceDevDealButtonName).GetComponent<Button>();
             for (var i = 0; i < 4; i++)
@@ -326,7 +318,7 @@ namespace AssetManager.Tests
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(3));
-            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("딜 최대 보유: 추가 딜 폐기"));
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("딜 한도: 추가 딜 버림"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -373,6 +365,55 @@ namespace AssetManager.Tests
             Assert.That(
                 firstSellImminentButton.GetComponent<RectTransform>().rect.height,
                 Is.GreaterThan(firstUpcomingMarketButton.GetComponent<RectTransform>().rect.height));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapShowsConsumableResourceMarketCardWithoutName()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapConsumableResourceCardTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var resourceCard = new AssetCardData(
+                "market-patience-resource-card",
+                "Hidden Resource Name",
+                "시장 표시 테스트 카드",
+                AssetRarity.Uncommon,
+                1,
+                new ProfessionalResourceCost[0],
+                0,
+                0,
+                new TagData[0],
+                cardDomain: CardDomain.ConsumableResource,
+                providedResourceType: ResourceType.Patience,
+                providedResourceAmount: 2);
+            var runtimeCard = new AssetCardRuntimeData(resourceCard, AssetCardRuntimeState.Available, PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, runtimeCard, 0));
+            RefreshRunUi(bootstrap);
+
+            yield return null;
+
+            var cardText = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+                .GetComponentInChildren<Text>()
+                .text;
+
+            Assert.That(cardText, Does.Contain("₩1"));
+            Assert.That(cardText, Does.Contain("Uncommon"));
+            Assert.That(cardText, Does.Contain("인내 +2"));
+            Assert.That(cardText, Does.Not.Contain(resourceCard.DisplayName));
+            Assert.That(cardText, Does.Not.Contain("↗"));
+            Assert.That(cardText, Does.Not.Contain("◆"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -503,21 +544,21 @@ namespace AssetManager.Tests
 
             var buyButton = FindUiObject(ProjectShell.CardDetailBuyButtonName).GetComponent<Button>();
             Assert.That(buyButton.interactable, Is.False);
-            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("리서치: 비어 있음"));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("독서: 비어 있음"));
 
             FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).GetComponent<Button>().onClick.Invoke();
 
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(1));
-            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("리서치: 리서치"));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("독서: 독서"));
 
             FindUiObject(ProjectShell.CardDetailPaymentSlotButtonPrefix + "1").GetComponent<Button>().onClick.Invoke();
 
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(1));
-            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("리서치: 비어 있음"));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("독서: 비어 있음"));
 
             FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).GetComponent<Button>().onClick.Invoke();
             FindUiObject(ProjectShell.CardDetailPlaceCreditButtonName).GetComponent<Button>().onClick.Invoke();
@@ -589,7 +630,7 @@ namespace AssetManager.Tests
             Assert.That(paymentPot.GetComponent<Image>(), Is.Not.Null);
             Assert.That(paymentSlotsText, Does.Contain("Payment Pot"));
             Assert.That(paymentSlotsText, Does.Not.Contain("현금:"));
-            Assert.That(slotButtonText, Does.Contain("리서치"));
+            Assert.That(slotButtonText, Does.Contain("독서"));
             Assert.That(slotButtonText, Does.Contain("비어 있음"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
@@ -854,7 +895,7 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MainGameShellBootstrapLiquidityActionButtonsDriveGainLiquidity()
+        public IEnumerator MainGameShellBootstrapDoesNotEnterGainLiquidityFromNewPlayFlow()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapLiquidityActionTests");
             SceneManager.SetActiveScene(scene);
@@ -870,63 +911,19 @@ namespace AssetManager.Tests
             yield return null;
 
             var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
-            var startingCash = bootstrap.CurrentRun.Resources.Cash;
-            var marketPanel = FindUiObject(ProjectShell.MarketAreaMarketPanelName);
-            var liquidityPanel = FindUiObject(ProjectShell.LiquidityActionPanelName);
-            var centralBankButton = FindUiObject(ProjectShell.CentralBankButtonName).GetComponent<Button>();
-            var closeButton = FindUiObject(ProjectShell.LiquidityActionCloseButtonName).GetComponent<Button>();
-            var cashButton = FindUiObject(ProjectShell.LiquidityActionCashButtonName).GetComponent<Button>();
-            var researchButton = FindUiObject(ProjectShell.LiquidityActionResearchButtonName).GetComponent<Button>();
             var nextBusinessDayButton = FindUiObject(ProjectShell.NextBusinessDayButtonName).GetComponent<Button>();
+            var uiRoot = GameObject.Find(ProjectShell.UiRootName).transform;
 
-            Assert.That(marketPanel.activeSelf, Is.True);
-            Assert.That(liquidityPanel.activeSelf, Is.False);
-            Assert.That(centralBankButton.interactable, Is.True);
+            Assert.That(FindChild(uiRoot, ProjectShell.CentralBankButtonName), Is.Null);
+            Assert.That(FindChild(uiRoot, ProjectShell.LiquidityActionPanelName), Is.Null);
             Assert.That(nextBusinessDayButton.interactable, Is.True);
 
-            centralBankButton.onClick.Invoke();
-
-            yield return null;
-
-            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.GainLiquidity));
-            Assert.That(marketPanel.activeSelf, Is.False);
-            Assert.That(liquidityPanel.activeSelf, Is.True);
-            Assert.That(closeButton.interactable, Is.True);
-            Assert.That(cashButton.interactable, Is.True);
-            Assert.That(researchButton.interactable, Is.True);
-            Assert.That(nextBusinessDayButton.interactable, Is.False);
-
-            closeButton.onClick.Invoke();
+            bootstrap.EnterLiquidityAction();
 
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
-            Assert.That(liquidityPanel.activeSelf, Is.False);
-            Assert.That(nextBusinessDayButton.interactable, Is.True);
-
-            centralBankButton.onClick.Invoke();
-
-            yield return null;
-
-            cashButton.onClick.Invoke();
-
-            yield return null;
-
-            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.GainLiquidity));
-            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(startingCash + 1));
-            Assert.That(closeButton.interactable, Is.False);
-            Assert.That(nextBusinessDayButton.interactable, Is.False);
-
-            cashButton.onClick.Invoke();
-
-            yield return null;
-
-            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays - 1));
-            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(startingCash + 2));
-            Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(0));
-            Assert.That(liquidityPanel.activeSelf, Is.False);
             Assert.That(nextBusinessDayButton.interactable, Is.True);
 
             yield return SceneManager.UnloadSceneAsync(scene);
@@ -1019,14 +1016,13 @@ namespace AssetManager.Tests
             yield return null;
 
             var statusText = FindUiObject(ProjectShell.RunStatusTextName).GetComponent<Text>();
-            var centralBankButton = FindUiObject(ProjectShell.CentralBankButtonName);
             var marketTapeAdvanceButton = FindUiObject(ProjectShell.MarketTapeAdvanceButtonName);
             var resourceDevCashButton = FindUiObject(ProjectShell.ResourceDevFundingCashButtonName);
             var nextBusinessDayButton = FindUiObject(ProjectShell.NextBusinessDayButtonName).GetComponent<Button>();
             var nextBusinessDayButtonText = nextBusinessDayButton.GetComponentInChildren<Text>();
 
             Assert.That(statusText.text, Does.Contain("추가 매수 가능"));
-            Assert.That(centralBankButton.activeSelf, Is.False);
+            Assert.That(FindChild(GameObject.Find(ProjectShell.UiRootName).transform, ProjectShell.CentralBankButtonName), Is.Null);
             Assert.That(marketTapeAdvanceButton.activeSelf, Is.False);
             Assert.That(resourceDevCashButton.activeSelf, Is.False);
             Assert.That(nextBusinessDayButton.gameObject.activeSelf, Is.True);
@@ -1337,6 +1333,60 @@ namespace AssetManager.Tests
                 run.RedemptionPressure,
                 run.CardDetail,
                 run.LiquidityAction);
+        }
+
+        private static RunSessionState WithCurrentMarketCard(
+            RunSessionState run,
+            AssetCardRuntimeData runtimeCard,
+            int slotIndex)
+        {
+            var currentMarketCards = new System.Collections.Generic.List<AssetCardRuntimeData>(run.MarketTape.CurrentMarketCards);
+            currentMarketCards[slotIndex] = runtimeCard;
+
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                ReplaceCard(run.AssetCards, runtimeCard),
+                new MarketTapeState(
+                    run.MarketTape.SellImminentCards,
+                    currentMarketCards,
+                    run.MarketTape.UpcomingMarketCards),
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction);
+        }
+
+        private static System.Collections.Generic.IReadOnlyList<AssetCardRuntimeData> ReplaceCard(
+            System.Collections.Generic.IEnumerable<AssetCardRuntimeData> cards,
+            AssetCardRuntimeData replacement)
+        {
+            var updatedCards = new System.Collections.Generic.List<AssetCardRuntimeData>();
+            var replaced = false;
+            foreach (var card in cards)
+            {
+                if (card.Card.Id == replacement.Card.Id)
+                {
+                    updatedCards.Add(replacement);
+                    replaced = true;
+                }
+                else
+                {
+                    updatedCards.Add(card);
+                }
+            }
+
+            if (!replaced)
+            {
+                updatedCards.Add(replacement);
+            }
+
+            return updatedCards;
         }
 
         private static void SetCurrentRun(MainGameShellBootstrap bootstrap, RunSessionState run)

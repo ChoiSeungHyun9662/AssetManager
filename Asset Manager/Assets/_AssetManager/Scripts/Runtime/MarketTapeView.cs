@@ -80,6 +80,11 @@ namespace AssetManager
 
         private static string FormatCard(AssetCardRuntimeData card)
         {
+            if (card.Card.CardDomain == CardDomain.ConsumableResource)
+            {
+                return FormatConsumableResourceCard(card.Card);
+            }
+
             var builder = new StringBuilder();
             builder.Append("₩");
             builder.Append(card.Card.CashCost);
@@ -103,6 +108,21 @@ namespace AssetManager
 
             builder.Append("◆");
             builder.Append(card.Card.ManagementValue);
+
+            return builder.ToString();
+        }
+
+        private static string FormatConsumableResourceCard(AssetCardData card)
+        {
+            var builder = new StringBuilder();
+            builder.Append("₩");
+            builder.Append(card.CashCost);
+            builder.AppendLine();
+            builder.Append("■ ");
+            builder.AppendLine(card.Rarity.ToString());
+            builder.Append(ResourceLedger.GetResourceDisplayName(card.ProvidedResourceType));
+            builder.Append(" +");
+            builder.Append(card.ProvidedResourceAmount);
 
             return builder.ToString();
         }

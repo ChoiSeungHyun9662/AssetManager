@@ -18,9 +18,9 @@ namespace AssetManager
                 run,
                 new ResourceState(
                     run.Resources.Cash + amount,
-                    run.Resources.Research,
-                    run.Resources.Credit,
-                    run.Resources.Commodity,
+                    run.Resources.Reading,
+                    run.Resources.Meditation,
+                    run.Resources.Patience,
                     run.Resources.Deal),
                 new RunPerformanceState(
                     run.Performance.CurrentQuarterEarnedCash,
@@ -45,9 +45,9 @@ namespace AssetManager
                 run,
                 new ResourceState(
                     run.Resources.Cash + amount,
-                    run.Resources.Research,
-                    run.Resources.Credit,
-                    run.Resources.Commodity,
+                    run.Resources.Reading,
+                    run.Resources.Meditation,
+                    run.Resources.Patience,
                     run.Resources.Deal),
                 new RunPerformanceState(
                     performance.CurrentQuarterEarnedCash + amount,
@@ -57,7 +57,7 @@ namespace AssetManager
                     performance.CompletedQuarterEarnedCash));
         }
 
-        public static ResourceLedgerResult AddProfessionalResource(
+        public static ResourceLedgerResult AddInvestmentPhilosophy(
             RunSessionState run,
             ResourceType resourceType,
             int amount)
@@ -65,9 +65,9 @@ namespace AssetManager
             ValidateRun(run);
             ValidateAmount(amount);
 
-            if (!IsProfessionalResource(resourceType))
+            if (!IsInvestmentPhilosophy(resourceType))
             {
-                throw new ArgumentException("Only professional resources can be added through this method.", nameof(resourceType));
+                throw new ArgumentException("Only investment philosophy resources can be added through this method.", nameof(resourceType));
             }
 
             if (amount == 0)
@@ -75,14 +75,17 @@ namespace AssetManager
                 return new ResourceLedgerResult(run, 0, 0, string.Empty);
             }
 
-            var remainingCapacity = Math.Max(
+            var totalCapacity = Math.Max(
                 0,
-                run.StaticData.ResourceConfig.ProfessionalResourceCap - run.Resources.ProfessionalTotal);
-            var gainedAmount = Math.Min(amount, remainingCapacity);
+                run.StaticData.ResourceConfig.InvestmentPhilosophyCap - run.Resources.InvestmentPhilosophyTotal);
+            var typeCapacity = Math.Max(
+                0,
+                run.StaticData.ResourceConfig.InvestmentPhilosophyTypeCap - run.Resources.Get(resourceType));
+            var gainedAmount = Math.Min(amount, Math.Min(totalCapacity, typeCapacity));
             var discardedAmount = amount - gainedAmount;
-            var resources = AddProfessionalResourceAmount(run.Resources, resourceType, gainedAmount);
+            var resources = AddInvestmentPhilosophyAmount(run.Resources, resourceType, gainedAmount);
             var message = discardedAmount > 0
-                ? $"자원칩 최대 보유: {GetResourceDisplayName(resourceType)} +{discardedAmount} 폐기"
+                ? $"투자 철학 한도: {GetResourceDisplayName(resourceType)} +{discardedAmount} 버림"
                 : string.Empty;
 
             return new ResourceLedgerResult(
@@ -90,6 +93,14 @@ namespace AssetManager
                 gainedAmount,
                 discardedAmount,
                 message);
+        }
+
+        public static ResourceLedgerResult AddProfessionalResource(
+            RunSessionState run,
+            ResourceType resourceType,
+            int amount)
+        {
+            return AddInvestmentPhilosophy(run, resourceType, amount);
         }
 
         public static ResourceLedgerResult AddDeal(RunSessionState run, int amount)
@@ -106,7 +117,7 @@ namespace AssetManager
             var gainedAmount = Math.Min(amount, remainingCapacity);
             var discardedAmount = amount - gainedAmount;
             var message = discardedAmount > 0
-                ? "딜 최대 보유: 추가 딜 폐기"
+                ? "딜 한도: 추가 딜 버림"
                 : string.Empty;
 
             return new ResourceLedgerResult(
@@ -114,9 +125,9 @@ namespace AssetManager
                     run,
                     new ResourceState(
                         run.Resources.Cash,
-                        run.Resources.Research,
-                        run.Resources.Credit,
-                        run.Resources.Commodity,
+                        run.Resources.Reading,
+                        run.Resources.Meditation,
+                        run.Resources.Patience,
                         run.Resources.Deal + gainedAmount),
                     run.Performance),
                 gainedAmount,
@@ -130,12 +141,12 @@ namespace AssetManager
             {
                 case ResourceType.Cash:
                     return "현금";
-                case ResourceType.Research:
-                    return "리서치";
-                case ResourceType.Credit:
-                    return "신용";
-                case ResourceType.Commodity:
-                    return "원자재";
+                case ResourceType.Reading:
+                    return "독서";
+                case ResourceType.Meditation:
+                    return "명상";
+                case ResourceType.Patience:
+                    return "인내";
                 case ResourceType.Deal:
                     return "딜";
                 default:
@@ -143,40 +154,40 @@ namespace AssetManager
             }
         }
 
-        private static bool IsProfessionalResource(ResourceType resourceType)
+        private static bool IsInvestmentPhilosophy(ResourceType resourceType)
         {
-            return resourceType == ResourceType.Research
-                || resourceType == ResourceType.Credit
-                || resourceType == ResourceType.Commodity;
+            return resourceType == ResourceType.Reading
+                || resourceType == ResourceType.Meditation
+                || resourceType == ResourceType.Patience;
         }
 
-        private static ResourceState AddProfessionalResourceAmount(
+        private static ResourceState AddInvestmentPhilosophyAmount(
             ResourceState resources,
             ResourceType resourceType,
             int amount)
         {
             switch (resourceType)
             {
-                case ResourceType.Research:
+                case ResourceType.Reading:
                     return new ResourceState(
                         resources.Cash,
-                        resources.Research + amount,
-                        resources.Credit,
-                        resources.Commodity,
+                        resources.Reading + amount,
+                        resources.Meditation,
+                        resources.Patience,
                         resources.Deal);
-                case ResourceType.Credit:
+                case ResourceType.Meditation:
                     return new ResourceState(
                         resources.Cash,
-                        resources.Research,
-                        resources.Credit + amount,
-                        resources.Commodity,
+                        resources.Reading,
+                        resources.Meditation + amount,
+                        resources.Patience,
                         resources.Deal);
-                case ResourceType.Commodity:
+                case ResourceType.Patience:
                     return new ResourceState(
                         resources.Cash,
-                        resources.Research,
-                        resources.Credit,
-                        resources.Commodity + amount,
+                        resources.Reading,
+                        resources.Meditation,
+                        resources.Patience + amount,
                         resources.Deal);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(resourceType), resourceType, null);

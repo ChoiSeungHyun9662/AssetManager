@@ -40,6 +40,31 @@ namespace AssetManager.Tests
             Assert.That(ContainsExtraBuyGrant(staticData.AssetCards), Is.True);
         }
 
+        [Test]
+        public void MvpDefaultsExposePortfolioCardsAsStocksWithFoilAndDeckCopyData()
+        {
+            var staticData = RunStaticDataSet.CreateMvpDefaults();
+            var firstStock = staticData.AssetCards[0];
+
+            Assert.That(firstStock.CardDomain, Is.EqualTo(CardDomain.Stock));
+            Assert.That(firstStock.BaseValue, Is.GreaterThan(0));
+            Assert.That(firstStock.BaseDividend, Is.GreaterThanOrEqualTo(0));
+            Assert.That(firstStock.FoilValue, Is.GreaterThan(firstStock.BaseValue));
+            Assert.That(firstStock.FoilDividend, Is.GreaterThanOrEqualTo(firstStock.BaseDividend));
+            Assert.That(firstStock.MinDeckCopies, Is.GreaterThan(0));
+            Assert.That(firstStock.MaxDeckCopies, Is.GreaterThanOrEqualTo(firstStock.MinDeckCopies));
+        }
+
+        [Test]
+        public void MvpDefaultStockCostsUseInvestmentPhilosophyResources()
+        {
+            var staticData = RunStaticDataSet.CreateMvpDefaults();
+            var firstStock = staticData.AssetCards[0];
+
+            Assert.That(firstStock.ProfessionalCosts[0].ResourceType, Is.EqualTo(ResourceType.Reading));
+            Assert.That(ResourceLedger.GetResourceDisplayName(firstStock.ProfessionalCosts[0].ResourceType), Is.EqualTo("독서"));
+        }
+
         private static bool ContainsExtraBuyGrant(System.Collections.Generic.IEnumerable<AssetCardData> cards)
         {
             foreach (var card in cards)

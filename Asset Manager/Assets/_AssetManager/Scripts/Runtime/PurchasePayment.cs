@@ -113,6 +113,12 @@ namespace AssetManager
             var payment = run.CardDetail.PendingPayment;
             var selectedCard = run.CardDetail.SelectedCard;
             var purchaseSource = run.CardDetail.PurchaseSource.Value;
+
+            if (selectedCard.Card.CardDomain == CardDomain.ConsumableResource)
+            {
+                return ConfirmConsumableResourcePurchase(run, payment, selectedCard, purchaseSource);
+            }
+
             var ownedCard = new AssetCardRuntimeData(
                 selectedCard.Card,
                 AssetCardRuntimeState.Owned,
@@ -145,6 +151,50 @@ namespace AssetManager
                 WithConfirmedPurchase(run, payment, assetCards, marketTape, reservation, ownedAssets),
                 true,
                 string.Empty);
+        }
+
+        private static PurchasePaymentResult ConfirmConsumableResourcePurchase(
+            RunSessionState run,
+            PurchasePaymentState payment,
+            AssetCardRuntimeData selectedCard,
+            PurchaseSource purchaseSource)
+        {
+            var removedCard = new AssetCardRuntimeData(
+                selectedCard.Card,
+                AssetCardRuntimeState.Removed,
+                null);
+            var assetCards = MarkCardRemoved(run.AssetCards, removedCard);
+            var marketTape = run.MarketTape;
+            var reservation = run.Reservation;
+
+            if (purchaseSource == PurchaseSource.MarketTape)
+            {
+                var zone = FindMarketTapeZone(run.MarketTape, selectedCard.Card.Id).Value;
+                var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, zone, selectedCard.Card.Id);
+                marketTape = MarketTape.AdvanceSlotAt(
+                    run.StaticData.MarketConfig,
+                    assetCards,
+                    run.MarketTape,
+                    run.OwnedAssets,
+                    run.Reservation,
+                    zone,
+                    slotIndex);
+            }
+            else if (purchaseSource == PurchaseSource.Reserved)
+            {
+                reservation = RemoveReservedCard(run.Reservation, selectedCard.Card.Id);
+            }
+
+            var committedRun = WithConfirmedPurchase(
+                run,
+                payment,
+                assetCards,
+                marketTape,
+                reservation,
+                run.OwnedAssets);
+            var rewardedRun = AddConsumableResourceReward(committedRun, selectedCard.Card, out var rewardMessage);
+
+            return new PurchasePaymentResult(rewardedRun, true, rewardMessage);
         }
 
         private static bool CanEditPendingPayment(RunSessionState run)
@@ -288,6 +338,19 @@ namespace AssetManager
             return updatedCards;
         }
 
+        private static IReadOnlyList<AssetCardRuntimeData> MarkCardRemoved(
+            IEnumerable<AssetCardRuntimeData> assetCards,
+            AssetCardRuntimeData removedCard)
+        {
+            var updatedCards = new List<AssetCardRuntimeData>();
+            foreach (var card in assetCards)
+            {
+                updatedCards.Add(card.Card.Id == removedCard.Card.Id ? removedCard : card);
+            }
+
+            return updatedCards;
+        }
+
         private static OwnedAssetState AddOwnedCard(OwnedAssetState ownedAssets, AssetCardRuntimeData ownedCard)
         {
             var ownedCards = new List<AssetCardRuntimeData>(ownedAssets.OwnedCards);
@@ -404,6 +467,25 @@ namespace AssetManager
             }
 
             return BusinessDayFlow.ConsumeBusinessDay(committedRun);
+        }
+
+        private static RunSessionState AddConsumableResourceReward(
+            RunSessionState run,
+            AssetCardData card,
+            out string message)
+        {
+            if (card.ProvidedResourceType == ResourceType.Cash)
+            {
+                message = string.Empty;
+                return ResourceLedger.AddFundingCash(run, card.ProvidedResourceAmount);
+            }
+
+            var result = ResourceLedger.AddInvestmentPhilosophy(
+                run,
+                card.ProvidedResourceType,
+                card.ProvidedResourceAmount);
+            message = result.Message;
+            return result.Run;
         }
     }
 

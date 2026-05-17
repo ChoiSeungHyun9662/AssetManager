@@ -50,7 +50,7 @@ namespace AssetManager
         }
 
         public PurchasePaymentState(AssetCardData card, int inflationCostModifier)
-            : this(card.Id, card.CashCost, CreateEmptySlots(card.ProfessionalCosts), inflationCostModifier)
+            : this(card.Id, card.CashCost, CreateEmptySlots(card), inflationCostModifier)
         {
         }
 
@@ -94,11 +94,15 @@ namespace AssetManager
             }
         }
 
-        private static IReadOnlyList<PaymentSlotState> CreateEmptySlots(
-            IEnumerable<ProfessionalResourceCost> professionalCosts)
+        private static IReadOnlyList<PaymentSlotState> CreateEmptySlots(AssetCardData card)
         {
+            if (card.CardDomain == CardDomain.ConsumableResource)
+            {
+                return Array.Empty<PaymentSlotState>();
+            }
+
             var slots = new List<PaymentSlotState>();
-            foreach (var cost in professionalCosts)
+            foreach (var cost in card.ProfessionalCosts)
             {
                 for (var i = 0; i < cost.Amount; i++)
                 {

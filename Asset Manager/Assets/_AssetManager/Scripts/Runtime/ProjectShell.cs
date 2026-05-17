@@ -143,7 +143,7 @@ namespace AssetManager
             EnsurePortfolioSummaryView(uiRoot.transform);
             EnsureMarketTapeView(uiRoot.transform);
             EnsureReservationView(uiRoot.transform);
-            EnsureLiquidityActionView(uiRoot.transform);
+            RemoveLegacyLiquidityActionObjects(uiRoot.transform);
             EnsureCardDetailView(uiRoot.transform);
             EnsureMarketTapeDevControls(uiRoot.transform);
             EnsureResourceDevControls(uiRoot.transform);
@@ -580,7 +580,7 @@ namespace AssetManager
             var placeResearchButton = EnsureButton(
                 panel.transform,
                 CardDetailPlaceResearchButtonName,
-                "리서치",
+                "독서",
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
@@ -589,7 +589,7 @@ namespace AssetManager
             var placeCreditButton = EnsureButton(
                 panel.transform,
                 CardDetailPlaceCreditButtonName,
-                "신용",
+                "명상",
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
@@ -598,7 +598,7 @@ namespace AssetManager
             var placeCommodityButton = EnsureButton(
                 panel.transform,
                 CardDetailPlaceCommodityButtonName,
-                "원자재",
+                "인내",
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
@@ -730,6 +730,25 @@ namespace AssetManager
             return view;
         }
 
+        private static void RemoveLegacyLiquidityActionObjects(Transform uiRoot)
+        {
+            RemoveChild(uiRoot, CentralBankButtonName);
+            RemoveChild(uiRoot, LiquidityActionPanelName);
+
+            var marketPanel = uiRoot.Find(MarketAreaMarketPanelName);
+            if (marketPanel != null)
+            {
+                RemoveChild(marketPanel, CentralBankButtonName);
+                RemoveChild(marketPanel, LiquidityActionPanelName);
+            }
+
+            var view = uiRoot.GetComponent<LiquidityActionView>();
+            if (view != null)
+            {
+                DestroyObject(view);
+            }
+        }
+
         public static LiquidityActionView EnsureLiquidityActionView(Transform uiRoot)
         {
             var marketPanel = EnsureMarketPanel(uiRoot);
@@ -781,7 +800,7 @@ namespace AssetManager
             var researchButton = EnsureButton(
                 panel.transform,
                 LiquidityActionResearchButtonName,
-                "리서치\n칩 +1",
+                "독서\n칩 +1",
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
@@ -790,7 +809,7 @@ namespace AssetManager
             var creditButton = EnsureButton(
                 panel.transform,
                 LiquidityActionCreditButtonName,
-                "신용\n칩 +1",
+                "명상\n칩 +1",
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
@@ -799,7 +818,7 @@ namespace AssetManager
             var commodityButton = EnsureButton(
                 panel.transform,
                 LiquidityActionCommodityButtonName,
-                "원자재\n칩 +1",
+                "인내\n칩 +1",
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
@@ -859,6 +878,27 @@ namespace AssetManager
             return view;
         }
 
+        private static void RemoveChild(Transform parent, string childName)
+        {
+            var child = parent.Find(childName);
+            if (child != null)
+            {
+                DestroyObject(child.gameObject);
+            }
+        }
+
+        private static void DestroyObject(Object target)
+        {
+            if (Application.isPlaying)
+            {
+                Object.Destroy(target);
+            }
+            else
+            {
+                Object.DestroyImmediate(target);
+            }
+        }
+
         public static MarketTapeDevControls EnsureMarketTapeDevControls(Transform uiRoot)
         {
             var advanceButton = EnsureButton(
@@ -912,7 +952,7 @@ namespace AssetManager
             var researchButton = EnsureButton(
                 uiRoot,
                 ResourceDevResearchButtonName,
-                "리서치 +1",
+                "독서 +1",
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
@@ -921,7 +961,7 @@ namespace AssetManager
             var creditButton = EnsureButton(
                 uiRoot,
                 ResourceDevCreditButtonName,
-                "신용 +1",
+                "명상 +1",
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
@@ -930,7 +970,7 @@ namespace AssetManager
             var commodityButton = EnsureButton(
                 uiRoot,
                 ResourceDevCommodityButtonName,
-                "원자재 +1",
+                "인내 +1",
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
@@ -1126,9 +1166,9 @@ namespace AssetManager
                 SetButtonTextInset(button, new Vector2(10f, 4f), new Vector2(10f, 4f), 15, TextAnchor.MiddleLeft);
             }
 
-            SetDetailActionButton(placeResearchButton, new Vector2(880f, -334f), "리서치");
-            SetDetailActionButton(placeCreditButton, new Vector2(1004f, -334f), "신용");
-            SetDetailActionButton(placeCommodityButton, new Vector2(1128f, -334f), "원자재");
+            SetDetailActionButton(placeResearchButton, new Vector2(880f, -334f), "독서");
+            SetDetailActionButton(placeCreditButton, new Vector2(1004f, -334f), "명상");
+            SetDetailActionButton(placeCommodityButton, new Vector2(1128f, -334f), "인내");
             SetDetailActionButton(placeDealButton, new Vector2(880f, -388f), "딜");
             SetRect(closeButton != null ? closeButton.gameObject : null, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-110f, -38f), new Vector2(150f, 46f));
             SetButtonTextInset(closeButton, new Vector2(8f, 4f), new Vector2(8f, 4f), 18, TextAnchor.MiddleCenter);

@@ -74,29 +74,15 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MvpSmoke_LiquidityCashTwiceAddsFundingCashAndEndsBusinessDay()
+        public IEnumerator MvpSmoke_CentralBankAndGainLiquidityAreNotInNewMarketFlow()
         {
             var bootstrap = CreateStartedShell("MvpSmokeLiquidity");
             yield return null;
 
-            var startingCash = bootstrap.CurrentRun.Resources.Cash;
-
-            FindUiObject(ProjectShell.CentralBankButtonName).GetComponent<Button>().onClick.Invoke();
-            yield return null;
-
-            Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.GainLiquidity));
-            Assert.That(FindUiObject(ProjectShell.NextBusinessDayButtonName).GetComponent<Button>().interactable, Is.False);
-
-            FindUiObject(ProjectShell.LiquidityActionCashButtonName).GetComponent<Button>().onClick.Invoke();
-            yield return null;
-            FindUiObject(ProjectShell.LiquidityActionCashButtonName).GetComponent<Button>().onClick.Invoke();
-            yield return null;
-
+            var uiRoot = GameObject.Find(ProjectShell.UiRootName).transform;
+            Assert.That(FindChild(uiRoot, ProjectShell.CentralBankButtonName), Is.Null);
+            Assert.That(FindChild(uiRoot, ProjectShell.LiquidityActionPanelName), Is.Null);
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
-            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(startingCash + 2));
-            Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(0));
-            Assert.That(FindUiObject(ProjectShell.LiquidityActionPanelName).activeSelf, Is.False);
 
             yield return SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene());
         }

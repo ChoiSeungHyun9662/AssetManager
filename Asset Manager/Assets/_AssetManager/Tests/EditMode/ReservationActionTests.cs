@@ -44,7 +44,7 @@ namespace AssetManager.Tests
             Assert.That(result.Succeeded, Is.True);
             Assert.That(result.Run.Resources.Deal, Is.EqualTo(3));
             Assert.That(result.Run.Reservation.ReservedCards, Has.Count.EqualTo(1));
-            Assert.That(result.Message, Is.EqualTo("딜 최대 보유: 추가 딜 폐기"));
+            Assert.That(result.Message, Is.EqualTo("딜 한도: 추가 딜 버림"));
         }
 
         [Test]

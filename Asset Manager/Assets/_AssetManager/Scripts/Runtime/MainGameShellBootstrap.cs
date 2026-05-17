@@ -21,7 +21,6 @@ namespace AssetManager
         private PortfolioSummaryView portfolioSummaryView;
         private MarketTapeView marketTapeView;
         private ReservationView reservationView;
-        private LiquidityActionView liquidityActionView;
         private CardDetailView cardDetailView;
         private MarketTapeDevControls marketTapeDevControls;
         private ResourceDevControls resourceDevControls;
@@ -118,7 +117,6 @@ namespace AssetManager
                 return;
             }
 
-            CurrentRun = LiquidityAction.Enter(CurrentRun);
             resourceFeedbackMessage = string.Empty;
             RefreshRunUi();
         }
@@ -313,7 +311,6 @@ namespace AssetManager
             portfolioSummaryView = ProjectShell.EnsurePortfolioSummaryView(uiRoot);
             marketTapeView = ProjectShell.EnsureMarketTapeView(uiRoot);
             reservationView = ProjectShell.EnsureReservationView(uiRoot);
-            liquidityActionView = ProjectShell.EnsureLiquidityActionView(uiRoot);
             cardDetailView = ProjectShell.EnsureCardDetailView(uiRoot);
             marketTapeDevControls = ProjectShell.EnsureMarketTapeDevControls(uiRoot);
             resourceDevControls = ProjectShell.EnsureResourceDevControls(uiRoot);
@@ -321,24 +318,6 @@ namespace AssetManager
 
             marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
             reservationView.SetReservedCardSelectedHandler(OpenReservedCardDetail);
-
-            liquidityActionView.CentralBankButton.onClick.RemoveListener(EnterLiquidityAction);
-            liquidityActionView.CentralBankButton.onClick.AddListener(EnterLiquidityAction);
-
-            liquidityActionView.CloseButton.onClick.RemoveListener(CloseLiquidityAction);
-            liquidityActionView.CloseButton.onClick.AddListener(CloseLiquidityAction);
-
-            liquidityActionView.CashButton.onClick.RemoveListener(SelectLiquidityCash);
-            liquidityActionView.CashButton.onClick.AddListener(SelectLiquidityCash);
-
-            liquidityActionView.ResearchButton.onClick.RemoveListener(SelectLiquidityResearch);
-            liquidityActionView.ResearchButton.onClick.AddListener(SelectLiquidityResearch);
-
-            liquidityActionView.CreditButton.onClick.RemoveListener(SelectLiquidityCredit);
-            liquidityActionView.CreditButton.onClick.AddListener(SelectLiquidityCredit);
-
-            liquidityActionView.CommodityButton.onClick.RemoveListener(SelectLiquidityCommodity);
-            liquidityActionView.CommodityButton.onClick.AddListener(SelectLiquidityCommodity);
 
             cardDetailView.CloseButton.onClick.RemoveListener(CloseCardDetail);
             cardDetailView.CloseButton.onClick.AddListener(CloseCardDetail);
@@ -401,7 +380,6 @@ namespace AssetManager
             portfolioSummaryView.Show(CurrentRun);
             marketTapeView.Show(CurrentRun);
             reservationView.Show(CurrentRun);
-            liquidityActionView.Show(CurrentRun, resourceFeedbackMessage);
             cardDetailView.Show(CurrentRun);
             marketTapeDevControls.Show(CurrentRun);
             resourceDevControls.Show(CurrentRun);

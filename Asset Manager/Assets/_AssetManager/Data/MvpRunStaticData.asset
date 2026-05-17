@@ -13,53 +13,71 @@ MonoBehaviour:
   m_Name: MvpRunStaticData
   m_EditorClassIdentifier: AssetManager.Runtime::AssetManager.RunStaticDataSet
   assetCards:
-  - id: starter-office-reit
-    displayName: "\uD14C\uC2A4\uD2B8 \uC624\uD53C\uC2A4 \uB9AC\uCE20"
-    description: "MVP \uBD80\uD2B8\uC2A4\uD2B8\uB7A9 \uD655\uC778\uC6A9 \uC790\uC0B0
-      \uCE74\uB4DC"
+  - id: starter-index-fund
+    displayName: Index Fund
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 1
       amount: 1
     managementValue: 3
     income: 1
+    foilValue: 5
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
-  - id: starter-logistics-center
-    displayName: 테스트 물류 센터
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-chip-maker
+    displayName: Chip Maker
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 2
       amount: 1
     managementValue: 2
     income: 1
+    foilValue: 4
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
-  - id: starter-retail-strip
-    displayName: 테스트 리테일 스트립
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-coffee-chain
+    displayName: Coffee Chain
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 1
     professionalCosts:
     - resourceType: 1
       amount: 1
     managementValue: 2
     income: 0
+    foilValue: 4
+    foilDividend: 1
+    minDeckCopies: 2
+    maxDeckCopies: 5
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: consumer
+      displayName: Consumer
       tagType: 0
-  - id: starter-data-center
-    displayName: 테스트 데이터 센터
-    description: MVP 시장 테이프 확인용 자산 카드
-    rarity: 1
+    grantsExtraBuyAction: 0
+  - id: starter-cloud-platform
+    displayName: Cloud Platform
+    description: Stock card for the starter portfolio.
+    rarity: 0
+    cardDomain: 0
     cashCost: 3
     professionalCosts:
     - resourceType: 1
@@ -68,84 +86,120 @@ MonoBehaviour:
       amount: 1
     managementValue: 4
     income: 1
+    foilValue: 7
+    foilDividend: 2
+    minDeckCopies: 1
+    maxDeckCopies: 3
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
-  - id: starter-warehouse-loan
-    displayName: 테스트 창고 대출
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-battery-maker
+    displayName: Battery Maker
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 1
     professionalCosts:
     - resourceType: 3
       amount: 1
     managementValue: 1
     income: 1
+    foilValue: 3
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: energy
+      displayName: Energy
       tagType: 0
-  - id: starter-suburban-office
-    displayName: 테스트 교외 오피스
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-payment-network
+    displayName: Payment Network
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 2
       amount: 1
     managementValue: 2
     income: 0
+    foilValue: 4
+    foilDividend: 1
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: consumer
+      displayName: Consumer
       tagType: 0
-  - id: starter-urban-mixed-use
-    displayName: 테스트 복합 상가
-    description: MVP 시장 테이프 확인용 자산 카드
-    rarity: 1
+    grantsExtraBuyAction: 0
+  - id: starter-cybersecurity
+    displayName: Cybersecurity
+    description: Stock card for the starter portfolio.
+    rarity: 0
+    cardDomain: 0
     cashCost: 3
     professionalCosts:
     - resourceType: 1
       amount: 1
     managementValue: 3
     income: 1
+    foilValue: 5
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 3
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
-  - id: starter-hotel-note
-    displayName: 테스트 호텔 노트
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-discount-store
+    displayName: Discount Store
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 1
     professionalCosts:
     - resourceType: 2
       amount: 1
     managementValue: 1
     income: 0
+    foilValue: 3
+    foilDividend: 1
+    minDeckCopies: 3
+    maxDeckCopies: 5
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: consumer
+      displayName: Consumer
       tagType: 0
-  - id: starter-industrial-yard
-    displayName: 테스트 산업 부지
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-solar-grid
+    displayName: Solar Grid
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 3
       amount: 1
     managementValue: 3
     income: 0
+    foilValue: 5
+    foilDividend: 1
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: energy
+      displayName: Energy
       tagType: 0
-  - id: starter-senior-housing
-    displayName: 테스트 시니어 하우징
-    description: MVP 시장 테이프 확인용 자산 카드
-    rarity: 1
+    grantsExtraBuyAction: 0
+  - id: starter-semiconductor-etf
+    displayName: Semiconductor ETF
+    description: Stock card for the starter portfolio.
+    rarity: 0
+    cardDomain: 0
     cashCost: 3
     professionalCosts:
     - resourceType: 1
@@ -154,98 +208,140 @@ MonoBehaviour:
       amount: 1
     managementValue: 4
     income: 1
+    foilValue: 7
+    foilDividend: 2
+    minDeckCopies: 1
+    maxDeckCopies: 3
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
-  - id: starter-parking-rights
-    displayName: 테스트 주차 권리
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-rail-operator
+    displayName: Rail Operator
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 1
     professionalCosts:
     - resourceType: 1
       amount: 1
     managementValue: 1
     income: 1
+    foilValue: 3
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: energy
+      displayName: Energy
       tagType: 0
-  - id: starter-medical-office
-    displayName: 테스트 메디컬 오피스
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-healthcare-platform
+    displayName: Healthcare Platform
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 2
       amount: 1
     managementValue: 3
     income: 1
+    foilValue: 5
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: consumer
+      displayName: Consumer
       tagType: 0
-  - id: starter-campus-housing
-    displayName: 테스트 캠퍼스 하우징
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-game-studio
+    displayName: Game Studio
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 1
       amount: 1
     managementValue: 2
     income: 1
+    foilValue: 4
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
-  - id: starter-cold-storage
-    displayName: 테스트 냉장 창고
-    description: MVP 시장 테이프 확인용 자산 카드
-    rarity: 1
+    grantsExtraBuyAction: 0
+  - id: starter-cold-chain
+    displayName: Cold Chain
+    description: Stock card for the starter portfolio.
+    rarity: 0
+    cardDomain: 0
     cashCost: 3
     professionalCosts:
     - resourceType: 3
       amount: 1
     managementValue: 4
     income: 1
+    foilValue: 6
+    foilDividend: 2
+    minDeckCopies: 1
+    maxDeckCopies: 3
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: consumer
+      displayName: Consumer
       tagType: 0
-  - id: starter-renewal-lot
-    displayName: 테스트 재개발 부지
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-water-utility
+    displayName: Water Utility
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 1
     professionalCosts:
     - resourceType: 2
       amount: 1
     managementValue: 2
     income: 0
+    foilValue: 4
+    foilDividend: 1
+    minDeckCopies: 2
+    maxDeckCopies: 5
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: energy
+      displayName: Energy
       tagType: 0
-  - id: starter-bridge-loan
-    displayName: 테스트 브릿지 론
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-automation-robotics
+    displayName: Automation Robotics
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 2
       amount: 1
     managementValue: 2
     income: 1
+    foilValue: 4
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
-  - id: starter-solar-roof-lease
-    displayName: 테스트 태양광 지붕 임대
-    description: MVP 시장 테이프 확인용 자산 카드
-    rarity: 1
+    grantsExtraBuyAction: 0
+  - id: starter-wind-turbine
+    displayName: Wind Turbine
+    description: Stock card for the starter portfolio.
+    rarity: 0
+    cardDomain: 0
     cashCost: 3
     professionalCosts:
     - resourceType: 1
@@ -254,42 +350,60 @@ MonoBehaviour:
       amount: 1
     managementValue: 4
     income: 1
+    foilValue: 7
+    foilDividend: 2
+    minDeckCopies: 1
+    maxDeckCopies: 3
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: energy
+      displayName: Energy
       tagType: 0
-  - id: starter-mall-anchor
-    displayName: 테스트 몰 앵커
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-grocery-app
+    displayName: Grocery App
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 1
       amount: 1
     managementValue: 3
     income: 0
+    foilValue: 5
+    foilDividend: 1
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: consumer
+      displayName: Consumer
       tagType: 0
-  - id: starter-self-storage
-    displayName: 테스트 셀프 스토리지
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-memory-maker
+    displayName: Memory Maker
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 1
     professionalCosts:
     - resourceType: 3
       amount: 1
     managementValue: 2
     income: 1
+    foilValue: 4
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
-  - id: starter-life-science-suite
-    displayName: 테스트 연구 시설
-    description: MVP 시장 테이프 확인용 자산 카드
-    rarity: 1
+    grantsExtraBuyAction: 0
+  - id: starter-luxury-brand
+    displayName: Luxury Brand
+    description: Stock card for the starter portfolio.
+    rarity: 0
+    cardDomain: 0
     cashCost: 3
     professionalCosts:
     - resourceType: 1
@@ -298,65 +412,93 @@ MonoBehaviour:
       amount: 1
     managementValue: 4
     income: 1
+    foilValue: 7
+    foilDividend: 2
+    minDeckCopies: 1
+    maxDeckCopies: 3
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: consumer
+      displayName: Consumer
       tagType: 0
-  - id: starter-transit-retail
-    displayName: 테스트 역세권 리테일
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-data-broker
+    displayName: Data Broker
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 2
       amount: 1
     managementValue: 3
     income: 1
+    foilValue: 5
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
-  - id: starter-industrial-reit
-    displayName: 테스트 산업 리츠
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-grid-storage
+    displayName: Grid Storage
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 2
     professionalCosts:
     - resourceType: 3
       amount: 1
     managementValue: 3
     income: 1
+    foilValue: 5
+    foilDividend: 2
+    minDeckCopies: 2
+    maxDeckCopies: 4
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: energy
+      displayName: Energy
       tagType: 0
-  - id: starter-student-housing
-    displayName: 테스트 학생 하우징
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-streaming-service
+    displayName: Streaming Service
+    description: Stock card for the starter portfolio.
     rarity: 0
+    cardDomain: 0
     cashCost: 1
     professionalCosts:
     - resourceType: 1
       amount: 1
     managementValue: 2
     income: 0
+    foilValue: 4
+    foilDividend: 1
+    minDeckCopies: 2
+    maxDeckCopies: 5
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: consumer
+      displayName: Consumer
       tagType: 0
-  - id: starter-ground-lease
-    displayName: 테스트 토지 임대권
-    description: MVP 시장 테이프 확인용 자산 카드
+    grantsExtraBuyAction: 0
+  - id: starter-ai-tools
+    displayName: AI Tools
+    description: Stock card for the starter portfolio.
     rarity: 0
-    cashCost: 1
+    cardDomain: 0
+    cashCost: 2
     professionalCosts:
     - resourceType: 2
       amount: 1
-    managementValue: 1
+    managementValue: 3
     income: 1
+    foilValue: 6
+    foilDividend: 2
+    minDeckCopies: 1
+    maxDeckCopies: 3
     tags:
-    - id: real-estate
-      displayName: "\uBD80\uB3D9\uC0B0"
+    - id: software
+      displayName: Software
       tagType: 0
     grantsExtraBuyAction: 1
   quarters:
@@ -441,23 +583,23 @@ MonoBehaviour:
   - commentId: seed-stable
     ratingId: seed
     pressureLevelId: stable
-    comment: "\uAE30\uCD08 \uC6B4\uC6A9 \uCCB4\uACC4\uAC00 \uC791\uB3D9\uD569\uB2C8\uB2E4."
+    comment: Small but solvent.
   - commentId: seed-watch
     ratingId: seed
     pressureLevelId: watch
-    comment: "기초 운용은 유지했지만 환매 압력을 낮춰야 합니다."
+    comment: Small portfolio, rising pressure.
   - commentId: seed-critical
     ratingId: seed
     pressureLevelId: critical
-    comment: "운용 기반은 남았지만 환매 압력이 높습니다."
+    comment: Barely balanced the run.
   - commentId: core-stable
     ratingId: core
     pressureLevelId: stable
-    comment: "안정적인 핵심 포트폴리오를 구축했습니다."
+    comment: A steady portfolio held together.
   - commentId: core-watch
     ratingId: core
     pressureLevelId: watch
-    comment: "성과는 충분하지만 환매 압력 관리가 필요합니다."
+    comment: Good value with some pressure.
   - commentId: core-critical
     ratingId: core
     pressureLevelId: critical
@@ -465,22 +607,23 @@ MonoBehaviour:
   - commentId: flagship-stable
     ratingId: flagship
     pressureLevelId: stable
-    comment: "대표 운용사로 인정받을 만한 성과입니다."
+    comment: A flagship portfolio.
   - commentId: flagship-watch
     ratingId: flagship
     pressureLevelId: watch
-    comment: "높은 성과와 함께 환매 압력 관리 과제가 남았습니다."
+    comment: Strong value under pressure.
   - commentId: flagship-critical
     ratingId: flagship
     pressureLevelId: critical
-    comment: "성과는 탁월하지만 환매 압력이 높습니다."
+    comment: Impressive and risky.
   marketConfig:
     sellImminentSlots: 3
     currentMarketSlots: 3
     upcomingMarketSlots: 3
   resourceConfig:
     startingCash: 3
-    professionalResourceCap: 10
+    investmentPhilosophyCap: 10
+    investmentPhilosophyTypeCap: 5
     maxDeal: 3
   redemptionPressureConfig:
     startingPressure: 0

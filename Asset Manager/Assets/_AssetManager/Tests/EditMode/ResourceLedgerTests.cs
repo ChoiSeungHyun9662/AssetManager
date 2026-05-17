@@ -26,41 +26,66 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void ProfessionalResourceGainCapsCombinedTotalAndReportsDiscardedOverflow()
+        public void InvestmentPhilosophyGainCapsCombinedTotalAndPerTypeAndReportsDiscardedOverflow()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 4).Run;
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 3).Run;
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Commodity, 2).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Reading, 5).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Meditation, 3).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Patience, 1).Run;
 
-            var result = ResourceLedger.AddProfessionalResource(run, ResourceType.Commodity, 2);
+            var result = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Patience, 4);
 
-            Assert.That(result.Run.Resources.Research, Is.EqualTo(4));
-            Assert.That(result.Run.Resources.Credit, Is.EqualTo(3));
-            Assert.That(result.Run.Resources.Commodity, Is.EqualTo(3));
-            Assert.That(result.Run.Resources.ProfessionalTotal, Is.EqualTo(10));
+            Assert.That(result.Run.Resources.Reading, Is.EqualTo(5));
+            Assert.That(result.Run.Resources.Meditation, Is.EqualTo(3));
+            Assert.That(result.Run.Resources.Patience, Is.EqualTo(2));
+            Assert.That(result.Run.Resources.InvestmentPhilosophyTotal, Is.EqualTo(10));
             Assert.That(result.GainedAmount, Is.EqualTo(1));
-            Assert.That(result.DiscardedAmount, Is.EqualTo(1));
-            Assert.That(result.Message, Is.EqualTo("자원칩 최대 보유: 원자재 +1 폐기"));
+            Assert.That(result.DiscardedAmount, Is.EqualTo(3));
+            Assert.That(result.Message, Is.EqualTo("투자 철학 한도: 인내 +3 버림"));
         }
 
         [Test]
-        public void CashAndDealAreExcludedFromProfessionalCapAndDealOverflowIsDiscarded()
+        public void InvestmentPhilosophyGainCapsEachTypeAtFive()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 4).Run;
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 3).Run;
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Commodity, 3).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Reading, 4).Run;
+
+            var result = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Reading, 3);
+
+            Assert.That(result.Run.Resources.Reading, Is.EqualTo(5));
+            Assert.That(result.Run.Resources.Meditation, Is.EqualTo(0));
+            Assert.That(result.Run.Resources.Patience, Is.EqualTo(0));
+            Assert.That(result.Run.Resources.InvestmentPhilosophyTotal, Is.EqualTo(5));
+            Assert.That(result.GainedAmount, Is.EqualTo(1));
+            Assert.That(result.DiscardedAmount, Is.EqualTo(2));
+            Assert.That(result.Message, Is.EqualTo("투자 철학 한도: 독서 +2 버림"));
+        }
+
+        [Test]
+        public void CashAndDealAreExcludedFromInvestmentPhilosophyCapAndDealOverflowIsDiscarded()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Reading, 5).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Meditation, 3).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Patience, 2).Run;
             run = ResourceLedger.AddFundingCash(run, 5);
 
             var result = ResourceLedger.AddDeal(run, 4);
 
             Assert.That(result.Run.Resources.Cash, Is.EqualTo(run.Resources.Cash));
-            Assert.That(result.Run.Resources.ProfessionalTotal, Is.EqualTo(10));
+            Assert.That(result.Run.Resources.InvestmentPhilosophyTotal, Is.EqualTo(10));
             Assert.That(result.Run.Resources.Deal, Is.EqualTo(3));
             Assert.That(result.GainedAmount, Is.EqualTo(3));
             Assert.That(result.DiscardedAmount, Is.EqualTo(1));
-            Assert.That(result.Message, Is.EqualTo("딜 최대 보유: 추가 딜 폐기"));
+            Assert.That(result.Message, Is.EqualTo("딜 한도: 추가 딜 버림"));
+        }
+
+        [Test]
+        public void InvestmentPhilosophyDisplayNamesReplaceOldProfessionalResourceNames()
+        {
+            Assert.That(ResourceLedger.GetResourceDisplayName(ResourceType.Reading), Is.EqualTo("독서"));
+            Assert.That(ResourceLedger.GetResourceDisplayName(ResourceType.Meditation), Is.EqualTo("명상"));
+            Assert.That(ResourceLedger.GetResourceDisplayName(ResourceType.Patience), Is.EqualTo("인내"));
         }
     }
 }

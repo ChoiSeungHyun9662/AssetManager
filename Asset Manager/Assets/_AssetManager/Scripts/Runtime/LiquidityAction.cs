@@ -92,7 +92,7 @@ namespace AssetManager
 
             if (shouldAutoEnd && string.IsNullOrEmpty(message))
             {
-                message = "전문 자원 최대 보유";
+                message = "투자 철학 한도";
             }
 
             return IsComplete(selectedResources) || shouldAutoEnd
@@ -136,7 +136,7 @@ namespace AssetManager
                 return ResourceLedger.AddFundingCash(run, 1);
             }
 
-            var result = ResourceLedger.AddProfessionalResource(run, resourceType, 1);
+            var result = ResourceLedger.AddInvestmentPhilosophy(run, resourceType, 1);
             message = result.Message;
             return result.Run;
         }
@@ -160,9 +160,9 @@ namespace AssetManager
         private static bool IsBasicResource(ResourceType resourceType)
         {
             return resourceType == ResourceType.Cash
-                || resourceType == ResourceType.Research
-                || resourceType == ResourceType.Credit
-                || resourceType == ResourceType.Commodity;
+                || resourceType == ResourceType.Reading
+                || resourceType == ResourceType.Meditation
+                || resourceType == ResourceType.Patience;
         }
 
         private static bool HasCapacityFor(RunSessionState run, ResourceType resourceType)
@@ -172,15 +172,16 @@ namespace AssetManager
                 return true;
             }
 
-            return run.Resources.ProfessionalTotal < run.StaticData.ResourceConfig.ProfessionalResourceCap;
+            return run.Resources.InvestmentPhilosophyTotal < run.StaticData.ResourceConfig.InvestmentPhilosophyCap
+                && run.Resources.Get(resourceType) < run.StaticData.ResourceConfig.InvestmentPhilosophyTypeCap;
         }
 
         private static bool HasAnyValidNextChoice(RunSessionState run)
         {
             return CanSelect(run, ResourceType.Cash)
-                || CanSelect(run, ResourceType.Research)
-                || CanSelect(run, ResourceType.Credit)
-                || CanSelect(run, ResourceType.Commodity);
+                || CanSelect(run, ResourceType.Reading)
+                || CanSelect(run, ResourceType.Meditation)
+                || CanSelect(run, ResourceType.Patience);
         }
 
         private static IReadOnlyList<ResourceType> AddSelection(
