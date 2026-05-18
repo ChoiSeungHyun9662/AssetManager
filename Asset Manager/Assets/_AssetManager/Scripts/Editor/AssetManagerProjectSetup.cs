@@ -133,13 +133,33 @@ namespace AssetManager.Editor
                 return staticData;
             }
 
-            if (!staticData.HasRequiredMvpData)
+            if (RequiresMvpDefaultReset(staticData))
             {
                 staticData.ResetToMvpDefaults();
                 EditorUtility.SetDirty(staticData);
             }
 
             return staticData;
+        }
+
+        private static bool RequiresMvpDefaultReset(RunStaticDataSet staticData)
+        {
+            return !staticData.HasRequiredMvpData
+                || !ContainsCardDomain(staticData, CardDomain.Stock)
+                || !ContainsCardDomain(staticData, CardDomain.ConsumableResource);
+        }
+
+        private static bool ContainsCardDomain(RunStaticDataSet staticData, CardDomain cardDomain)
+        {
+            foreach (var card in staticData.AssetCards)
+            {
+                if (card.CardDomain == cardDomain)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Scene OpenOrCreateScene(string path, NewSceneSetup setup)

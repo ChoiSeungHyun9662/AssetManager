@@ -1,6 +1,6 @@
 # 06. 주식 매수 결제와 8칸 포트폴리오 제한
 
-Status: ready-for-agent
+Status: completed
 
 ## Parent
 
@@ -42,3 +42,60 @@ Status: ready-for-agent
 
 - `01-stock-data-and-investment-philosophy-resources.md`
 - `04-market-tape-1x8-progress-refresh-pull.md`
+
+## TDD completion report
+
+### Assumptions and non-goals
+
+- Portfolio capacity means 8 owned stock slots; consumable resource cards are paid for and consumed without entering the portfolio.
+- A third purchase of an already-owned stock must not be blocked by the 8-slot cap, because a later foil-combination issue will consume that path.
+- Selling stocks and full foil-combination resolution are out of scope for this issue.
+- Existing MVP tests that assumed the old 3-zone market tape were treated as stale when they conflicted with the stock-overhaul PRD.
+
+### Behaviors protected
+
+- Full portfolio blocks a new stock purchase before chips, cash, or business days are consumed.
+- Full portfolio does not block consumable resource card purchase.
+- Owned assets expose 8-slot capacity and full/open-slot state through the public `OwnedAssetState` surface.
+- Market and reserved purchases replenish the 1x8 market tape by pulling from the purchased slot, not by column-advance semantics.
+- Long schedule refresh preserves reserved slots while replacing non-reserved visible cards so consumable resource cards can recycle.
+- PlayMode market and purchase flows use the active scene UI root and current 1x8 market-row behavior.
+
+### RED/GREEN/REFACTOR log
+
+- RED: added `OwnedAssetState` behavior for 8 stock slots and full state; initial compile/test signal exposed missing capacity API. GREEN: added `MaxStockSlots`, `OpenStockSlots`, `IsPortfolioFull`, `CanAcceptStockPurchase`, and third-copy foil-path allowance.
+- RED: added purchase validation behavior for full portfolio blocking new stock buys before spending. GREEN: `PurchasePayment` checks portfolio capacity before payment slot, cash, and business-day validation.
+- RED: added consumable resource purchase behavior under full portfolio. GREEN: capacity validation applies only to stock cards.
+- RED: final EditMode revealed long schedule refresh could exhaust the market deck. GREEN: `MarketTape.Refresh(run)` now removes non-reserved visible cards before refresh, preserves reserved slots, and allows removed consumables to recycle.
+- RED: PlayMode exposed stale UI-root lookup and old 3-zone assumptions. GREEN: PlayMode helpers now isolate/find the active scene UI root and assertions follow the 1x8 market-row behavior.
+- REFACTOR: kept `AdvanceSlotAt` as a compatibility wrapper and routed new purchase behavior through `PullFromSlotAt` to make the public purchase intent explicit without a broad rename.
+
+### Automated tests
+
+- Passed: EditMode `AssetManager.Tests.EditMode`
+  - Result: `.scratch/test-results/editmode-20260517-211106-results.xml`
+- Passed: PlayMode `AssetManager.Tests.PlayMode`
+  - Result: `.scratch/test-results/playmode-20260517-211031-results.xml`
+
+### Unity manual checks
+
+- Not run manually. UI-visible behavior was covered by PlayMode tests for market row rendering, card detail purchase, reservation/failure flows, and smoke scenarios.
+
+### Files touched
+
+- `Asset Manager/Assets/_AssetManager/Scripts/Runtime/RunModels.cs`: portfolio-cap helpers on `OwnedAssetState`.
+- `Asset Manager/Assets/_AssetManager/Scripts/Runtime/PurchasePayment.cs`: stock-cap validation and direct 1x8 slot-pull purchase replenishment.
+- `Asset Manager/Assets/_AssetManager/Scripts/Runtime/MarketTape.cs`: `PullFromSlotAt` public API and schedule refresh preservation/recycling behavior.
+- `Asset Manager/Assets/_AssetManager/Tests/EditMode/OwnedAssetStateTests.cs`: 8-slot capacity behavior.
+- `Asset Manager/Assets/_AssetManager/Tests/EditMode/PurchasePaymentTests.cs`: full-portfolio stock/consumable purchase behavior and 1x8 purchase replenishment expectations.
+- `Asset Manager/Assets/_AssetManager/Tests/EditMode/BusinessDayFlowTests.cs`: schedule refresh expectation updated to stock-only non-reuse while consumables may recycle.
+- `Asset Manager/Assets/_AssetManager/Tests/PlayMode/MainGameShellBootstrapTests.cs`: active-scene UI isolation and 1x8 market-row assertions.
+- `Asset Manager/Assets/_AssetManager/Tests/PlayMode/MvpSmokeScenarioTests.cs`: active-scene UI isolation for smoke flows.
+- `docs/agents/class-inventory.md`: class/responsibility inventory updated for issue 06.
+- `.scratch/stock-rules-overhaul/issues/06-stock-purchase-payment-and-portfolio-cap.md`: this completion report.
+
+### Remaining risk
+
+- Issue 05 was being developed concurrently, and the working tree contains unrelated issue-05 and scene changes. Those were not reverted.
+- Foil-combination behavior is intentionally deferred; this issue only leaves the third-copy purchase path open.
+- Manual Unity scene inspection was not run, so visual polish outside PlayMode assertions remains unverified.

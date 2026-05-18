@@ -209,7 +209,7 @@ namespace AssetManager.Tests
             run = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
             run = CompleteCurrentQuarter(run);
             run = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
-            var previousFiscalYearCardIds = CollectVisibleCardIds(run.MarketTape);
+            var previousFiscalYearStockCardIds = CollectVisibleStockCardIds(run.MarketTape);
 
             run = BusinessDayFlow.ContinueAfterVacation(run);
 
@@ -217,9 +217,9 @@ namespace AssetManager.Tests
             Assert.That(run.Calendar.Quarter, Is.EqualTo(1));
             Assert.That(run.MarketTape.Slots, Has.Count.EqualTo(run.StaticData.MarketConfig.MarketTapeSlots));
             Assert.That(CollectVisibleCardIds(run.MarketTape), Is.Unique);
-            foreach (var cardId in CollectVisibleCardIds(run.MarketTape))
+            foreach (var cardId in CollectVisibleStockCardIds(run.MarketTape))
             {
-                Assert.That(previousFiscalYearCardIds.Contains(cardId), Is.False);
+                Assert.That(previousFiscalYearStockCardIds.Contains(cardId), Is.False);
             }
         }
 
@@ -228,19 +228,19 @@ namespace AssetManager.Tests
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ReserveFirstCurrentMarketCard(run);
-            var reservedCardId = run.Reservation.ReservedCards[0].Card.Id;
+            var reservedCardId = FindReservedSlotCardId(run.MarketTape);
 
             run = BusinessDayFlow.AdvanceToNextBusinessDay(run);
 
-            Assert.That(run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+            Assert.That(FindReservedSlotCardId(run.MarketTape), Is.EqualTo(reservedCardId));
 
             run = CompleteCurrentQuarter(run);
 
-            Assert.That(run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+            Assert.That(FindReservedSlotCardId(run.MarketTape), Is.EqualTo(reservedCardId));
 
             run = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
 
-            Assert.That(run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+            Assert.That(FindReservedSlotCardId(run.MarketTape), Is.EqualTo(reservedCardId));
 
             run = CompleteCurrentQuarter(run);
             run = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
@@ -249,7 +249,7 @@ namespace AssetManager.Tests
             run = BusinessDayFlow.ContinueAfterVacation(run);
 
             Assert.That(run.Calendar.FiscalYear, Is.EqualTo(2));
-            Assert.That(run.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+            Assert.That(FindReservedSlotCardId(run.MarketTape), Is.EqualTo(reservedCardId));
         }
 
         [Test]
@@ -317,8 +317,39 @@ namespace AssetManager.Tests
 
         private static RunSessionState ReserveFirstCurrentMarketCard(RunSessionState run)
         {
-            var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, run.MarketTape.CurrentMarketCards[0]);
+            var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, FindFirstReservableMarketCard(run.MarketTape));
             return ReservationAction.ConfirmReservation(detailRun).Run;
+        }
+
+        private static AssetCardRuntimeData FindFirstReservableMarketCard(MarketTapeState tape)
+        {
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsReserved
+                    && !slot.IsEmpty
+                    && slot.Card.State == AssetCardRuntimeState.Available
+                    && slot.Card.Card.CardDomain == CardDomain.Stock)
+                {
+                    return slot.Card;
+                }
+            }
+
+            Assert.Fail("Expected to find a reservable market card.");
+            return null;
+        }
+
+        private static string FindReservedSlotCardId(MarketTapeState tape)
+        {
+            foreach (var slot in tape.Slots)
+            {
+                if (slot.IsReserved && !slot.IsEmpty)
+                {
+                    return slot.Card.RuntimeId;
+                }
+            }
+
+            Assert.Fail("Expected to find a reserved market slot.");
+            return string.Empty;
         }
 
         private static RunSessionState AdvanceToPlayableQuarter(RunSessionState run, int fiscalYear, int quarter)
@@ -439,7 +470,21 @@ namespace AssetManager.Tests
             {
                 if (!slot.IsEmpty)
                 {
-                    cardIds.Add(slot.Card.Card.Id);
+                    cardIds.Add(slot.Card.RuntimeId);
+                }
+            }
+
+            return cardIds;
+        }
+
+        private static System.Collections.Generic.HashSet<string> CollectVisibleStockCardIds(MarketTapeState tape)
+        {
+            var cardIds = new System.Collections.Generic.HashSet<string>();
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty && slot.Card.Card.CardDomain == CardDomain.Stock)
+                {
+                    cardIds.Add(slot.Card.RuntimeId);
                 }
             }
 

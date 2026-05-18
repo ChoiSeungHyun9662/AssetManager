@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace AssetManager.Tests
 {
@@ -18,10 +19,8 @@ namespace AssetManager.Tests
                 run.OwnedAssets,
                 run.Reservation);
 
-            Assert.That(tape.SellImminentCards, Has.Count.EqualTo(staticData.MarketConfig.SellImminentSlots));
-            Assert.That(tape.CurrentMarketCards, Has.Count.EqualTo(staticData.MarketConfig.CurrentMarketSlots));
-            Assert.That(tape.UpcomingMarketCards, Has.Count.EqualTo(staticData.MarketConfig.UpcomingMarketSlots));
-            Assert.That(CollectVisibleCardIds(tape), Is.Unique);
+            Assert.That(tape.Slots, Has.Count.EqualTo(staticData.MarketConfig.MarketTapeSlots));
+            Assert.That(CollectSlotCardIds(tape), Is.Unique);
         }
 
         [Test]
@@ -45,11 +44,11 @@ namespace AssetManager.Tests
         public void AdvanceRemovesLeftmostNonReservedCardAndMovesRemainingSlotsLeft()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            var oldSlotCardIds = new List<string>(CollectSlotCardIds(run.MarketTape));
+            var oldSlotCardIds = new List<string>(CollectSlotRuntimeIds(run.MarketTape));
 
             var advancedRun = MarketTape.Advance(run);
 
-            var advancedSlotCardIds = new List<string>(CollectSlotCardIds(advancedRun.MarketTape));
+            var advancedSlotCardIds = new List<string>(CollectSlotRuntimeIds(advancedRun.MarketTape));
             Assert.That(advancedRun.MarketTape.Slots, Has.Count.EqualTo(8));
             Assert.That(advancedSlotCardIds, Has.Count.EqualTo(8));
             for (var i = 0; i < oldSlotCardIds.Count - 1; i++)
@@ -58,7 +57,7 @@ namespace AssetManager.Tests
             }
 
             Assert.That(advancedSlotCardIds, Does.Not.Contain(oldSlotCardIds[0]));
-            Assert.That(FindCard(advancedRun.AssetCards, oldSlotCardIds[0]).State, Is.EqualTo(AssetCardRuntimeState.Removed));
+            Assert.That(FindRuntimeCard(advancedRun.AssetCards, oldSlotCardIds[0]).State, Is.EqualTo(AssetCardRuntimeState.Removed));
         }
 
         [Test]
@@ -119,8 +118,39 @@ namespace AssetManager.Tests
                 null,
                 new[] { 0.10, 0.90 });
 
-            Assert.That(tape.Slots[0].Card.CardDomain, Is.EqualTo(CardDomain.Stock));
-            Assert.That(tape.Slots[1].Card.CardDomain, Is.EqualTo(CardDomain.ConsumableResource));
+            Assert.That(tape.Slots[0].Card.Card.CardDomain, Is.EqualTo(CardDomain.Stock));
+            Assert.That(tape.Slots[1].Card.Card.CardDomain, Is.EqualTo(CardDomain.ConsumableResource));
+        }
+
+        [Test]
+        public void RefreshWithoutSuppliedRollsCanDrawConsumableResourceCardsFromDefaultDrawSource()
+        {
+            var cards = new List<AssetCardRuntimeData>();
+            for (var i = 0; i < 24; i++)
+            {
+                cards.Add(CreateCard("stock-card-" + i, CardDomain.Stock));
+                cards.Add(CreateCard("resource-card-" + i, CardDomain.ConsumableResource));
+            }
+
+            var sawConsumableResourceCard = false;
+            for (var seed = 0; seed < 25; seed++)
+            {
+                Random.InitState(seed);
+                var tape = MarketTape.Refresh(
+                    new MarketConfigData(8, 0.75),
+                    cards,
+                    null,
+                    null,
+                    null);
+
+                if (ContainsCardDomain(tape, CardDomain.ConsumableResource))
+                {
+                    sawConsumableResourceCard = true;
+                    break;
+                }
+            }
+
+            Assert.That(sawConsumableResourceCard, Is.True);
         }
 
         [Test]
@@ -194,20 +224,18 @@ namespace AssetManager.Tests
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ReserveFirstCurrentMarketCard(run);
-            var reservedCardId = run.Reservation.ReservedCards[0].Card.Id;
+            var reservedCardId = FindReservedSlotCardId(run.MarketTape);
             var reservedSlotIndex = FindSlotIndex(run.MarketTape, reservedCardId);
 
             var advancedRun = MarketTape.Advance(run);
 
-            Assert.That(advancedRun.Reservation.ReservedCards, Has.Count.EqualTo(1));
-            Assert.That(advancedRun.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+            Assert.That(advancedRun.Reservation.ReservedCards, Is.Empty);
             Assert.That(advancedRun.MarketTape.Slots[reservedSlotIndex].Card.Card.Id, Is.EqualTo(reservedCardId));
             Assert.That(advancedRun.MarketTape.Slots[reservedSlotIndex].IsReserved, Is.True);
 
             var refreshedRun = MarketTape.Refresh(advancedRun);
 
-            Assert.That(refreshedRun.Reservation.ReservedCards, Has.Count.EqualTo(1));
-            Assert.That(refreshedRun.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(reservedCardId));
+            Assert.That(refreshedRun.Reservation.ReservedCards, Is.Empty);
             Assert.That(refreshedRun.MarketTape.Slots[reservedSlotIndex].Card.Card.Id, Is.EqualTo(reservedCardId));
             Assert.That(refreshedRun.MarketTape.Slots[reservedSlotIndex].IsReserved, Is.True);
         }
@@ -281,10 +309,65 @@ namespace AssetManager.Tests
             }
         }
 
+        private static IEnumerable<string> CollectSlotRuntimeIds(MarketTapeState tape)
+        {
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty)
+                {
+                    yield return slot.Card.RuntimeId;
+                }
+            }
+        }
+
+        private static bool ContainsCardDomain(MarketTapeState tape, CardDomain cardDomain)
+        {
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty && slot.Card.Card.CardDomain == cardDomain)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static RunSessionState ReserveFirstCurrentMarketCard(RunSessionState run)
         {
-            var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, run.MarketTape.CurrentMarketCards[0]);
+            var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, FindFirstReservableMarketCard(run.MarketTape));
             return ReservationAction.ConfirmReservation(detailRun).Run;
+        }
+
+        private static AssetCardRuntimeData FindFirstReservableMarketCard(MarketTapeState tape)
+        {
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsReserved
+                    && !slot.IsEmpty
+                    && slot.Card.State == AssetCardRuntimeState.Available
+                    && slot.Card.Card.CardDomain == CardDomain.Stock)
+                {
+                    return slot.Card;
+                }
+            }
+
+            Assert.Fail("Expected to find a reservable market card.");
+            return null;
+        }
+
+        private static string FindReservedSlotCardId(MarketTapeState tape)
+        {
+            foreach (var slot in tape.Slots)
+            {
+                if (slot.IsReserved && !slot.IsEmpty)
+                {
+                    return slot.Card.Card.Id;
+                }
+            }
+
+            Assert.Fail("Expected to find a reserved market slot.");
+            return string.Empty;
         }
 
         private static int FindSlotIndex(MarketTapeState tape, string cardId)
@@ -312,6 +395,20 @@ namespace AssetManager.Tests
             }
 
             Assert.Fail("Expected to find card " + cardId + ".");
+            return null;
+        }
+
+        private static AssetCardRuntimeData FindRuntimeCard(IEnumerable<AssetCardRuntimeData> cards, string runtimeId)
+        {
+            foreach (var card in cards)
+            {
+                if (card.RuntimeId == runtimeId)
+                {
+                    return card;
+                }
+            }
+
+            Assert.Fail("Expected to find runtime card " + runtimeId + ".");
             return null;
         }
 

@@ -13,10 +13,11 @@ namespace AssetManager
             }
 
             var assetCards = MarkCardsRemoved(run.AssetCards, CollectNonReservedVisibleCardIds(run.MarketTape));
+            var reservedOnlyTape = KeepReservedSlotsOnly(run.MarketTape);
             var tape = Refresh(
                 run.StaticData.MarketConfig,
                 assetCards,
-                run.MarketTape,
+                reservedOnlyTape,
                 run.OwnedAssets,
                 run.Reservation,
                 null);
@@ -186,6 +187,23 @@ namespace AssetManager
             MarketTapeZone zone,
             int slotIndex)
         {
+            return PullFromSlotAt(
+                marketConfig,
+                cardPool,
+                currentTape,
+                ownedAssets,
+                reservation,
+                slotIndex);
+        }
+
+        public static MarketTapeState PullFromSlotAt(
+            MarketConfigData marketConfig,
+            IEnumerable<AssetCardRuntimeData> cardPool,
+            MarketTapeState currentTape,
+            OwnedAssetState ownedAssets,
+            ReservationState reservation,
+            int slotIndex)
+        {
             if (marketConfig == null)
             {
                 throw new ArgumentNullException(nameof(marketConfig));
@@ -309,7 +327,7 @@ namespace AssetManager
             var slots = new List<MarketTapeSlotState>(currentTape.Slots);
             for (var i = 0; i < slots.Count; i++)
             {
-                if (!slots[i].IsEmpty && slots[i].Card.Card.Id == cardId)
+                if (!slots[i].IsEmpty && slots[i].Card.RuntimeId == cardId)
                 {
                     slots[i] = new MarketTapeSlotState(reservedCard, true);
                     return new MarketTapeState(slots);
@@ -370,6 +388,22 @@ namespace AssetManager
             }
 
             return -1;
+        }
+
+        private static MarketTapeState KeepReservedSlotsOnly(MarketTapeState tape)
+        {
+            if (tape == null)
+            {
+                return null;
+            }
+
+            var slots = new List<MarketTapeSlotState>();
+            foreach (var slot in tape.Slots)
+            {
+                slots.Add(slot.IsReserved ? slot : new MarketTapeSlotState(null, false));
+            }
+
+            return new MarketTapeState(slots);
         }
 
         private static List<MarketTapeSlotState> NormalizeSlots(MarketTapeState tape, int targetSlotCount)
@@ -486,6 +520,7 @@ namespace AssetManager
             foreach (var card in cardPool)
             {
                 if (card.State == AssetCardRuntimeState.Available
+                    && !excludedCardIds.Contains(card.RuntimeId)
                     && !excludedCardIds.Contains(card.Card.Id))
                 {
                     candidates.Add(card);
@@ -503,7 +538,7 @@ namespace AssetManager
             DrawRollSource drawRolls,
             int targetCount)
         {
-            AddCardIds(excludedCardIds, visibleCards);
+            AddCardDefinitionIds(excludedCardIds, visibleCards);
             while (visibleCards.Count < targetCount)
             {
                 var draw = MarketDeck.DrawOne(cardPool, marketConfig, drawRolls.Next(), excludedCardIds);
@@ -588,9 +623,9 @@ namespace AssetManager
                 }
             }
 
-            AddCardIds(cardIds, tape.SellImminentCards);
-            AddCardIds(cardIds, tape.CurrentMarketCards);
-            AddCardIds(cardIds, tape.UpcomingMarketCards);
+            AddCardDefinitionIds(cardIds, tape.SellImminentCards);
+            AddCardDefinitionIds(cardIds, tape.CurrentMarketCards);
+            AddCardDefinitionIds(cardIds, tape.UpcomingMarketCards);
         }
 
         private static HashSet<string> CollectVisibleCardIds(MarketTapeState tape)
@@ -612,7 +647,7 @@ namespace AssetManager
             {
                 if (!slot.IsReserved && !slot.IsEmpty)
                 {
-                    cardIds.Add(slot.Card.Card.Id);
+                    cardIds.Add(slot.Card.RuntimeId);
                 }
             }
 
@@ -631,7 +666,7 @@ namespace AssetManager
             {
                 if (!slot.IsReserved && !slot.IsEmpty)
                 {
-                    cardIds.Add(slot.Card.Card.Id);
+                    cardIds.Add(slot.Card.RuntimeId);
                     break;
                 }
             }
@@ -647,6 +682,22 @@ namespace AssetManager
         }
 
         private static void AddCardIds(HashSet<string> cardIds, IEnumerable<AssetCardRuntimeData> cards)
+        {
+            if (cards == null)
+            {
+                return;
+            }
+
+            foreach (var card in cards)
+            {
+                if (card != null)
+                {
+                    cardIds.Add(card.RuntimeId);
+                }
+            }
+        }
+
+        private static void AddCardDefinitionIds(HashSet<string> cardIds, IEnumerable<AssetCardRuntimeData> cards)
         {
             if (cards == null)
             {
@@ -673,7 +724,7 @@ namespace AssetManager
             {
                 if (card.Card.CardDomain == CardDomain.Stock)
                 {
-                    cardIds.Add(card.Card.Id);
+                    cardIds.Add(card.RuntimeId);
                 }
             }
         }
@@ -694,9 +745,15 @@ namespace AssetManager
             foreach (var card in cards)
             {
                 if (card.State == AssetCardRuntimeState.Available
-                    && removedCardIds.Contains(card.Card.Id))
+                    && removedCardIds.Contains(card.RuntimeId))
                 {
-                    updatedCards.Add(new AssetCardRuntimeData(card.Card, AssetCardRuntimeState.Removed, card.PurchaseSource));
+                    updatedCards.Add(new AssetCardRuntimeData(
+                        card.Card,
+                        AssetCardRuntimeState.Removed,
+                        card.PurchaseSource,
+                        card.AcquiredOrder,
+                        card.IsFoil,
+                        card.RuntimeId));
                 }
                 else
                 {
@@ -743,8 +800,14 @@ namespace AssetManager
                     return rolls.Current;
                 }
 
-                return 0.0;
+                return DefaultMarketDrawRoll();
             }
+        }
+
+        private static double DefaultMarketDrawRoll()
+        {
+            var roll = UnityEngine.Random.value;
+            return roll >= 1f ? 0.999999999d : roll;
         }
     }
 }

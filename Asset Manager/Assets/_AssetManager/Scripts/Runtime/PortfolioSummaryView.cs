@@ -74,10 +74,15 @@ namespace AssetManager
                 builder.Append(card.AcquiredOrder.HasValue ? card.AcquiredOrder.Value : 0);
                 builder.Append(" ");
                 builder.Append(card.Card.DisplayName);
+                if (card.IsFoil)
+                {
+                    builder.Append(" FOIL");
+                }
+
                 builder.Append(" | 운용가치 ");
-                builder.Append(card.Card.ManagementValue);
+                builder.Append(card.ManagementValue);
                 builder.Append(" | 영업일 시작 운용 수익 ");
-                builder.Append(card.Card.Income);
+                builder.Append(card.Income);
                 shownCards++;
             }
 

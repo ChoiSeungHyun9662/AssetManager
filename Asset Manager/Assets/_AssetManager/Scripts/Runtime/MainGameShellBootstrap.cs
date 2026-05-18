@@ -77,9 +77,7 @@ namespace AssetManager
                 return;
             }
 
-            CurrentRun = selectedCard.State == AssetCardRuntimeState.Reserved
-                ? MarketAreaFlow.OpenReservedCardDetail(CurrentRun, selectedCard)
-                : zone == MarketTapeZone.UpcomingMarket
+            CurrentRun = zone == MarketTapeZone.UpcomingMarket
                 ? MarketAreaFlow.OpenMarketPreviewCardDetail(CurrentRun, selectedCard)
                 : MarketAreaFlow.OpenMarketCardDetail(CurrentRun, selectedCard);
             resourceFeedbackMessage = CurrentRun.CardDetail.ShouldShowReserveButton

@@ -5,6 +5,8 @@ namespace AssetManager
 {
     public static class RunBootstrapper
     {
+        private const int StockDuplicateCount = 3;
+
         public static RunSessionState CreateNewRun(RunStaticDataSet staticData)
         {
             if (staticData == null)
@@ -43,10 +45,25 @@ namespace AssetManager
             var runtimeCards = new List<AssetCardRuntimeData>();
             foreach (var card in staticData.AssetCards)
             {
-                runtimeCards.Add(new AssetCardRuntimeData(card, AssetCardRuntimeState.Available, null));
+                var copyCount = card.CardDomain == CardDomain.Stock ? StockDuplicateCount + 1 : 1;
+                for (var copyIndex = 0; copyIndex < copyCount; copyIndex++)
+                {
+                    runtimeCards.Add(new AssetCardRuntimeData(
+                        card,
+                        AssetCardRuntimeState.Available,
+                        null,
+                        null,
+                        false,
+                        CreateRuntimeId(card, copyIndex)));
+                }
             }
 
             return runtimeCards;
+        }
+
+        private static string CreateRuntimeId(AssetCardData card, int copyIndex)
+        {
+            return copyIndex == 0 ? card.Id : card.Id + "#copy-" + copyIndex;
         }
     }
 }

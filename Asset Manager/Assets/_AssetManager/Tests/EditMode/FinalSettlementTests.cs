@@ -8,12 +8,13 @@ namespace AssetManager.Tests
         public void CreateFinalSettlementRatesOwnedAssetsOnlyAndUsesPressureForComment()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            var secondStock = run.StaticData.AssetCards[3];
             var ownedOffice = new AssetCardRuntimeData(
                 run.AssetCards[0].Card,
                 AssetCardRuntimeState.Owned,
                 PurchaseSource.MarketTape);
             var ownedDataCenter = new AssetCardRuntimeData(
-                run.AssetCards[3].Card,
+                secondStock,
                 AssetCardRuntimeState.Owned,
                 PurchaseSource.MarketTape);
             var reservedLogistics = new AssetCardRuntimeData(

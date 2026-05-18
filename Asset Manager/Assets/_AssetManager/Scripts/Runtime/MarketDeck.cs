@@ -60,6 +60,7 @@ namespace AssetManager
             {
                 if (card.State == AssetCardRuntimeState.Available
                     && card.Card.CardDomain == cardDomain
+                    && !excludedCardIds.Contains(card.RuntimeId)
                     && !excludedCardIds.Contains(card.Card.Id))
                 {
                     return card;
@@ -77,9 +78,16 @@ namespace AssetManager
             {
                 if (card.State == AssetCardRuntimeState.Removed
                     && card.Card.CardDomain == CardDomain.ConsumableResource
+                    && !excludedCardIds.Contains(card.RuntimeId)
                     && !excludedCardIds.Contains(card.Card.Id))
                 {
-                    return new AssetCardRuntimeData(card.Card, AssetCardRuntimeState.Available, card.PurchaseSource);
+                    return new AssetCardRuntimeData(
+                        card.Card,
+                        AssetCardRuntimeState.Available,
+                        card.PurchaseSource,
+                        card.AcquiredOrder,
+                        card.IsFoil,
+                        card.RuntimeId);
                 }
             }
 

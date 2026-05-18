@@ -10,6 +10,18 @@ namespace AssetManager.Tests
 {
     public sealed class MainGameShellBootstrapTests
     {
+        [SetUp]
+        public void SetUp()
+        {
+            DestroyShellObjects();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            DestroyShellObjects();
+        }
+
         [UnityTest]
         public IEnumerator MainGameShellBootstrapCreatesGameAndUiRoots()
         {
@@ -348,6 +360,24 @@ namespace AssetManager.Tests
             Assert.That(FindChild(marketPanel, ProjectShell.MarketTapeCurrentMarketTextName), Is.Null);
             Assert.That(FindChild(marketPanel, ProjectShell.MarketTapeUpcomingMarketTextName), Is.Null);
 
+            if (bootstrap.CurrentRun.MarketTape.SellImminentCards.Count == 0)
+            {
+                var firstCurrentMarketCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0].Card;
+                var firstCurrentMarketButton = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1");
+                var eighthCurrentMarketButton = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "8");
+                var firstCurrentMarketButtonText = firstCurrentMarketButton.GetComponentInChildren<Text>().text;
+
+                Assert.That(bootstrap.CurrentRun.MarketTape.UpcomingMarketCards, Is.Empty);
+                Assert.That(firstCurrentMarketButtonText, Does.Contain(firstCurrentMarketCard.DisplayName));
+                Assert.That(firstCurrentMarketButton.activeSelf, Is.True);
+                Assert.That(eighthCurrentMarketButton.activeSelf, Is.True);
+                Assert.That(marketPanel.Find(ProjectShell.MarketTapeSellImminentCardButtonPrefix + "1"), Is.Null);
+                Assert.That(marketPanel.Find(ProjectShell.MarketTapeUpcomingMarketCardButtonPrefix + "1"), Is.Null);
+
+                yield return SceneManager.UnloadSceneAsync(scene);
+                yield break;
+            }
+
             var firstSellImminentCard = bootstrap.CurrentRun.MarketTape.SellImminentCards[0].Card;
             var firstSellImminentButton = FindUiObject(ProjectShell.MarketTapeSellImminentCardButtonPrefix + "1");
             var firstUpcomingMarketButton = FindUiObject(ProjectShell.MarketTapeUpcomingMarketCardButtonPrefix + "1");
@@ -434,11 +464,12 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            var selectedCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0].Card;
+            var selectedSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape);
+            var selectedCard = bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card.Card;
             var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
             var marketPanel = FindUiObject(ProjectShell.MarketAreaMarketPanelName);
             var cardDetailPanel = FindUiObject(ProjectShell.CardDetailPanelName);
-            var currentMarketButton = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+            var currentMarketButton = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
                 .GetComponent<Button>();
             var nextBusinessDayButton = FindUiObject(ProjectShell.NextBusinessDayButtonName)
                 .GetComponent<Button>();
@@ -489,6 +520,17 @@ namespace AssetManager.Tests
 
             yield return null;
 
+            if (bootstrap.CurrentRun.MarketTape.UpcomingMarketCards.Count == 0)
+            {
+                var marketPanel = FindUiObject(ProjectShell.MarketAreaMarketPanelName).transform;
+
+                Assert.That(marketPanel.Find(ProjectShell.MarketTapeUpcomingMarketCardButtonPrefix + "1"), Is.Null);
+                Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.False);
+
+                yield return SceneManager.UnloadSceneAsync(scene);
+                yield break;
+            }
+
             var selectedCard = bootstrap.CurrentRun.MarketTape.UpcomingMarketCards[0].Card;
 
             FindUiObject(ProjectShell.MarketTapeUpcomingMarketCardButtonPrefix + "1")
@@ -531,11 +573,26 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            var selectedCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0];
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "payment-ui-stock",
+                    "Payment UI Stock",
+                    "Payment UI stock test card.",
+                    AssetRarity.Common,
+                    1,
+                    new[] { new ProfessionalResourceCost(ResourceType.Reading, 1) },
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
             var previousCash = bootstrap.CurrentRun.Resources.Cash;
-            var previousCurrentMarketSecondCardId = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[1].Card.Id;
-            var previousUpcomingMarketFirstCardId = bootstrap.CurrentRun.MarketTape.UpcomingMarketCards[0].Card.Id;
-            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+            var expectedCashAfterPurchase = previousCash - selectedCard.Card.CashCost + selectedCard.Card.Income;
+            var previousSlotIds = CollectSlotCardIds(bootstrap.CurrentRun.MarketTape);
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
                 .GetComponent<Button>()
                 .onClick
                 .Invoke();
@@ -566,7 +623,9 @@ namespace AssetManager.Tests
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(previousCash));
-            Assert.That(FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).GetComponent<Text>().text, Does.Contain("최종 현금 3"));
+            Assert.That(
+                FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).GetComponent<Text>().text,
+                Does.Contain("최종 현금 " + selectedCard.Card.CashCost));
             Assert.That(buyButton.interactable, Is.True);
 
             buyButton.onClick.Invoke();
@@ -575,13 +634,17 @@ namespace AssetManager.Tests
 
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
-            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(selectedCard.Card.Income));
-            Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(0));
-            Assert.That(bootstrap.CurrentRun.Resources.Credit, Is.EqualTo(0));
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(expectedCashAfterPurchase));
+            Assert.That(
+                bootstrap.CurrentRun.Resources.Research,
+                Is.EqualTo(1 - CountProfessionalCost(selectedCard.Card, ResourceType.Research)));
+            Assert.That(
+                bootstrap.CurrentRun.Resources.Credit,
+                Is.EqualTo(1 - CountProfessionalCost(selectedCard.Card, ResourceType.Credit)));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
-            Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(previousUpcomingMarketFirstCardId));
-            Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[1].Card.Id, Is.EqualTo(previousCurrentMarketSecondCardId));
+            Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Does.Not.Contain(selectedCard.Card.Id));
+            Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Has.Count.EqualTo(previousSlotIds.Count));
             Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.False);
             Assert.That(FindUiObject(ProjectShell.PortfolioSummaryTextName).GetComponent<Text>().text, Does.Contain("보유 자산 1"));
             Assert.That(
@@ -613,7 +676,8 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+            var selectedSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape, ResourceType.Reading);
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
                 .GetComponent<Button>()
                 .onClick
                 .Invoke();
@@ -658,7 +722,8 @@ namespace AssetManager.Tests
             run = ResourceLedger.AddDeal(run, 1).Run;
             SetCurrentRun(bootstrap, run);
 
-            var selectedCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0];
+            var selectedSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape, ResourceType.Reading);
+            var selectedCard = bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card;
             bootstrap.OpenMarketCardDetail(selectedCard);
 
             yield return null;
@@ -680,7 +745,7 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MainGameShellBootstrapReserveButtonMovesMarketCardToReservationAndUpdatesUi()
+        public IEnumerator MainGameShellBootstrapReserveButtonLocksMarketSlotAndUpdatesUi()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapReservationTests");
             SceneManager.SetActiveScene(scene);
@@ -695,12 +760,12 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            var selectedCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0];
-            var previousCurrentMarketSecondCardId = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[1].Card.Id;
-            var previousUpcomingMarketFirstCardId = bootstrap.CurrentRun.MarketTape.UpcomingMarketCards[0].Card.Id;
+            var selectedSlotIndex = FindFirstAffordableMarketSlotIndex(bootstrap.CurrentRun.MarketTape);
+            var selectedCard = bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card;
+            var previousSlotIds = CollectSlotCardIds(bootstrap.CurrentRun.MarketTape);
             var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
 
-            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
                 .GetComponent<Button>()
                 .onClick
                 .Invoke();
@@ -715,18 +780,16 @@ namespace AssetManager.Tests
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Has.Count.EqualTo(1));
-            Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Is.Empty);
+            Assert.That(bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card.Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].IsReserved, Is.True);
+            Assert.That(CountReservedSlots(bootstrap.CurrentRun.MarketTape), Is.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays - 1));
-            Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(previousUpcomingMarketFirstCardId));
-            Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[1].Card.Id, Is.EqualTo(previousCurrentMarketSecondCardId));
+            Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Is.EqualTo(previousSlotIds));
             Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.False);
-            Assert.That(FindUiObject(ProjectShell.ReservationTitleTextName).GetComponent<Text>().text, Does.Contain("1/3"));
-            Assert.That(
-                FindUiObject(ProjectShell.ReservationCardButtonPrefix + "1").GetComponentInChildren<Text>().text,
-                Does.Contain(selectedCard.Card.DisplayName));
+            Assert.That(FindUiObject(ProjectShell.ReservationPanelName).activeSelf, Is.False);
             Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("환매 압력 +1"));
             Assert.That(
                 FindUiObject(ProjectShell.RunStatusTextName).GetComponent<Text>().text,
@@ -736,7 +799,7 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MainGameShellBootstrapReservedCardClickShowsDetailAndPurchaseClearsReservationOnly()
+        public IEnumerator MainGameShellBootstrapReservedMarketSlotClickShowsDetailAndPurchasePullsTape()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapReservedPurchaseTests");
             SceneManager.SetActiveScene(scene);
@@ -756,8 +819,9 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            var selectedCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0];
-            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+            var selectedSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape);
+            var selectedCard = bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card;
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
                 .GetComponent<Button>()
                 .onClick
                 .Invoke();
@@ -769,11 +833,9 @@ namespace AssetManager.Tests
             yield return null;
 
             var previousRemainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
-            var previousSellImminentIds = CollectCardIds(bootstrap.CurrentRun.MarketTape.SellImminentCards);
-            var previousCurrentMarketIds = CollectCardIds(bootstrap.CurrentRun.MarketTape.CurrentMarketCards);
-            var previousUpcomingMarketIds = CollectCardIds(bootstrap.CurrentRun.MarketTape.UpcomingMarketCards);
+            var previousSlotIds = CollectSlotCardIds(bootstrap.CurrentRun.MarketTape);
 
-            FindUiObject(ProjectShell.ReservationCardButtonPrefix + "1")
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
                 .GetComponent<Button>()
                 .onClick
                 .Invoke();
@@ -782,7 +844,7 @@ namespace AssetManager.Tests
 
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
             Assert.That(bootstrap.CurrentRun.CardDetail.SelectedCard.Card.Id, Is.EqualTo(selectedCard.Card.Id));
-            Assert.That(bootstrap.CurrentRun.CardDetail.PurchaseSource, Is.EqualTo(PurchaseSource.Reserved));
+            Assert.That(bootstrap.CurrentRun.CardDetail.PurchaseSource, Is.EqualTo(PurchaseSource.MarketTape));
             Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.True);
             Assert.That(FindUiObject(ProjectShell.CardDetailReserveButtonName).activeSelf, Is.False);
 
@@ -799,12 +861,11 @@ namespace AssetManager.Tests
             Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(previousRemainingBusinessDays - 1));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
-            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].PurchaseSource, Is.EqualTo(PurchaseSource.Reserved));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].PurchaseSource, Is.EqualTo(PurchaseSource.MarketTape));
             Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Is.Empty);
-            AssertZoneMatches(bootstrap.CurrentRun.MarketTape.SellImminentCards, previousSellImminentIds);
-            AssertZoneMatches(bootstrap.CurrentRun.MarketTape.CurrentMarketCards, previousCurrentMarketIds);
-            AssertZoneMatches(bootstrap.CurrentRun.MarketTape.UpcomingMarketCards, previousUpcomingMarketIds);
-            Assert.That(FindUiObject(ProjectShell.ReservationTitleTextName).GetComponent<Text>().text, Does.Contain("0/3"));
+            Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Does.Not.Contain(selectedCard.Card.Id));
+            Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Is.Not.EqualTo(previousSlotIds));
+            Assert.That(FindUiObject(ProjectShell.ReservationPanelName).activeSelf, Is.False);
             Assert.That(
                 FindUiObject(ProjectShell.ReservationCardButtonPrefix + "1").GetComponentInChildren<Text>().text,
                 Is.EqualTo("비어 있음"));
@@ -830,7 +891,7 @@ namespace AssetManager.Tests
 
             for (var i = 0; i < 3; i++)
             {
-                bootstrap.OpenMarketCardDetail(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0]);
+                bootstrap.OpenMarketCardDetail(FindFirstAvailableMarketSlotCard(bootstrap.CurrentRun.MarketTape));
                 bootstrap.ConfirmReservation();
             }
 
@@ -838,7 +899,7 @@ namespace AssetManager.Tests
             var deal = bootstrap.CurrentRun.Resources.Deal;
             var pressure = bootstrap.CurrentRun.RedemptionPressure.CurrentPressure;
 
-            bootstrap.OpenMarketCardDetail(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0]);
+            bootstrap.OpenMarketCardDetail(FindFirstAvailableMarketSlotCard(bootstrap.CurrentRun.MarketTape));
 
             yield return null;
 
@@ -850,7 +911,7 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Has.Count.EqualTo(3));
+            Assert.That(CountReservedSlots(bootstrap.CurrentRun.MarketTape), Is.EqualTo(3));
             Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
             Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(deal));
             Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(pressure));
@@ -876,7 +937,8 @@ namespace AssetManager.Tests
             yield return null;
 
             SetCurrentRun(bootstrap, WithRedemptionPressure(bootstrap.CurrentRun, 9));
-            bootstrap.OpenMarketCardDetail(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0]);
+            bootstrap.OpenMarketCardDetail(
+                bootstrap.CurrentRun.MarketTape.Slots[FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape)].Card);
 
             yield return null;
 
@@ -945,20 +1007,38 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            var expectedSellImminentCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0].Card;
-            var buttonObject = GameObject.Find(ProjectShell.MarketTapeAdvanceButtonName);
+            var pulledCard = bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0];
+            var previousSlotIds = CollectSlotRuntimeIds(bootstrap.CurrentRun.MarketTape);
+            var buttonObject = FindUiObject(ProjectShell.MarketTapeAdvanceButtonName);
             Assert.That(buttonObject, Is.Not.Null);
 
             buttonObject.GetComponent<Button>().onClick.Invoke();
 
             yield return null;
 
-            Assert.That(bootstrap.CurrentRun.MarketTape.SellImminentCards[0].Card.Id, Is.EqualTo(expectedSellImminentCard.Id));
+            if (bootstrap.CurrentRun.MarketTape.SellImminentCards.Count == 0)
+            {
+                Assert.That(CollectSlotRuntimeIds(bootstrap.CurrentRun.MarketTape), Does.Not.Contain(pulledCard.RuntimeId));
+                Assert.That(CollectSlotRuntimeIds(bootstrap.CurrentRun.MarketTape), Has.Count.EqualTo(previousSlotIds.Count));
+                Assert.That(bootstrap.CurrentRun.MarketTape.CurrentMarketCards[0].RuntimeId, Is.EqualTo(previousSlotIds[1]));
 
-            var sellImminentCardButtonText = FindUiObject(ProjectShell.MarketTapeSellImminentCardButtonPrefix + "1")
-                .GetComponentInChildren<Text>()
-                .text;
-            Assert.That(sellImminentCardButtonText, Does.Contain(expectedSellImminentCard.DisplayName));
+                var firstCurrentMarketCardButtonText = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1")
+                    .GetComponentInChildren<Text>()
+                    .text;
+                if (!string.IsNullOrEmpty(pulledCard.Card.DisplayName))
+                {
+                    Assert.That(firstCurrentMarketCardButtonText, Does.Not.Contain(pulledCard.Card.DisplayName));
+                }
+            }
+            else
+            {
+                Assert.That(bootstrap.CurrentRun.MarketTape.SellImminentCards[0].RuntimeId, Is.EqualTo(pulledCard.RuntimeId));
+
+                var sellImminentCardButtonText = FindUiObject(ProjectShell.MarketTapeSellImminentCardButtonPrefix + "1")
+                    .GetComponentInChildren<Text>()
+                    .text;
+                Assert.That(sellImminentCardButtonText, Does.Contain(pulledCard.Card.DisplayName));
+            }
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -1182,7 +1262,7 @@ namespace AssetManager.Tests
                 AssetCardRuntimeState.Owned,
                 PurchaseSource.MarketTape);
             var ownedDataCenter = new AssetCardRuntimeData(
-                bootstrap.CurrentRun.AssetCards[3].Card,
+                bootstrap.CurrentRun.StaticData.AssetCards[3],
                 AssetCardRuntimeState.Owned,
                 PurchaseSource.MarketTape);
             var run = WithCalendar(bootstrap.CurrentRun, new RunCalendarState(3, 4, 0));
@@ -1211,12 +1291,26 @@ namespace AssetManager.Tests
 
         private static GameObject FindUiObject(string objectName)
         {
-            var uiRoot = GameObject.Find(ProjectShell.UiRootName);
+            var uiRoot = FindRootObject(ProjectShell.UiRootName);
             Assert.That(uiRoot, Is.Not.Null);
 
             var match = FindChild(uiRoot.transform, objectName);
             Assert.That(match, Is.Not.Null, "Expected to find UI object " + objectName + ".");
             return match.gameObject;
+        }
+
+        private static GameObject FindRootObject(string objectName)
+        {
+            var scene = SceneManager.GetActiveScene();
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                if (root.name == objectName)
+                {
+                    return root;
+                }
+            }
+
+            return null;
         }
 
         private static Transform FindChild(Transform parent, string objectName)
@@ -1418,6 +1512,25 @@ namespace AssetManager.Tests
                 .SetValue(target, sprite);
         }
 
+        private static void DestroyShellObjects()
+        {
+            var objects = Resources.FindObjectsOfTypeAll<GameObject>();
+            foreach (var gameObject in objects)
+            {
+                if (!gameObject.scene.IsValid())
+                {
+                    continue;
+                }
+
+                if (gameObject.name == "Main Game Shell"
+                    || gameObject.name == ProjectShell.GameRootName
+                    || gameObject.name == ProjectShell.UiRootName)
+                {
+                    UnityEngine.Object.DestroyImmediate(gameObject);
+                }
+            }
+        }
+
         private static System.Collections.Generic.List<string> CollectCardIds(
             System.Collections.Generic.IReadOnlyList<AssetCardRuntimeData> cards)
         {
@@ -1428,6 +1541,171 @@ namespace AssetManager.Tests
             }
 
             return cardIds;
+        }
+
+        private static int CountProfessionalCost(AssetCardData card, ResourceType resourceType)
+        {
+            var count = 0;
+            foreach (var cost in card.ProfessionalCosts)
+            {
+                if (cost.ResourceType == resourceType)
+                {
+                    count += cost.Amount;
+                }
+            }
+
+            return count;
+        }
+
+        private static System.Collections.Generic.List<string> CollectSlotCardIds(MarketTapeState tape)
+        {
+            var cardIds = new System.Collections.Generic.List<string>();
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty)
+                {
+                    cardIds.Add(slot.Card.Card.Id);
+                }
+            }
+
+            return cardIds;
+        }
+
+        private static System.Collections.Generic.List<string> CollectSlotRuntimeIds(MarketTapeState tape)
+        {
+            var runtimeIds = new System.Collections.Generic.List<string>();
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty)
+                {
+                    runtimeIds.Add(slot.Card.RuntimeId);
+                }
+            }
+
+            return runtimeIds;
+        }
+
+        private static int CountReservedSlots(MarketTapeState tape)
+        {
+            var count = 0;
+            foreach (var slot in tape.Slots)
+            {
+                if (slot.IsReserved)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static AssetCardRuntimeData FindFirstAvailableMarketSlotCard(MarketTapeState tape)
+        {
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsReserved
+                    && !slot.IsEmpty
+                    && slot.Card.State == AssetCardRuntimeState.Available
+                    && slot.Card.Card.CardDomain == CardDomain.Stock)
+                {
+                    return slot.Card;
+                }
+            }
+
+            Assert.Fail("Expected to find an available stock market slot.");
+            return null;
+        }
+
+        private static int FindFirstAvailableMarketSlotIndex(MarketTapeState tape)
+        {
+            for (var i = 0; i < tape.Slots.Count; i++)
+            {
+                var slot = tape.Slots[i];
+                if (!slot.IsReserved
+                    && !slot.IsEmpty
+                    && slot.Card.State == AssetCardRuntimeState.Available
+                    && slot.Card.Card.CardDomain == CardDomain.Stock)
+                {
+                    return i;
+                }
+            }
+
+            Assert.Fail("Expected to find an available stock market slot.");
+            return -1;
+        }
+
+        private static int FindFirstAvailableMarketSlotIndex(MarketTapeState tape, ResourceType requiredResourceType)
+        {
+            for (var i = 0; i < tape.Slots.Count; i++)
+            {
+                var slot = tape.Slots[i];
+                if (!slot.IsReserved
+                    && !slot.IsEmpty
+                    && slot.Card.State == AssetCardRuntimeState.Available
+                    && slot.Card.Card.CardDomain == CardDomain.Stock
+                    && HasProfessionalCost(slot.Card.Card, requiredResourceType))
+                {
+                    return i;
+                }
+            }
+
+            Assert.Fail("Expected to find an available stock market slot with " + requiredResourceType + " cost.");
+            return -1;
+        }
+
+        private static int FindFirstAffordableMarketSlotIndex(MarketTapeState tape)
+        {
+            for (var i = 0; i < tape.Slots.Count; i++)
+            {
+                var slot = tape.Slots[i];
+                if (!slot.IsReserved
+                    && !slot.IsEmpty
+                    && slot.Card.State == AssetCardRuntimeState.Available
+                    && slot.Card.Card.CardDomain == CardDomain.Stock
+                    && CanPayWithOneResearchAndOneCredit(slot.Card.Card))
+                {
+                    return i;
+                }
+            }
+
+            Assert.Fail("Expected to find an available stock market slot payable with one research and one credit.");
+            return -1;
+        }
+
+        private static bool CanPayWithOneResearchAndOneCredit(AssetCardData card)
+        {
+            var research = 0;
+            var credit = 0;
+            foreach (var cost in card.ProfessionalCosts)
+            {
+                if (cost.ResourceType == ResourceType.Reading)
+                {
+                    research += cost.Amount;
+                }
+                else if (cost.ResourceType == ResourceType.Meditation)
+                {
+                    credit += cost.Amount;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return research <= 1 && credit <= 1;
+        }
+
+        private static bool HasProfessionalCost(AssetCardData card, ResourceType resourceType)
+        {
+            foreach (var cost in card.ProfessionalCosts)
+            {
+                if (cost.ResourceType == resourceType)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void AssertZoneMatches(

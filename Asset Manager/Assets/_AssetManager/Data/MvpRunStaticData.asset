@@ -33,6 +33,8 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-chip-maker
     displayName: Chip Maker
     description: Stock card for the starter portfolio.
@@ -53,6 +55,8 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-coffee-chain
     displayName: Coffee Chain
     description: Stock card for the starter portfolio.
@@ -73,6 +77,8 @@ MonoBehaviour:
       displayName: Consumer
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-cloud-platform
     displayName: Cloud Platform
     description: Stock card for the starter portfolio.
@@ -95,6 +101,8 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-battery-maker
     displayName: Battery Maker
     description: Stock card for the starter portfolio.
@@ -115,6 +123,8 @@ MonoBehaviour:
       displayName: Energy
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-payment-network
     displayName: Payment Network
     description: Stock card for the starter portfolio.
@@ -135,6 +145,8 @@ MonoBehaviour:
       displayName: Consumer
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-cybersecurity
     displayName: Cybersecurity
     description: Stock card for the starter portfolio.
@@ -155,6 +167,8 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-discount-store
     displayName: Discount Store
     description: Stock card for the starter portfolio.
@@ -175,6 +189,8 @@ MonoBehaviour:
       displayName: Consumer
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-solar-grid
     displayName: Solar Grid
     description: Stock card for the starter portfolio.
@@ -195,6 +211,8 @@ MonoBehaviour:
       displayName: Energy
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-semiconductor-etf
     displayName: Semiconductor ETF
     description: Stock card for the starter portfolio.
@@ -217,6 +235,8 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-rail-operator
     displayName: Rail Operator
     description: Stock card for the starter portfolio.
@@ -237,6 +257,8 @@ MonoBehaviour:
       displayName: Energy
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-healthcare-platform
     displayName: Healthcare Platform
     description: Stock card for the starter portfolio.
@@ -257,6 +279,8 @@ MonoBehaviour:
       displayName: Consumer
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-game-studio
     displayName: Game Studio
     description: Stock card for the starter portfolio.
@@ -277,6 +301,8 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-cold-chain
     displayName: Cold Chain
     description: Stock card for the starter portfolio.
@@ -297,6 +323,8 @@ MonoBehaviour:
       displayName: Consumer
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-water-utility
     displayName: Water Utility
     description: Stock card for the starter portfolio.
@@ -317,6 +345,8 @@ MonoBehaviour:
       displayName: Energy
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-automation-robotics
     displayName: Automation Robotics
     description: Stock card for the starter portfolio.
@@ -337,6 +367,8 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-wind-turbine
     displayName: Wind Turbine
     description: Stock card for the starter portfolio.
@@ -359,6 +391,8 @@ MonoBehaviour:
       displayName: Energy
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-grocery-app
     displayName: Grocery App
     description: Stock card for the starter portfolio.
@@ -379,6 +413,8 @@ MonoBehaviour:
       displayName: Consumer
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-memory-maker
     displayName: Memory Maker
     description: Stock card for the starter portfolio.
@@ -399,6 +435,8 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-luxury-brand
     displayName: Luxury Brand
     description: Stock card for the starter portfolio.
@@ -421,6 +459,8 @@ MonoBehaviour:
       displayName: Consumer
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-data-broker
     displayName: Data Broker
     description: Stock card for the starter portfolio.
@@ -441,6 +481,8 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-grid-storage
     displayName: Grid Storage
     description: Stock card for the starter portfolio.
@@ -461,6 +503,8 @@ MonoBehaviour:
       displayName: Energy
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-streaming-service
     displayName: Streaming Service
     description: Stock card for the starter portfolio.
@@ -481,6 +525,8 @@ MonoBehaviour:
       displayName: Consumer
       tagType: 0
     grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 0
   - id: starter-ai-tools
     displayName: AI Tools
     description: Stock card for the starter portfolio.
@@ -501,6 +547,161 @@ MonoBehaviour:
       displayName: Software
       tagType: 0
     grantsExtraBuyAction: 1
+    providedResourceType: 0
+    providedResourceAmount: 0
+  - id: resource-cash-small
+    displayName:
+    description: Consumable market resource card.
+    rarity: 0
+    cardDomain: 1
+    cashCost: 1
+    professionalCosts: []
+    managementValue: 0
+    income: 0
+    foilValue: 0
+    foilDividend: 0
+    minDeckCopies: 1
+    maxDeckCopies: 1
+    tags: []
+    grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 2
+  - id: resource-cash-large
+    displayName:
+    description: Consumable market resource card.
+    rarity: 1
+    cardDomain: 1
+    cashCost: 2
+    professionalCosts: []
+    managementValue: 0
+    income: 0
+    foilValue: 0
+    foilDividend: 0
+    minDeckCopies: 1
+    maxDeckCopies: 1
+    tags: []
+    grantsExtraBuyAction: 0
+    providedResourceType: 0
+    providedResourceAmount: 3
+  - id: resource-reading
+    displayName:
+    description: Consumable market resource card.
+    rarity: 0
+    cardDomain: 1
+    cashCost: 1
+    professionalCosts: []
+    managementValue: 0
+    income: 0
+    foilValue: 0
+    foilDividend: 0
+    minDeckCopies: 1
+    maxDeckCopies: 1
+    tags: []
+    grantsExtraBuyAction: 0
+    providedResourceType: 1
+    providedResourceAmount: 1
+  - id: resource-reading-plus
+    displayName:
+    description: Consumable market resource card.
+    rarity: 1
+    cardDomain: 1
+    cashCost: 2
+    professionalCosts: []
+    managementValue: 0
+    income: 0
+    foilValue: 0
+    foilDividend: 0
+    minDeckCopies: 1
+    maxDeckCopies: 1
+    tags: []
+    grantsExtraBuyAction: 0
+    providedResourceType: 1
+    providedResourceAmount: 2
+  - id: resource-meditation
+    displayName:
+    description: Consumable market resource card.
+    rarity: 0
+    cardDomain: 1
+    cashCost: 1
+    professionalCosts: []
+    managementValue: 0
+    income: 0
+    foilValue: 0
+    foilDividend: 0
+    minDeckCopies: 1
+    maxDeckCopies: 1
+    tags: []
+    grantsExtraBuyAction: 0
+    providedResourceType: 2
+    providedResourceAmount: 1
+  - id: resource-meditation-plus
+    displayName:
+    description: Consumable market resource card.
+    rarity: 1
+    cardDomain: 1
+    cashCost: 2
+    professionalCosts: []
+    managementValue: 0
+    income: 0
+    foilValue: 0
+    foilDividend: 0
+    minDeckCopies: 1
+    maxDeckCopies: 1
+    tags: []
+    grantsExtraBuyAction: 0
+    providedResourceType: 2
+    providedResourceAmount: 2
+  - id: resource-patience
+    displayName:
+    description: Consumable market resource card.
+    rarity: 0
+    cardDomain: 1
+    cashCost: 1
+    professionalCosts: []
+    managementValue: 0
+    income: 0
+    foilValue: 0
+    foilDividend: 0
+    minDeckCopies: 1
+    maxDeckCopies: 1
+    tags: []
+    grantsExtraBuyAction: 0
+    providedResourceType: 3
+    providedResourceAmount: 1
+  - id: resource-patience-plus
+    displayName:
+    description: Consumable market resource card.
+    rarity: 1
+    cardDomain: 1
+    cashCost: 2
+    professionalCosts: []
+    managementValue: 0
+    income: 0
+    foilValue: 0
+    foilDividend: 0
+    minDeckCopies: 1
+    maxDeckCopies: 1
+    tags: []
+    grantsExtraBuyAction: 0
+    providedResourceType: 3
+    providedResourceAmount: 2
+  - id: resource-balanced-study
+    displayName:
+    description: Consumable market resource card.
+    rarity: 2
+    cardDomain: 1
+    cashCost: 0
+    professionalCosts: []
+    managementValue: 0
+    income: 0
+    foilValue: 0
+    foilDividend: 0
+    minDeckCopies: 1
+    maxDeckCopies: 1
+    tags: []
+    grantsExtraBuyAction: 0
+    providedResourceType: 1
+    providedResourceAmount: 1
   quarters:
   - fiscalYear: 1
     quarter: 1
@@ -603,7 +804,8 @@ MonoBehaviour:
   - commentId: core-critical
     ratingId: core
     pressureLevelId: critical
-    comment: "성과는 충분하지만 환매 압력이 높습니다."
+    comment: "\uC131\uACFC\uB294 \uCDA9\uBD84\uD558\uC9C0\uB9CC \uD658\uB9E4 \uC555\uB825\uC774
+      \uB192\uC2B5\uB2C8\uB2E4."
   - commentId: flagship-stable
     ratingId: flagship
     pressureLevelId: stable

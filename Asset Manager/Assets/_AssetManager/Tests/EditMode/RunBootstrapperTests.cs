@@ -53,6 +53,26 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void CreateNewRunDuplicatesEachStockCardThreeTimesWithDistinctRuntimeIds()
+        {
+            var staticData = RunStaticDataSet.CreateMvpDefaults();
+            var firstStock = staticData.AssetCards[0];
+
+            var run = RunBootstrapper.CreateNewRun(staticData);
+
+            var matchingRuntimeIds = new System.Collections.Generic.HashSet<string>();
+            foreach (var runtimeCard in run.AssetCards)
+            {
+                if (runtimeCard.Card.Id == firstStock.Id)
+                {
+                    matchingRuntimeIds.Add(runtimeCard.RuntimeId);
+                }
+            }
+
+            Assert.That(matchingRuntimeIds, Has.Count.EqualTo(4));
+        }
+
+        [Test]
         public void MvpDefaultStockCostsUseInvestmentPhilosophyResources()
         {
             var staticData = RunStaticDataSet.CreateMvpDefaults();

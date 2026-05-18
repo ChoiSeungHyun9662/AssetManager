@@ -61,7 +61,7 @@ Status: done
 ## Remaining risk
 
 - Explicit deck/discard-pile shuffle behavior is still unimplemented.
-- Sold-stock and foil-completed-stock non-return behavior is represented by the same removed-stock exclusion path; the sale and foil issue slices still need to connect their final removal states into this supply rule.
+- Foil-completed stock non-return behavior is now connected by issue 07 through removed same-stock runtime cards. Sold-stock permanent removal still needs to be connected by the sale issue.
 
 ## Blocked by
 

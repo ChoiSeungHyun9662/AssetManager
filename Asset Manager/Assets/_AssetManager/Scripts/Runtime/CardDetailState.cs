@@ -144,6 +144,8 @@ namespace AssetManager
         public bool ShouldShowReserveButton =>
             SelectedCard != null
             && PurchaseSource == AssetManager.PurchaseSource.MarketTape
+            && SelectedCard.State == AssetCardRuntimeState.Available
+            && SelectedCard.Card.CardDomain == CardDomain.Stock
             && !IsOpenedDuringExtraBuy
             && !IsPreview;
 

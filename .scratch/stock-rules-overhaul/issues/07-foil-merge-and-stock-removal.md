@@ -1,6 +1,6 @@
 # 07. 동일 주식 3장 호일 합성과 종목 제거
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -29,14 +29,37 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 동일 주식 3장을 보유하는 순간 즉시 호일 주식 1장으로 합쳐진다.
-- [ ] 포트폴리오가 8/8이어도 세 번째 동일 주식 구매가 즉시 호일로 이어지는 경우 구매를 허용한다.
-- [ ] 호일 결과는 가장 먼저 획득한 같은 종목 주식 슬롯에 배치된다.
-- [ ] 합쳐진 나머지 두 포트폴리오 슬롯은 빈칸으로 유지된다.
-- [ ] 호일 주식은 같은 등급을 유지하되, 가치와 배당금은 데이터에 지정된 호일 값을 사용한다.
-- [ ] 호일 완성 후 주식 덱의 같은 종목 주식은 모두 제거된다.
-- [ ] 호일 완성 후 시장과 예약 슬롯의 같은 종목 주식은 모두 제거되고, 생긴 빈칸은 시장 테이프 당김으로 메운다.
-- [ ] 예약된 같은 종목 주식이 제거되면 예약 수가 함께 감소한다.
+- [x] 동일 주식 3장을 보유하는 순간 즉시 호일 주식 1장으로 합쳐진다.
+- [x] 포트폴리오가 8/8이어도 세 번째 동일 주식 구매가 즉시 호일로 이어지는 경우 구매를 허용한다.
+- [x] 호일 결과는 가장 먼저 획득한 같은 종목 주식 슬롯에 배치된다.
+- [x] 합쳐진 나머지 두 포트폴리오 슬롯은 빈칸으로 유지된다.
+- [x] 호일 주식은 같은 등급을 유지하되, 가치와 배당금은 데이터에 지정된 호일 값을 사용한다.
+- [x] 호일 완성 후 주식 덱의 같은 종목 주식은 모두 제거된다.
+- [x] 호일 완성 후 시장과 예약 슬롯의 같은 종목 주식은 모두 제거되고, 생긴 빈칸은 시장 테이프 당김으로 메운다.
+- [x] 예약된 같은 종목 주식이 제거되면 예약 수가 함께 감소한다.
+
+## Completion notes
+
+- `OwnedAssetState` now exposes `StockSlots` as the ordered portfolio slot surface while `OwnedCards`, `Count`, value, and income continue to report only occupied owned stocks.
+- `PurchasePayment` now resolves the third same-stock purchase as an immediate foil merge: the earliest acquired matching slot becomes the foil, the other matching owned slot is left empty, and later stock purchases fill the leftmost empty slot.
+- Foil completion removes consumed same-stock runtime cards, remaining available/reserved same-stock runtime cards, same-stock market slots, and same-stock reservation entries, then pulls market tape empty slots.
+- A stale PlayMode test reference to `AssetCardRuntimeData.DisplayName` was updated to the current `AssetCardRuntimeData.Card.DisplayName` model so Unity test compilation can run.
+
+## TDD log
+
+- RED: added `FoilMergeLeavesConsumedPortfolioSlotsEmptyAndNextStockUsesLeftmostEmptySlot`; Unity compilation failed because `OwnedAssetState.StockSlots` did not exist.
+- GREEN: added `StockSlots`, slot-aware owned-card insertion, and foil merge slot preservation; EditMode passed.
+- RED/GREEN: added `FoilMergeRemovesSameStockReservedSlotsAndReservationCount`; the same purchase path now removes matching reservation slots and market slots before pull refill.
+
+## Verification
+
+- EditMode: `AssetManager.Tests.EditMode`, 94 passed / 0 failed.
+- PlayMode: `AssetManager.Tests.PlayMode`, 33 passed / 0 failed.
+- Unity manual check: not run. This issue changed pure purchase/portfolio/market rules and was covered through EditMode plus existing PlayMode regression coverage.
+
+## Remaining risk
+
+- Stock sale is covered by a later issue; sold-stock permanent removal is not implemented here.
 
 ## Blocked by
 

@@ -15,7 +15,7 @@ namespace AssetManager
             RunSessionState run,
             AssetCardRuntimeData selectedCard)
         {
-            return OpenCardDetail(run, selectedCard, PurchaseSource.Reserved);
+            return OpenCardDetail(run, selectedCard, PurchaseSource.MarketTape);
         }
 
         public static RunSessionState OpenMarketPreviewCardDetail(

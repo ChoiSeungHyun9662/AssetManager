@@ -9,7 +9,7 @@ namespace AssetManager.Tests
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             var remainingBusinessDays = run.Calendar.RemainingBusinessDays;
-            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+            var selectedCard = FindFirstReservableMarketCard(run.MarketTape);
 
             var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
 
@@ -36,10 +36,10 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void ReservedCardDetailHookRecordsReservedSourceAndHidesReserveButton()
+        public void ReservedCardDetailHookRecordsMarketTapeSourceAndHidesReserveButton()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            var marketCard = run.MarketTape.CurrentMarketCards[0];
+            var marketCard = FindFirstReservableMarketCard(run.MarketTape);
             var reservedCard = new AssetCardRuntimeData(
                 marketCard.Card,
                 AssetCardRuntimeState.Reserved,
@@ -49,7 +49,7 @@ namespace AssetManager.Tests
 
             Assert.That(detailRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
             Assert.That(detailRun.CardDetail.SelectedCard, Is.SameAs(reservedCard));
-            Assert.That(detailRun.CardDetail.PurchaseSource, Is.EqualTo(PurchaseSource.Reserved));
+            Assert.That(detailRun.CardDetail.PurchaseSource, Is.EqualTo(PurchaseSource.MarketTape));
             Assert.That(detailRun.CardDetail.PendingPayment, Is.Not.Null);
             Assert.That(detailRun.CardDetail.ShouldShowReserveButton, Is.False);
         }
@@ -58,7 +58,7 @@ namespace AssetManager.Tests
         public void ExtraBuyChoiceOpensCardDetailAsExtraBuyAndBlocksReservation()
         {
             var run = ExtraBuyAction.BeginChoice(RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults()));
-            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+            var selectedCard = FindFirstReservableMarketCard(run.MarketTape);
 
             var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
 
@@ -76,6 +76,23 @@ namespace AssetManager.Tests
             Assert.That(closedRun.BusinessDay.HasExtraBuyAction, Is.True);
             Assert.That(closedRun.BusinessDay.IsAwaitingExtraBuyChoice, Is.True);
             Assert.That(closedRun.BusinessDay.IsBuyingWithExtraBuy, Is.False);
+        }
+
+        private static AssetCardRuntimeData FindFirstReservableMarketCard(MarketTapeState tape)
+        {
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsReserved
+                    && !slot.IsEmpty
+                    && slot.Card.State == AssetCardRuntimeState.Available
+                    && slot.Card.Card.CardDomain == CardDomain.Stock)
+                {
+                    return slot.Card;
+                }
+            }
+
+            Assert.Fail("Expected to find a reservable stock market card.");
+            return null;
         }
     }
 }

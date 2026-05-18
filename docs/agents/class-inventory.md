@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-17
-Covered implementation slices: issues 00-17, stock overhaul issues 01-04
+Covered implementation slices: issues 00-17, stock overhaul issues 01-06
 
 ## Update Workflow
 
@@ -101,11 +101,31 @@ Current runtime flow:
 
 - `MarketTapeState` now exposes an ordered 1x8 `Slots` list. `MarketTapeSlotState` stores the card in a slot plus whether that slot is reservation-locked.
 - `MarketConfigData` now carries `MarketTapeSlots`, with MVP defaults set to 8; the old 3-zone counts remain as compatibility fields while older callers are migrated.
-- `MarketTape.Advance`, `Refresh`, `PullFromEmptySlot`, and `PullAllEmptySlots` are the public 1x8 tape rules: non-reserved cards move left, reserved slots stay fixed, refresh replaces only non-reserved slots, and empty slots are pulled from the leftmost gap.
-- `ReservationAction` now locks the selected stock in its current market slot instead of replacing it from an upcoming column. The legacy reservation list still tracks capacity and reserved-card detail access during this transition.
+- `MarketTape.Advance`, `Refresh`, `PullFromEmptySlot`, and `PullAllEmptySlots` are the public 1x8 tape rules: non-reserved cards move left, reserved slots stay fixed, refresh replaces only non-reserved slots, old non-reserved visible cards are removed before schedule refresh so consumables can recycle, and empty slots are pulled from the leftmost gap.
+- `ReservationAction` now locks the selected stock in its current market slot instead of replacing it from an upcoming column.
 - `PurchasePayment` now routes market and reserved purchases through slot pull behavior after the purchased card leaves the tape. Foil-removal pull integration remains for the later foil issue.
 - `BusinessDayFlow` advances the market tape at the start of a normal next business day and refreshes the tape at new-quarter start without an extra progress step.
 - `ProjectShell` and `MarketTapeView` render the market as one row of 8 current-market slot buttons; reserved slots are marked on the card.
+
+## Stock Overhaul Issue 05 Notes
+
+- Reservations now live on `MarketTapeSlotState.IsReserved`; `ReservationState` remains only as a compatibility/capacity shell and no longer stores newly reserved cards.
+- `ReservationAction` locks the selected stock in its existing market slot, grants one Deal subject to the normal cap, increases redemption pressure, checks failure immediately, and consumes the business day without advancing the market tape.
+- Reserved stock purchases are opened and confirmed as market-slot purchases. Buying the reserved stock clears that locked slot and uses market tape pull behavior to fill the gap.
+- `CardDetailState` hides Reserve for reserved cards, consumable resource cards, previews, and extra-buy purchases. `ReservationView` is hidden because the market card itself now carries reservation state.
+
+## Stock Overhaul Issue 06 Notes
+
+- `OwnedAssetState` now exposes the 8-stock-slot portfolio limit through `MaxStockSlots`, `OpenStockSlots`, `IsPortfolioFull`, and `CanAcceptStockPurchase`; it leaves a third-copy stock purchase path open for the later foil-combination rule.
+- `PurchasePayment` now checks stock portfolio capacity before professional resource slots, cash, or business-day consumption, returns "주식 매도가 필요합니다" for blocked new stock buys, and keeps consumable resource card purchases outside the portfolio cap.
+- Market and reserved purchases now call the market tape pull API directly after clearing the purchased slot, so purchase replenishment follows 1x8 slot pull behavior rather than column-advance wording.
+
+## Stock Overhaul Issue 07 Notes
+
+- `RunBootstrapper` creates four runtime instances for each stock definition: the original plus three duplicates. Runtime instances share the same stock `AssetCardData.Id` but have distinct `AssetCardRuntimeData.RuntimeId` values.
+- `AssetCardRuntimeData` carries `RuntimeId`, `IsFoil`, and effective management value/income accessors so market state can track physical card instances while portfolio scoring can use authored foil values.
+- `OwnedAssetState` exposes `StockSlots` for ordered portfolio slots with preserved empty holes, while `OwnedCards` remains the occupied-card view used by scoring and summaries.
+- `PurchasePayment` merges the third owned copy of a stock into one foil owned card in the earliest matching owned slot, leaves the other matching portfolio slots empty, allows the purchase even when the 8-slot portfolio is full, removes remaining same-stock available/reserved runtime cards, clears same-stock market and reservation slots, and pulls empty market slots afterward.
 
 ## Shell And Editor Setup
 
@@ -143,11 +163,11 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunCalendarState` | `Runtime/RunModels.cs` | Current 회계년도, 분기, and remaining 영업일. |
 | `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 운용 수익 counters, tracked 조달 현금, and completed 분기 운용 수익 records for 4Q 휴가 summaries. |
 | `QuarterPerformanceRecord` | `Runtime/RunModels.cs` | Completed 회계년도/분기 운용 수익 row recorded at 분기 마감 for later 회계년도 summary display. |
-| `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one 자산 카드 and whether it is available, reserved, owned, or removed; owned cards can carry 매수 출처 and AcquiredOrder. |
+| `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one physical market card instance and whether it is available, reserved, owned, or removed; owned cards can carry purchase source, acquired order, foil state, and effective value/income derived from base or foil card data. |
 | `MarketTapeSlotState` | `Runtime/RunModels.cs` | One 1x8 market tape slot: optional visible market card plus whether the slot is reservation-locked. |
 | `MarketTapeState` | `Runtime/RunModels.cs` | Current ordered 1x8 market tape slots, with `CurrentMarketCards` projecting visible slot cards for older callers during the migration. |
-| `ReservationState` | `Runtime/RunModels.cs` | 예약 구역 capacity and reserved cards. |
-| `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list plus Owned-only 보유 자산 수, 현재 운용가치, and 영업일 시작 운용 수익 totals. |
+| `ReservationState` | `Runtime/RunModels.cs` | Reservation capacity compatibility shell. Newly reserved stocks are tracked on market tape slots rather than in this separate collection. |
+| `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list plus Owned-only 보유 자산 수, 현재 운용가치, 영업일 시작 운용 수익 totals using foil-aware runtime values, and the 8-stock-slot portfolio capacity helpers. |
 | `BusinessDayState` | `Runtime/RunModels.cs` | Current phase and 시장 영역 state. |
 | `LiquidityActionState` | `Runtime/RunModels.cs` | Current 자원 확보 selected basic resources and whether the first resource has committed the action. |
 | `QuarterEndResult` | `Runtime/RunModels.cs` | Snapshot of a completed 분기 마감: 정산 수익, 분기 운용 수익, 분기 목표, 목표 달성률, and 환매 압력 impact. |
@@ -195,9 +215,9 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RedemptionPressureResult` | `Runtime/RedemptionPressure.cs` | Return data for 환매 압력 changes, including the updated run, increase amount, and failure flag. |
 | `LiquidityAction` | `Runtime/LiquidityAction.cs` | Public rule service for 자원 확보 entry, close eligibility, selected resource sequence validation, funding-cash/professional-resource gain, auto-ending, and 영업일 consumption. |
 | `LiquidityActionResult` | `Runtime/LiquidityAction.cs` | Return data for 자원 확보 selections, including the updated run and short feedback message. |
-| `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, inflation-aware cash-cost validation, stock ownership transition, consumable resource card reward/removal, purchased-column advance for 시장 카드 only, reservation cleanup for 예약 카드, and 영업일 consumption. |
+| `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, portfolio-cap validation, inflation-aware cash-cost validation, stock ownership transition, consumable resource card reward/removal, market-slot pull after market or reserved-slot purchase, and 영업일 consumption. |
 | `PurchasePaymentResult` | `Runtime/PurchasePayment.cs` | Return data for 결제 and 자산 매수 operations, including success and short feedback message. |
-| `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for 예약 validation, 예약 카드 transition, 예약 구역 capacity, 딜 reward, 환매 압력 increase through RedemptionPressure, reserved-column market-tape advance, and 영업일 consumption. |
+| `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for reservation validation, stock-only market slot locking, reserved-slot capacity, Deal reward, redemption pressure increase through RedemptionPressure, immediate failure check, and business-day consumption without immediate market-tape advance. |
 | `ReservationActionResult` | `Runtime/ReservationAction.cs` | Return data for 예약 operations, including success and short feedback message. |
 
 ## Market Rules
@@ -226,7 +246,7 @@ Important distinction:
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary: 보유 자산 수, 현재 운용가치, 이번 분기 운용 수익, and a short ordered 보유 자산 list. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 UI; displays 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 summaries. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders the clickable 1x8 market tape: stock cards show cost, 운용가치, 운용 수익, tags, and reservation state, while consumable resource cards show cash cost, 희귀도, and provided resource without a display name. |
-| `ReservationView` | `Runtime/ReservationView.cs` | Renders the 예약 구역 count and three reserved-card card summaries in the 시장 area, with clickable occupied slots for 예약 카드 상세보기. |
+| `ReservationView` | `Runtime/ReservationView.cs` | Legacy reservation panel component kept for scene compatibility, now hidden because reservation state is shown on the market card slot itself. |
 | `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Legacy GainLiquidity view for 중앙 은행 resource-object choices; no longer created or wired by the new play flow. |
 | `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, Payment Pot professional-cost slots, final cash cost, chip placement/recovery buttons, buy availability, 예약 visibility/availability, and preview-only detail without transaction controls. |
 | `MarketTapeDevControls` | `Runtime/MarketTapeDevControls.cs` | Temporary Market-state-only development buttons for 시장 테이프 진행 and 시장 테이프 갱신. |

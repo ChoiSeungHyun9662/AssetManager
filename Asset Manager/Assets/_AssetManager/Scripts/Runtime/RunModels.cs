@@ -635,17 +635,34 @@ namespace AssetManager
             AssetCardRuntimeState state,
             PurchaseSource? purchaseSource,
             int? acquiredOrder)
+            : this(card, state, purchaseSource, acquiredOrder, false, null)
+        {
+        }
+
+        public AssetCardRuntimeData(
+            AssetCardData card,
+            AssetCardRuntimeState state,
+            PurchaseSource? purchaseSource,
+            int? acquiredOrder,
+            bool isFoil,
+            string runtimeId)
         {
             Card = card;
             State = state;
             PurchaseSource = purchaseSource;
             AcquiredOrder = acquiredOrder;
+            IsFoil = isFoil;
+            RuntimeId = string.IsNullOrEmpty(runtimeId) ? card.Id : runtimeId;
         }
 
         public AssetCardData Card { get; }
+        public string RuntimeId { get; }
         public AssetCardRuntimeState State { get; }
         public PurchaseSource? PurchaseSource { get; }
         public int? AcquiredOrder { get; }
+        public bool IsFoil { get; }
+        public int ManagementValue => IsFoil ? Card.FoilValue : Card.ManagementValue;
+        public int Income => IsFoil ? Card.FoilDividend : Card.Income;
     }
 
     public sealed class MarketTapeSlotState
@@ -738,20 +755,73 @@ namespace AssetManager
 
     public sealed class OwnedAssetState
     {
+        public const int DefaultMaxStockSlots = 8;
+
         public OwnedAssetState(IEnumerable<AssetCardRuntimeData> ownedCards)
         {
-            OwnedCards = new List<AssetCardRuntimeData>(ownedCards).AsReadOnly();
+            StockSlots = new List<AssetCardRuntimeData>(ownedCards).AsReadOnly();
+            OwnedCards = CollectOwnedCards(StockSlots).AsReadOnly();
         }
 
         public IReadOnlyList<AssetCardRuntimeData> OwnedCards { get; }
+        public IReadOnlyList<AssetCardRuntimeData> StockSlots { get; }
+        public int MaxStockSlots => DefaultMaxStockSlots;
+        public int OpenStockSlots => Math.Max(0, MaxStockSlots - Count);
+        public bool IsPortfolioFull => OpenStockSlots == 0;
+
+        public bool CanAcceptStockPurchase(AssetCardData card)
+        {
+            if (card == null || card.CardDomain != CardDomain.Stock)
+            {
+                return true;
+            }
+
+            return !IsPortfolioFull || WouldCreateFoilFromStockPurchase(card);
+        }
+
+        public bool WouldCreateFoilFromStockPurchase(AssetCardData card)
+        {
+            if (card == null || card.CardDomain != CardDomain.Stock)
+            {
+                return false;
+            }
+
+            var matchingOwnedCards = 0;
+            foreach (var ownedCard in OwnedCards)
+            {
+                if (ownedCard.State == AssetCardRuntimeState.Owned
+                    && !ownedCard.IsFoil
+                    && ownedCard.Card.Id == card.Id)
+                {
+                    matchingOwnedCards++;
+                }
+            }
+
+            return matchingOwnedCards >= 2;
+        }
+
+        private static List<AssetCardRuntimeData> CollectOwnedCards(IEnumerable<AssetCardRuntimeData> stockSlots)
+        {
+            var ownedCards = new List<AssetCardRuntimeData>();
+            foreach (var card in stockSlots)
+            {
+                if (card != null && card.State == AssetCardRuntimeState.Owned)
+                {
+                    ownedCards.Add(card);
+                }
+            }
+
+            return ownedCards;
+        }
+
         public int Count
         {
             get
             {
                 var count = 0;
-                foreach (var card in OwnedCards)
+                foreach (var card in StockSlots)
                 {
-                    if (card.State == AssetCardRuntimeState.Owned)
+                    if (card != null && card.State == AssetCardRuntimeState.Owned)
                     {
                         count++;
                     }
@@ -766,11 +836,11 @@ namespace AssetManager
             get
             {
                 var total = 0;
-                foreach (var card in OwnedCards)
+                foreach (var card in StockSlots)
                 {
-                    if (card.State == AssetCardRuntimeState.Owned)
+                    if (card != null && card.State == AssetCardRuntimeState.Owned)
                     {
-                        total += card.Card.ManagementValue;
+                        total += card.ManagementValue;
                     }
                 }
 
@@ -783,11 +853,11 @@ namespace AssetManager
             get
             {
                 var total = 0;
-                foreach (var card in OwnedCards)
+                foreach (var card in StockSlots)
                 {
-                    if (card.State == AssetCardRuntimeState.Owned)
+                    if (card != null && card.State == AssetCardRuntimeState.Owned)
                     {
-                        total += card.Card.Income;
+                        total += card.Income;
                     }
                 }
 

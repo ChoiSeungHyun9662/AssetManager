@@ -119,45 +119,77 @@ namespace AssetManager
                 return ConfirmConsumableResourcePurchase(run, payment, selectedCard, purchaseSource);
             }
 
+            var createsFoil = run.OwnedAssets.WouldCreateFoilFromStockPurchase(selectedCard.Card);
             var ownedCard = new AssetCardRuntimeData(
                 selectedCard.Card,
                 AssetCardRuntimeState.Owned,
                 purchaseSource,
-                run.OwnedAssets.Count + 1);
-            var assetCards = MarkCardOwned(run.AssetCards, ownedCard);
-            var ownedAssets = AddOwnedCard(run.OwnedAssets, ownedCard);
+                NextAcquiredOrder(run.OwnedAssets),
+                false,
+                selectedCard.RuntimeId);
+            IReadOnlyList<AssetCardRuntimeData> assetCards;
+            OwnedAssetState ownedAssets;
+            if (createsFoil)
+            {
+                var foilMerge = AddFoilOwnedCard(run.OwnedAssets, ownedCard);
+                assetCards = ApplyFoilMerge(run.AssetCards, foilMerge);
+                ownedAssets = foilMerge.OwnedAssets;
+            }
+            else
+            {
+                assetCards = MarkCardOwned(run.AssetCards, ownedCard);
+                ownedAssets = AddOwnedCard(run.OwnedAssets, ownedCard);
+            }
+
+            if (createsFoil)
+            {
+                assetCards = RemoveAvailableAndReservedSameStockCards(assetCards, ownedCard.Card.Id, ownedCard.RuntimeId);
+            }
+
             var marketTape = run.MarketTape;
             var reservation = run.Reservation;
+            if (createsFoil)
+            {
+                reservation = RemoveSameStockReservedCards(reservation, ownedCard.Card.Id);
+            }
 
             if (purchaseSource == PurchaseSource.MarketTape)
             {
-                var zone = FindMarketTapeZone(run.MarketTape, selectedCard.Card.Id).Value;
-                var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, zone, selectedCard.Card.Id);
-                marketTape = MarketTape.AdvanceSlotAt(
+                var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, selectedCard.RuntimeId);
+                marketTape = MarketTape.PullFromSlotAt(
                     run.StaticData.MarketConfig,
                     assetCards,
                     run.MarketTape,
                     ownedAssets,
-                    run.Reservation,
-                    zone,
+                    reservation,
                     slotIndex);
             }
             else if (purchaseSource == PurchaseSource.Reserved)
             {
-                reservation = RemoveReservedCard(run.Reservation, selectedCard.Card.Id);
-                var zone = FindMarketTapeZone(run.MarketTape, selectedCard.Card.Id);
+                reservation = RemoveReservedCard(run.Reservation, selectedCard.RuntimeId);
+                var zone = FindMarketTapeZone(run.MarketTape, selectedCard.RuntimeId);
                 if (zone.HasValue)
                 {
-                    var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, zone.Value, selectedCard.Card.Id);
-                    marketTape = MarketTape.AdvanceSlotAt(
+                    var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, selectedCard.RuntimeId);
+                    marketTape = MarketTape.PullFromSlotAt(
                         run.StaticData.MarketConfig,
                         assetCards,
                         run.MarketTape,
                         ownedAssets,
                         reservation,
-                        zone.Value,
                         slotIndex);
                 }
+            }
+
+            if (createsFoil)
+            {
+                marketTape = RemoveSameStockFromMarketTape(marketTape, ownedCard.Card.Id);
+                marketTape = MarketTape.PullAllEmptySlots(
+                    run.StaticData.MarketConfig,
+                    assetCards,
+                    marketTape,
+                    ownedAssets,
+                    reservation);
             }
 
             return new PurchasePaymentResult(
@@ -175,38 +207,38 @@ namespace AssetManager
             var removedCard = new AssetCardRuntimeData(
                 selectedCard.Card,
                 AssetCardRuntimeState.Removed,
-                null);
+                null,
+                selectedCard.AcquiredOrder,
+                selectedCard.IsFoil,
+                selectedCard.RuntimeId);
             var assetCards = MarkCardRemoved(run.AssetCards, removedCard);
             var marketTape = run.MarketTape;
             var reservation = run.Reservation;
 
             if (purchaseSource == PurchaseSource.MarketTape)
             {
-                var zone = FindMarketTapeZone(run.MarketTape, selectedCard.Card.Id).Value;
-                var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, zone, selectedCard.Card.Id);
-                marketTape = MarketTape.AdvanceSlotAt(
+                var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, selectedCard.RuntimeId);
+                marketTape = MarketTape.PullFromSlotAt(
                     run.StaticData.MarketConfig,
                     assetCards,
                     run.MarketTape,
                     run.OwnedAssets,
                     run.Reservation,
-                    zone,
                     slotIndex);
             }
             else if (purchaseSource == PurchaseSource.Reserved)
             {
-                reservation = RemoveReservedCard(run.Reservation, selectedCard.Card.Id);
-                var zone = FindMarketTapeZone(run.MarketTape, selectedCard.Card.Id);
+                reservation = RemoveReservedCard(run.Reservation, selectedCard.RuntimeId);
+                var zone = FindMarketTapeZone(run.MarketTape, selectedCard.RuntimeId);
                 if (zone.HasValue)
                 {
-                    var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, zone.Value, selectedCard.Card.Id);
-                    marketTape = MarketTape.AdvanceSlotAt(
+                    var slotIndex = FindMarketTapeSlotIndex(run.MarketTape, selectedCard.RuntimeId);
+                    marketTape = MarketTape.PullFromSlotAt(
                         run.StaticData.MarketConfig,
                         assetCards,
                         run.MarketTape,
                         run.OwnedAssets,
                         reservation,
-                        zone.Value,
                         slotIndex);
                 }
             }
@@ -269,15 +301,20 @@ namespace AssetManager
             }
 
             if (run.CardDetail.PurchaseSource == PurchaseSource.MarketTape
-                && !FindMarketTapeZone(run.MarketTape, run.CardDetail.SelectedCard.Card.Id).HasValue)
+                && !FindMarketTapeZone(run.MarketTape, run.CardDetail.SelectedCard.RuntimeId).HasValue)
             {
                 return "매수 출처를 찾을 수 없습니다.";
             }
 
             if (run.CardDetail.PurchaseSource == PurchaseSource.Reserved
-                && !ContainsCard(run.Reservation.ReservedCards, run.CardDetail.SelectedCard.Card.Id))
+                && !ContainsCard(run.Reservation.ReservedCards, run.CardDetail.SelectedCard.RuntimeId))
             {
                 return "매수 출처를 찾을 수 없습니다.";
+            }
+
+            if (!run.OwnedAssets.CanAcceptStockPurchase(run.CardDetail.SelectedCard.Card))
+            {
+                return "주식 매도가 필요합니다";
             }
 
             var payment = run.CardDetail.PendingPayment;
@@ -358,7 +395,7 @@ namespace AssetManager
             var updatedCards = new List<AssetCardRuntimeData>();
             foreach (var card in assetCards)
             {
-                updatedCards.Add(card.Card.Id == ownedCard.Card.Id ? ownedCard : card);
+                updatedCards.Add(card.RuntimeId == ownedCard.RuntimeId ? ownedCard : card);
             }
 
             return updatedCards;
@@ -371,7 +408,36 @@ namespace AssetManager
             var updatedCards = new List<AssetCardRuntimeData>();
             foreach (var card in assetCards)
             {
-                updatedCards.Add(card.Card.Id == removedCard.Card.Id ? removedCard : card);
+                updatedCards.Add(card.RuntimeId == removedCard.RuntimeId ? removedCard : card);
+            }
+
+            return updatedCards;
+        }
+
+        private static IReadOnlyList<AssetCardRuntimeData> RemoveAvailableAndReservedSameStockCards(
+            IEnumerable<AssetCardRuntimeData> assetCards,
+            string stockId,
+            string purchasedRuntimeId)
+        {
+            var updatedCards = new List<AssetCardRuntimeData>();
+            foreach (var card in assetCards)
+            {
+                if (card.Card.Id == stockId
+                    && card.RuntimeId != purchasedRuntimeId
+                    && card.State != AssetCardRuntimeState.Owned)
+                {
+                    updatedCards.Add(new AssetCardRuntimeData(
+                        card.Card,
+                        AssetCardRuntimeState.Removed,
+                        null,
+                        card.AcquiredOrder,
+                        card.IsFoil,
+                        card.RuntimeId));
+                }
+                else
+                {
+                    updatedCards.Add(card);
+                }
             }
 
             return updatedCards;
@@ -379,17 +445,135 @@ namespace AssetManager
 
         private static OwnedAssetState AddOwnedCard(OwnedAssetState ownedAssets, AssetCardRuntimeData ownedCard)
         {
-            var ownedCards = new List<AssetCardRuntimeData>(ownedAssets.OwnedCards);
-            ownedCards.Add(ownedCard);
-            return new OwnedAssetState(ownedCards);
+            var slots = new List<AssetCardRuntimeData>(ownedAssets.StockSlots);
+            for (var i = 0; i < slots.Count; i++)
+            {
+                if (slots[i] == null || slots[i].State != AssetCardRuntimeState.Owned)
+                {
+                    slots[i] = ownedCard;
+                    return new OwnedAssetState(slots);
+                }
+            }
+
+            slots.Add(ownedCard);
+            return new OwnedAssetState(slots);
         }
 
-        private static ReservationState RemoveReservedCard(ReservationState reservation, string cardId)
+        private static FoilMergeResult AddFoilOwnedCard(OwnedAssetState ownedAssets, AssetCardRuntimeData ownedCard)
+        {
+            var slots = new List<AssetCardRuntimeData>(ownedAssets.StockSlots);
+            var earliestIndex = -1;
+            var earliestOrder = int.MaxValue;
+
+            for (var i = 0; i < slots.Count; i++)
+            {
+                var card = slots[i];
+                if (card != null
+                    && card.State == AssetCardRuntimeState.Owned
+                    && !card.IsFoil
+                    && card.Card.Id == ownedCard.Card.Id)
+                {
+                    var acquiredOrder = card.AcquiredOrder ?? int.MaxValue;
+                    if (acquiredOrder < earliestOrder)
+                    {
+                        earliestIndex = i;
+                        earliestOrder = acquiredOrder;
+                    }
+                }
+            }
+
+            if (earliestIndex < 0)
+            {
+                var fallback = new OwnedAssetState(new[] { ownedCard });
+                return new FoilMergeResult(fallback, ownedCard, new[] { ownedCard.RuntimeId });
+            }
+
+            var earliestCard = slots[earliestIndex];
+            var foilCard = new AssetCardRuntimeData(
+                ownedCard.Card,
+                AssetCardRuntimeState.Owned,
+                earliestCard.PurchaseSource,
+                earliestCard.AcquiredOrder ?? ownedCard.AcquiredOrder,
+                true,
+                earliestCard.RuntimeId);
+            var consumedRuntimeIds = new List<string> { ownedCard.RuntimeId };
+
+            for (var i = 0; i < slots.Count; i++)
+            {
+                var card = slots[i];
+                if (card == null
+                    || card.State != AssetCardRuntimeState.Owned
+                    || card.IsFoil
+                    || card.Card.Id != ownedCard.Card.Id)
+                {
+                    continue;
+                }
+
+                if (i == earliestIndex)
+                {
+                    slots[i] = foilCard;
+                }
+                else
+                {
+                    consumedRuntimeIds.Add(card.RuntimeId);
+                    slots[i] = null;
+                }
+            }
+
+            return new FoilMergeResult(new OwnedAssetState(slots), foilCard, consumedRuntimeIds);
+        }
+
+        private static IReadOnlyList<AssetCardRuntimeData> ApplyFoilMerge(
+            IEnumerable<AssetCardRuntimeData> assetCards,
+            FoilMergeResult foilMerge)
+        {
+            var consumedRuntimeIds = new HashSet<string>(foilMerge.ConsumedRuntimeIds);
+            var updatedCards = new List<AssetCardRuntimeData>();
+            foreach (var card in assetCards)
+            {
+                if (card.RuntimeId == foilMerge.FoilCard.RuntimeId)
+                {
+                    updatedCards.Add(foilMerge.FoilCard);
+                }
+                else if (consumedRuntimeIds.Contains(card.RuntimeId))
+                {
+                    updatedCards.Add(new AssetCardRuntimeData(
+                        card.Card,
+                        AssetCardRuntimeState.Removed,
+                        null,
+                        card.AcquiredOrder,
+                        card.IsFoil,
+                        card.RuntimeId));
+                }
+                else
+                {
+                    updatedCards.Add(card);
+                }
+            }
+
+            return updatedCards;
+        }
+
+        private static int NextAcquiredOrder(OwnedAssetState ownedAssets)
+        {
+            var highestOrder = 0;
+            foreach (var slot in ownedAssets.StockSlots)
+            {
+                if (slot != null && slot.AcquiredOrder.HasValue && slot.AcquiredOrder.Value > highestOrder)
+                {
+                    highestOrder = slot.AcquiredOrder.Value;
+                }
+            }
+
+            return highestOrder + 1;
+        }
+
+        private static ReservationState RemoveReservedCard(ReservationState reservation, string runtimeId)
         {
             var reservedCards = new List<AssetCardRuntimeData>();
             foreach (var card in reservation.ReservedCards)
             {
-                if (card.Card.Id != cardId)
+                if (card.RuntimeId != runtimeId)
                 {
                     reservedCards.Add(card);
                 }
@@ -398,19 +582,56 @@ namespace AssetManager
             return new ReservationState(reservation.Capacity, reservedCards);
         }
 
-        private static MarketTapeZone? FindMarketTapeZone(MarketTapeState tape, string cardId)
+        private static ReservationState RemoveSameStockReservedCards(ReservationState reservation, string stockId)
         {
-            if (ContainsCard(tape.SellImminentCards, cardId))
+            var reservedCards = new List<AssetCardRuntimeData>();
+            foreach (var card in reservation.ReservedCards)
             {
-                return MarketTapeZone.SellImminent;
+                if (card.Card.Id != stockId)
+                {
+                    reservedCards.Add(card);
+                }
             }
 
-            if (ContainsCard(tape.CurrentMarketCards, cardId))
+            return new ReservationState(reservation.Capacity, reservedCards);
+        }
+
+        private static MarketTapeState RemoveSameStockFromMarketTape(MarketTapeState tape, string stockId)
+        {
+            var slots = new List<MarketTapeSlotState>();
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty && slot.Card.Card.Id == stockId)
+                {
+                    slots.Add(new MarketTapeSlotState(null, false));
+                }
+                else
+                {
+                    slots.Add(slot);
+                }
+            }
+
+            return new MarketTapeState(slots);
+        }
+
+        private static MarketTapeZone? FindMarketTapeZone(MarketTapeState tape, string runtimeId)
+        {
+            if (FindMarketTapeSlotIndex(tape, runtimeId) >= 0)
             {
                 return MarketTapeZone.CurrentMarket;
             }
 
-            if (ContainsCard(tape.UpcomingMarketCards, cardId))
+            if (ContainsCard(tape.SellImminentCards, runtimeId))
+            {
+                return MarketTapeZone.SellImminent;
+            }
+
+            if (ContainsCard(tape.CurrentMarketCards, runtimeId))
+            {
+                return MarketTapeZone.CurrentMarket;
+            }
+
+            if (ContainsCard(tape.UpcomingMarketCards, runtimeId))
             {
                 return MarketTapeZone.UpcomingMarket;
             }
@@ -418,11 +639,11 @@ namespace AssetManager
             return null;
         }
 
-        private static bool ContainsCard(IReadOnlyList<AssetCardRuntimeData> cards, string cardId)
+        private static bool ContainsCard(IReadOnlyList<AssetCardRuntimeData> cards, string runtimeId)
         {
             foreach (var card in cards)
             {
-                if (card.Card.Id == cardId)
+                if (card.RuntimeId == runtimeId)
                 {
                     return true;
                 }
@@ -431,33 +652,17 @@ namespace AssetManager
             return false;
         }
 
-        private static int FindMarketTapeSlotIndex(MarketTapeState tape, MarketTapeZone zone, string cardId)
+        private static int FindMarketTapeSlotIndex(MarketTapeState tape, string runtimeId)
         {
-            var cards = SelectMarketTapeZone(tape, zone);
-            for (var i = 0; i < cards.Count; i++)
+            for (var i = 0; i < tape.Slots.Count; i++)
             {
-                if (cards[i].Card.Id == cardId)
+                if (!tape.Slots[i].IsEmpty && tape.Slots[i].Card.RuntimeId == runtimeId)
                 {
                     return i;
                 }
             }
 
             return -1;
-        }
-
-        private static IReadOnlyList<AssetCardRuntimeData> SelectMarketTapeZone(MarketTapeState tape, MarketTapeZone zone)
-        {
-            switch (zone)
-            {
-                case MarketTapeZone.SellImminent:
-                    return tape.SellImminentCards;
-                case MarketTapeZone.CurrentMarket:
-                    return tape.CurrentMarketCards;
-                case MarketTapeZone.UpcomingMarket:
-                    return tape.UpcomingMarketCards;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(zone), zone, null);
-            }
         }
 
         private static RunSessionState WithConfirmedPurchase(
@@ -512,6 +717,23 @@ namespace AssetManager
                 card.ProvidedResourceAmount);
             message = result.Message;
             return result.Run;
+        }
+
+        private sealed class FoilMergeResult
+        {
+            public FoilMergeResult(
+                OwnedAssetState ownedAssets,
+                AssetCardRuntimeData foilCard,
+                IEnumerable<string> consumedRuntimeIds)
+            {
+                OwnedAssets = ownedAssets;
+                FoilCard = foilCard;
+                ConsumedRuntimeIds = new List<string>(consumedRuntimeIds).AsReadOnly();
+            }
+
+            public OwnedAssetState OwnedAssets { get; }
+            public AssetCardRuntimeData FoilCard { get; }
+            public IReadOnlyList<string> ConsumedRuntimeIds { get; }
         }
     }
 

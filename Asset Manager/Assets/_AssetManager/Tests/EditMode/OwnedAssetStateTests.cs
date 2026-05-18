@@ -18,6 +18,22 @@ namespace AssetManager.Tests
             Assert.That(ownedAssets.BusinessDayStartIncome, Is.EqualTo(2));
         }
 
+        [Test]
+        public void PortfolioReportsEightStockSlotsAndFullStateFromOwnedCards()
+        {
+            var ownedCards = new System.Collections.Generic.List<AssetCardRuntimeData>();
+            for (var i = 0; i < 8; i++)
+            {
+                ownedCards.Add(CreateRuntimeCard("owned-card-" + i, 1, 0, AssetCardRuntimeState.Owned));
+            }
+
+            var ownedAssets = new OwnedAssetState(ownedCards);
+
+            Assert.That(ownedAssets.MaxStockSlots, Is.EqualTo(8));
+            Assert.That(ownedAssets.OpenStockSlots, Is.EqualTo(0));
+            Assert.That(ownedAssets.IsPortfolioFull, Is.True);
+        }
+
         private static AssetCardRuntimeData CreateRuntimeCard(
             string cardId,
             int managementValue,

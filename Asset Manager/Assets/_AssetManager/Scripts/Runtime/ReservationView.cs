@@ -36,7 +36,11 @@ namespace AssetManager
 
         public void Show(RunSessionState run)
         {
-            SetActive(panel, run.BusinessDay.MarketArea == MarketAreaState.Market);
+            SetActive(panel, false);
+            if (panel != null)
+            {
+                return;
+            }
             SetText(titleText, $"예약 구역 {run.Reservation.ReservedCards.Count}/{run.Reservation.Capacity}");
 
             for (var i = 0; i < reservedCardButtons.Count; i++)

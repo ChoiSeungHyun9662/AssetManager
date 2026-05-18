@@ -45,6 +45,7 @@ namespace AssetManager.Tests
             Assert.That(staticData, Is.Not.Null);
             Assert.That(staticData.HasRequiredMvpData, Is.True);
             Assert.That(staticData.AssetCards, Has.Count.GreaterThanOrEqualTo(1));
+            Assert.That(staticData.AssetCards.Any(card => card.CardDomain == CardDomain.ConsumableResource), Is.True);
             Assert.That(staticData.Quarters, Has.Count.GreaterThanOrEqualTo(1));
             Assert.That(staticData.FinalRatings, Has.Count.GreaterThanOrEqualTo(1));
             Assert.That(staticData.ResourceConfig, Is.Not.Null);
