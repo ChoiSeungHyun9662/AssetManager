@@ -206,7 +206,8 @@
 ## 11. 주식 매도 루프
 
 ```text
-보유 주식 선택
+보유 주식 Card Button 호버
+→ Sell Button 표시
 → 매도
 → 현금 획득
 → 수익 기록
@@ -215,6 +216,8 @@
 ```
 
 주식 매도는 영업일을 소비하지 않으며 하루 횟수 제한이 없다.
+Card Button과 Sell Button 사이로 커서를 옮기는 동안에는 Sell Button을 유지한다.
+둘 다 벗어나면 Sell Button을 숨기며, Card Button 클릭은 표시 조건이 아니다.
 
 ---
 

@@ -184,6 +184,10 @@
 ## 10. 주식 매도
 
 주식 매도는 영업일을 소비하지 않는다.
+매도 입력은 포트폴리오의 `Owned Stock Card 1~8`에서 제공한다.
+보유 주식 카드의 Card Button에 마우스를 올리면 자식 Sell Button을 표시한다.
+Card Button과 Sell Button 사이로 커서를 이동하는 동안에는 Sell Button을 유지하고, 두 영역을 모두 벗어나면 숨긴다.
+Card Button 클릭은 Sell Button 표시 조건이 아니다.
 
 ```text
 주식 매도

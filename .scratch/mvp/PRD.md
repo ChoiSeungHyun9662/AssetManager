@@ -4,6 +4,8 @@ Status: ready-for-agent
 
 이 PRD는 기획 문서 세트를 MVP 구현 관점으로 압축한 문서이다. 목표는 모든 연출과 밸런스를 완성하는 것이 아니라, 자산 운용 로그라이트의 한 런이 처음부터 실패 또는 최종 정산까지 규칙대로 진행되는 상태를 만드는 것이다.
 
+> 2026-05-19 implementation note: 주식 규칙 대개편 기준이 이 문서의 옛 카드 상세보기/예약 구역/자원 확보 UI 규칙을 대체한다. 현재 예약은 별도 `Reservation Panel` 없이 시장 슬롯 주식 잠금으로 표시하고, 보유 주식 매도 버튼은 `Owned Stock Card 1~8 Card Button` 호버 중에만 표시한다. Card Button과 Sell Button 사이로 커서를 이동하는 동안에는 표시를 유지하고, 둘 다 벗어나면 숨기며, Card Button 클릭은 표시 조건이 아니다.
+
 ## Problem Statement
 
 플레이어는 제한된 영업일 안에서 자산을 매수하고, 카드를 예약하고, 자원을 확보하며, 분기 목표 운용 수익을 달성해야 한다. 현재 기획은 시스템별 세부 문서로 충분히 풀려 있지만, 구현을 시작하려면 어떤 범위를 1차 MVP로 묶을지, 어떤 모듈을 우선 분리할지, 어떤 규칙을 테스트로 고정할지 한 문서로 정리되어야 한다.
@@ -12,7 +14,7 @@ MVP에서 해결해야 하는 핵심 문제는 다음이다.
 
 - 영업일, 분기, 회계년도가 정해진 구조대로 진행되어야 한다.
 - 시장 테이프가 표시되고, 진행과 갱신과 슬롯 보충이 서로 다르게 동작해야 한다.
-- 플레이어가 시장 카드와 예약 카드를 상세보기에서 검토하고 매수할 수 있어야 한다.
+- 플레이어가 시장 카드와 예약 상태의 시장 슬롯을 검토하고 매수할 수 있어야 한다. 주식 규칙 대개편 이후 별도 카드 상세보기 화면과 `Reservation Panel`은 사용하지 않는다.
 - 플레이어가 시장 카드를 예약해 딜을 얻고 환매 압력을 감수할 수 있어야 한다.
 - 인플레이션이 매수 현금 비용에 반영되어, 분기별 비용 압박이 플레이 판단에 들어가야 한다.
 - 플레이어가 자원 확보로 현금과 전문 자원을 얻되, 운용 수익과 조달 현금이 섞이지 않아야 한다.
@@ -54,7 +56,8 @@ MVP는 다음 시스템을 포함한다.
 - 인플레이션이 매수 최종 현금 비용에 적용된다.
 - 자원 확보로 자원을 얻을 수 있다.
 - 시장 카드를 예약하고, 딜과 환매 압력을 처리할 수 있다.
-- 예약 카드를 유지하고 나중에 매수할 수 있다.
+- 예약된 주식을 시장 슬롯에 유지하고 나중에 매수할 수 있다.
+- 보유 주식 Card Button 호버로 Sell Button을 표시하고, Sell Button 클릭으로 주식을 매도할 수 있다.
 - 분기 마감에서 목표 달성률과 환매 압력을 계산한다.
 - 환매 압력 10 이상이면 최종 정산이 아니라 실패 화면으로 간다.
 - 실패하지 않고 3회계년도 4Q를 마치면 최종 정산이 표시된다.
@@ -92,14 +95,14 @@ MVP는 다음 시스템을 포함한다.
 29. As a player, I want deal chips to replace any professional resource slot, so that deals function as flexible resources.
 30. As a player, I want each used deal chip to reduce base cash cost by 1, so that deal timing matters.
 31. As a player, I want deal chips consumed only on purchase confirmation, so that tentative placement is reversible.
-32. As a player, I want to reserve a market card into one of three reservation slots, so that I can save a valuable future purchase.
+32. As a player, I want to reserve a market stock in its current market slot, so that I can save a valuable future purchase without moving it to a separate reservation panel.
 33. As a player, I want reservation to give deal +1, so that reservation has an immediate tactical upside.
 34. As a player, I want reservation to increase redemption pressure +1, so that reservation has a risk cost.
 35. As a player, I want reservation to remain possible even when deal is already 3/3, so that the card-saving effect is not blocked by deal cap.
 36. As a player, I want extra deal above 3 to be discarded with feedback, so that the cap is understandable.
-37. As a player, I want reservation disabled when reservation slots are full, so that impossible reservation does not consume a 영업일.
+37. As a player, I want reservation disabled when three market stocks are already reserved, so that impossible reservation does not consume a 영업일.
 38. As a player, I want to buy reserved cards later, so that reservation can become an owned asset.
-39. As a player, I want reserved card purchase to empty only its reservation slot, so that market tape state is unaffected.
+39. As a player, I want reserved stock purchase to release its market-slot reservation and fill the empty market slot through market tape pull.
 40. As a player, I want liquidity to offer cash, research, credit, and commodity, so that I can prepare for future purchases.
 41. As a player, I want liquidity to complete with two of the same resource or three different resources, so that resource gathering has a simple rule.
 42. As a player, I want professional resources capped at a combined 10, so that resource hoarding is limited.
@@ -133,7 +136,7 @@ MVP는 다음 시스템을 포함한다.
 - Treat additional buy as part of MVP rules, but make its priority dependent on whether the first MVP card pool actually contains a GrantExtraBuyAction-style effect.
 - Keep UI layout and art exactness out of the core MVP. The MVP defines which controls exist, when they are visible/enabled, and what they do.
 - Store balance-sensitive values in data tables: card costs, professional costs, management value, income, tags, rarity, quarter targets, inflation values, rating thresholds, redemption pressure levels, final comments, and market slot count per zone.
-- Separate static data from runtime state. Static data defines cards, tags, quarters, inflation config, rating bands, comments, resource config, market config, and redemption pressure config. Runtime state tracks current resources, calendar, current inflation, performance, market tape, reservation slots, owned assets, card runtime state, business day state, and redemption pressure.
+- Separate static data from runtime state. Static data defines cards, tags, quarters, inflation config, rating bands, comments, resource config, market config, and redemption pressure config. Runtime state tracks current resources, calendar, current inflation, performance, market tape, market-slot reservations, owned assets, card runtime state, business day state, and redemption pressure.
 
 Proposed major modules:
 
@@ -145,14 +148,14 @@ Proposed major modules:
 - ResourceLedger module: owns cash, professional resources, deal count, earned cash vs funding cash, professional resource cap, deal cap, and resource add/spend operations.
 - PurchasePayment module: owns payment slots, chip placement state, deal substitution, final cash cost calculation, validation, and transaction-like purchase confirmation.
 - Inflation module: owns current inflation value lookup, quarter-start update, cash-cost modifier, and display-ready cost breakdown.
-- Reservation module: owns reservation slot capacity, reserve action validation, card movement into reservation, deal gain, redemption pressure increase, and reserved card purchase cleanup.
+- Reservation module: owns market-slot reservation capacity, reserve action validation, market-slot lock state, deal gain, redemption pressure increase, and reserved stock purchase cleanup. It does not own a separate Reservation Panel.
 - LiquidityAction module: owns liquidity entry, close conditions, selected resource sequence, valid next choices, completion, auto-end, and funding-cash handling.
 - ExtraBuyAction module: owns extra buy grant, non-stacking, no carryover, input restrictions, second-purchase resolution, and GrantExtraBuyAction suppression during extra buy.
 - QuarterSettlement module: owns settlement income, earned cash finalization, target achievement, redemption pressure increase amount, quarter result data, and next schedule handoff.
 - RedemptionPressure module: owns pressure addition, max threshold, immediate failure, failure reason, and pressure level for final comments.
 - FiscalYearSummary module: owns 4Q vacation summary data, no-reward/no-penalty vacation behavior, annual earned cash summary, and next fiscal year start.
 - FinalSettlement module: owns final management value, final grade selection, total earned cash, owned asset count, redemption pressure level, management comment, and final summary.
-- FeedbackMessage module: owns short feedback messages such as resource cap reached, discarded deal, full reservation slots, invalid chip placement, and insufficient purchase conditions.
+- FeedbackMessage module: owns short feedback messages such as resource cap reached, discarded deal, max reserved stocks reached, invalid chip placement, and insufficient purchase conditions.
 
 Suggested deep modules to test first:
 
@@ -214,8 +217,8 @@ Core rules to test:
 - Market tape: fiscal year start refreshes, same-fiscal-year next quarter advances.
 - Market tape: 4Q vacation performs no advance or refresh.
 - Market tape: market card purchase refills only the purchased slot and does not advance.
-- Market tape: reserved card purchase empties only the reservation slot and does not affect market tape.
-- Market tape: market card reservation refills the reserved slot first, then advances the tape.
+- Market tape: reserved stock purchase releases the market-slot reservation, empties that market slot, and fills it through market tape pull.
+- Market tape: market card reservation locks the selected stock in place and does not immediately advance the tape.
 - Market tape: owned, reserved, removed, and already visible cards are excluded from new draws.
 - Asset card: only owned assets contribute to management value.
 - Asset card: reserved and market cards do not contribute to management value.
@@ -227,7 +230,7 @@ Core rules to test:
 - Resource ledger: reservation is still allowed at deal 3/3, and only extra deal is discarded.
 - Resource ledger: liquidity cash increases current cash but not earned cash.
 - Resource ledger: asset income and quarter settlement cash increase current cash and earned cash records.
-- Purchase: validation failure spends no resources, changes no card state, refills no market slot, and empties no reservation slot.
+- Purchase: validation failure spends no resources, changes no card state, refills no market slot, and does not release a market-slot reservation.
 - Purchase: placed chips do not spend resources before confirmation.
 - Purchase: closing card detail returns all placed chips and consumes no 영업일.
 - Purchase: deal can fill any professional resource slot.
@@ -241,7 +244,7 @@ Core rules to test:
 - Purchase: reserved purchase records source as Reserved and moves the card to owned assets.
 - Reservation: reservation is only available for market cards.
 - Reservation: reservation button is hidden for reserved cards.
-- Reservation: full reservation slots disable reservation and consume no 영업일.
+- Reservation: three existing reserved market stocks disable reservation and consume no 영업일.
 - Reservation: reservation action has no confirmation state.
 - Reservation: if chips are placed and reservation is valid, reservation auto-recovers chips and consumes no resources.
 - Reservation: reserved cards survive 영업일, 분기, 회계년도, market advance, and market refresh.
@@ -292,10 +295,11 @@ MVP smoke scenarios:
 1. 새 런 시작 → 1회계년도 1Q 시작 → 다음 영업일로 4일 진행 → 분기 마감 진입.
 2. 시장 카드 클릭 → 카드 상세보기 → 칩 배치 → 매수 확정 → 보유 자산 추가 → 다음 영업일 시작 → 운용 수익 발생.
 3. 중앙 은행 클릭 → 자원 확보 → 현금 선택 → 현금 선택 → 현금 +2 → 영업일 종료.
-4. 시장 카드 클릭 → 카드 상세보기 → 예약 → 예약 구역 추가 → 딜 +1 → 환매 압력 +1 → 시장 테이프 진행 → 영업일 종료.
-5. 환매 압력 9 → 시장 카드 예약 → 환매 압력 10 → 실패 화면.
-6. 3회계년도 4Q 완료 → 환매 압력 10 미만 → 최종 정산 → 최종 운용가치 / 평가 / 총 운용 수익 표시.
-7. 기본 현금 비용 5 → 딜 2개 사용 → 인플레이션 +1 → 최종 현금 비용 4 → 매수 확정 시 현금 4 차감.
+4. 시장 주식 예약 → 시장 슬롯에서 예약 상태 표시 → 딜 +1 → 환매 압력 +1 → 시장 테이프 즉시 진행 없음 → 영업일 종료.
+5. 보유 주식 Card Button 호버 → Sell Button 표시 → Sell Button 클릭 → 주식 매도 → 현금/운용 수익 증가 → 영업일 소비 없음.
+6. 환매 압력 9 → 시장 카드 예약 → 환매 압력 10 → 실패 화면.
+7. 3회계년도 4Q 완료 → 환매 압력 10 미만 → 최종 정산 → 최종 운용가치 / 평가 / 총 운용 수익 표시.
+8. 기본 현금 비용 5 → 딜 2개 사용 → 인플레이션 +1 → 최종 현금 비용 4 → 매수 확정 시 현금 4 차감.
 
 ## Out of Scope
 
@@ -322,6 +326,6 @@ MVP smoke scenarios:
 - 핵심 리스크: 운용 수익과 조달 현금이 섞이면 분기 목표와 최종 통계가 무너진다. ResourceLedger와 RunPerformanceState 성격을 초기에 확실히 분리해야 한다.
 - 핵심 리스크: 인플레이션 적용 순서가 흔들리면 딜 가치와 매수 가능 판정이 달라진다. PurchasePayment는 비용 수정 효과, 딜 할인, 인플레이션, 최종 0 클램프 순서를 한 경로로 계산해야 한다.
 - 핵심 리스크: 시장 테이프 진행, 갱신, 슬롯 보충이 섞이면 예약과 매수의 의사결정 비용이 흐려진다. MarketTape module을 독립적으로 먼저 테스트해야 한다.
-- 핵심 리스크: 예약 카드와 보유 자산이 섞이면 운용가치, 운용 수익, 정산, 최종 평가가 모두 오염된다. 카드 런타임 상태 전환을 명확하게 제한해야 한다.
+- 핵심 리스크: 예약된 시장 슬롯과 보유 자산이 섞이면 운용가치, 운용 수익, 정산, 최종 평가가 모두 오염된다. 카드 런타임 상태 전환을 명확하게 제한해야 한다.
 - 핵심 리스크: 환매 압력 한도 검사가 늦으면 실패해야 할 런이 다음 영업일, 휴가, 또는 최종 정산으로 진행될 수 있다. RedemptionPressure module은 pressure add와 failure check를 한 인터페이스로 묶는 것이 좋다.
 - 초기 구현은 화려함보다 규칙 정확성을 우선한다. 화면은 플레이 가능한 최소 표시와 버튼 상태를 갖추고, 연출과 사운드는 이후 단계에서 보강한다.

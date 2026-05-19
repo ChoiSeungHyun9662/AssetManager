@@ -41,6 +41,7 @@ Status: ready-for-agent
 - 분기 첫 영업일에는 갱신만 하고 진행하지 않는다.
 - 빈칸은 항상 시장 테이프 당김으로 메운다.
 - 예약은 별도 구역이 아니라 시장 슬롯의 주식 잠금이다.
+- 별도 Reservation Panel이나 예약 카드 목록 UI는 두지 않는다.
 - 예약된 주식은 진행, 당김, 갱신의 영향을 받지 않는다.
 - 최대 3개의 주식을 동시에 예약할 수 있다.
 - 포트폴리오는 최대 8칸이다.
@@ -48,6 +49,8 @@ Status: ready-for-agent
 - 동일 주식 3장을 보유하면 즉시 호일 주식 1장으로 합쳐진다.
 - 호일 완성 후 시장과 덱에 남은 같은 종목 주식은 모두 이번 게임에서 제거된다.
 - 주식 매도는 영업일을 소비하지 않으며, 일반 주식은 현금 1 x 인플레이션, 호일 주식은 현금 3 x 인플레이션을 지급한다.
+- 보유 주식 Card Button 호버 시 해당 Sell Button을 표시하고, Card Button과 Sell Button 사이 이동 중에는 표시를 유지한다.
+- Card Button과 Sell Button을 모두 벗어나면 Sell Button을 숨기며, Card Button 클릭은 매도 버튼 표시 조건이 아니다.
 - 주식 매도 수익은 분기 목표 판정에 쓰이는 수익에 포함한다.
 - 카드 상세보기 화면은 제거하고, 카드 호버 확대만 제공한다.
 - 최종 평가는 보유 주식의 최종 가치 기준으로 결정한다.
@@ -140,8 +143,8 @@ Issue `07a-readonly-portfolio-card-board.md` adds a UI-only delta between foil m
 - The board should preserve `OwnedAssetState.StockSlots` order, including empty holes left by foil merge.
 - Empty portfolio slots should remain visible as blank card frames with no "empty" label.
 - Owned stock slots should show stock name, grade, current value, dividend, and foil state.
-- Portfolio cards should not show cost, buy, reserve, payment, or sale controls in this issue.
-- Card click, hover enlargement, and sale interaction remain later scope, starting with stock sale work.
+- Portfolio cards should not show cost, buy, reserve, payment, or sale controls in issue `07a-readonly-portfolio-card-board.md`.
+- Sale interaction is implemented in issue `08-stock-sale-and-revenue-tracking.md`: hovering an owned stock Card Button reveals its child Sell Button, moving between the Card Button and Sell Button keeps it visible, leaving both hides it, and clicking the Card Button does not reveal it.
 
 ## Implementation Decisions
 
@@ -167,6 +170,7 @@ Issue `07a-readonly-portfolio-card-board.md` adds a UI-only delta between foil m
 - Apply market tape pull to all empty-slot cases.
 - Keep reserved stocks fixed during progress, pull, and refresh.
 - Store reservation as state on the market slot rather than as a separate reservation area.
+- Do not keep a separate Reservation Panel or reservation-card button list; reservation is presented on the market slot card.
 - Restrict reservation to stock cards.
 - Reserve action grants deal, increases 월세 밀림, checks bankruptcy, and consumes a business day.
 - Buying a reserved stock releases the reservation and fills the resulting empty slot via market tape pull.
@@ -180,6 +184,7 @@ Issue `07a-readonly-portfolio-card-board.md` adds a UI-only delta between foil m
 - Remove all same-stock cards from market and stock deck after foil completion.
 - Use data-authored foil value and foil dividend rather than multipliers.
 - Allow stock sale multiple times per day without consuming a business day.
+- Reveal owned stock Sell Buttons from Card Button hover, keep them visible while the pointer is over either the Card Button or Sell Button, and hide them after leaving both.
 - Include stock sale revenue in revenue tracking.
 - Remove sold stocks from the run permanently.
 - Remove card detail screen state and central bank/resource acquisition screen state.
@@ -199,11 +204,13 @@ Issue `07a-readonly-portfolio-card-board.md` adds a UI-only delta between foil m
 - Market tape tests should cover progress, refresh, pull, reserved-slot skipping, multiple empty slots, and rightmost refill behavior.
 - Market deck tests should cover 75/25 weighted selection at the decision boundary, fallback behavior, consumable recycle, and non-returning stock removal.
 - Reservation tests should cover stock-only reservation, max 3 reservation cap, deal grant at cap, 월세 밀림 increase, bankruptcy check, and reserved stock purchase release.
+- Reservation UI checks should ensure no separate Reservation Panel is required and reserved cards remain actionable through market slots.
 - Portfolio tests should cover 8-slot blocking, full-portfolio foil exception, merge placement, empty slot preservation, leftmost empty insertion, and same-stock removal from market/deck.
 - Portfolio display tests should cover 8 visible slot frames, leftmost insertion after purchase, blank frames for empty slots, foil visual distinction, and no legacy owned-card text list in the new play path.
 - Payment tests should cover cash cost, investment philosophy cost, deal substitution, deal cash discount before inflation, and consumable resource card payment without deal.
 - Resource tests should cover total investment philosophy cap 10, per-type cap 5, overflow discard, and cash/deal exclusion from philosophy caps.
 - Revenue tests should cover dividend revenue, stock sale revenue, quarter-end settlement revenue, and exclusion of consumable resource cash from revenue.
+- Stock sale UI tests should cover hover reveal, card-to-sell and sell-to-card pointer transitions, hide after leaving both targets, and no click-to-reveal behavior.
 - Rent arrears tests should cover reservation increase, quarter-failure increase tiers, threshold 10 bankruptcy, and immediate game-over behavior.
 - Card presentation tests should cover stock card fields, consumable resource card fields, no consumable display name, and hover enlargement without changing card information.
 - Flow tests should cover business-day-consuming actions, non-consuming sale action, quarter-start refresh-only behavior, and final settlement routing.

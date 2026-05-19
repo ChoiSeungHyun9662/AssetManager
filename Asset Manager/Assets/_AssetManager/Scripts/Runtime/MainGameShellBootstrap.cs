@@ -20,7 +20,6 @@ namespace AssetManager
         private ResourceHud resourceHud;
         private PortfolioSummaryView portfolioSummaryView;
         private MarketTapeView marketTapeView;
-        private ReservationView reservationView;
         private CardDetailView cardDetailView;
         private MarketTapeDevControls marketTapeDevControls;
         private ResourceDevControls resourceDevControls;
@@ -86,19 +85,6 @@ namespace AssetManager
                 && !ReservationAction.CanReserve(CurrentRun)
                 ? "예약 구역이 가득 찼습니다."
                 : string.Empty;
-            RefreshRunUi();
-        }
-
-        public void OpenReservedCardDetail(AssetCardRuntimeData selectedCard)
-        {
-            if (CurrentRun == null)
-            {
-                return;
-            }
-
-            ClearPortfolioSaleSelection();
-            CurrentRun = MarketAreaFlow.OpenReservedCardDetail(CurrentRun, selectedCard);
-            resourceFeedbackMessage = string.Empty;
             RefreshRunUi();
         }
 
@@ -334,7 +320,6 @@ namespace AssetManager
             resourceHud = ProjectShell.EnsureResourceHud(uiRoot);
             portfolioSummaryView = ProjectShell.EnsurePortfolioSummaryView(uiRoot);
             marketTapeView = ProjectShell.EnsureMarketTapeView(uiRoot);
-            reservationView = ProjectShell.EnsureReservationView(uiRoot);
             cardDetailView = ProjectShell.EnsureCardDetailView(uiRoot);
             marketTapeDevControls = ProjectShell.EnsureMarketTapeDevControls(uiRoot);
             resourceDevControls = ProjectShell.EnsureResourceDevControls(uiRoot);
@@ -342,7 +327,6 @@ namespace AssetManager
 
             marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
             portfolioSummaryView.SetStockSaleSelectedHandler(SellStockSlot);
-            reservationView.SetReservedCardSelectedHandler(OpenReservedCardDetail);
 
             cardDetailView.CloseButton.onClick.RemoveListener(CloseCardDetail);
             cardDetailView.CloseButton.onClick.AddListener(CloseCardDetail);
@@ -404,7 +388,6 @@ namespace AssetManager
             resourceHud.Show(CurrentRun, resourceFeedbackMessage);
             portfolioSummaryView.Show(CurrentRun);
             marketTapeView.Show(CurrentRun);
-            reservationView.Show(CurrentRun);
             cardDetailView.Show(CurrentRun);
             marketTapeDevControls.Show(CurrentRun);
             resourceDevControls.Show(CurrentRun);

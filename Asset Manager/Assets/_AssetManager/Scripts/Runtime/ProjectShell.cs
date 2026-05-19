@@ -53,9 +53,6 @@ namespace AssetManager
         public const string MarketTapeSellImminentCardButtonPrefix = "Market Tape Sell Imminent Card Button ";
         public const string MarketTapeCurrentMarketCardButtonPrefix = "Market Tape Current Market Card Button ";
         public const string MarketTapeUpcomingMarketCardButtonPrefix = "Market Tape Upcoming Market Card Button ";
-        public const string ReservationPanelName = "Reservation Panel";
-        public const string ReservationTitleTextName = "Reservation Title Text";
-        public const string ReservationCardButtonPrefix = "Reservation Card Button ";
         public const string MarketTapeAdvanceButtonName = "Market Tape Advance Button";
         public const string MarketTapeRefreshButtonName = "Market Tape Refresh Button";
         public const string CentralBankButtonName = "Central Bank Button";
@@ -107,6 +104,7 @@ namespace AssetManager
         public const string ResourceDevCreditButtonName = "Resource Dev Credit Button";
         public const string ResourceDevCommodityButtonName = "Resource Dev Commodity Button";
         public const string ResourceDevDealButtonName = "Resource Dev Deal Button";
+        private const string LegacyReservationPanelName = "Reservation Panel";
 
         public static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
         private static readonly HashSet<GameObject> CreatedLayoutObjects = new HashSet<GameObject>();
@@ -146,8 +144,7 @@ namespace AssetManager
             EnsureResourceHud(uiRoot.transform);
             EnsurePortfolioSummaryView(uiRoot.transform);
             EnsureMarketTapeView(uiRoot.transform);
-            EnsureReservationView(uiRoot.transform);
-            RemoveLegacyLiquidityActionObjects(uiRoot.transform);
+            RemoveLegacyDisconnectedUiObjects(uiRoot.transform);
             EnsureCardDetailView(uiRoot.transform);
             EnsureMarketTapeDevControls(uiRoot.transform);
             EnsureResourceDevControls(uiRoot.transform);
@@ -413,11 +410,11 @@ namespace AssetManager
             var panel = EnsurePanel(
                 uiRoot,
                 PortfolioSummaryPanelName,
+                new Vector2(0f, 0.5f),
+                new Vector2(0f, 0.5f),
                 new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(32f, -736f),
-                new Vector2(820f, 156f),
+                new Vector2(30f, -53.9f),
+                new Vector2(1210f, 300f),
                 new Color(0.06f, 0.08f, 0.10f, 0.92f));
 
             var summaryText = EnsurePanelText(
@@ -711,51 +708,16 @@ namespace AssetManager
             return view;
         }
 
-        public static ReservationView EnsureReservationView(Transform uiRoot)
+        private static void RemoveLegacyDisconnectedUiObjects(Transform uiRoot)
         {
-            var marketPanel = EnsureMarketPanel(uiRoot);
-            MoveOrRemoveMarketAreaChild(uiRoot, marketPanel.transform, ReservationPanelName);
-
-            var panel = EnsurePanel(
-                uiRoot,
-                ReservationPanelName,
-                new Vector2(0.5f, 1f),
-                new Vector2(0.5f, 1f),
-                new Vector2(0.5f, 1f),
-                new Vector2(0f, -84f),
-                new Vector2(820f, 112f),
-                new Color(0.08f, 0.11f, 0.14f, 0.92f));
-
-            var title = EnsurePanelText(
-                panel.transform,
-                ReservationTitleTextName,
-                new Vector2(18f, -12f),
-                new Vector2(160f, 32f),
-                18,
-                TextAnchor.MiddleLeft);
-
-            var buttons = EnsureReservationCardButtons(panel.transform);
-
-            ApplyReservationLayout(panel, title, buttons);
-
-            var view = uiRoot.GetComponent<ReservationView>();
-            if (view == null)
-            {
-                view = uiRoot.gameObject.AddComponent<ReservationView>();
-            }
-
-            view.Bind(panel, title, buttons);
-            return view;
-        }
-
-        private static void RemoveLegacyLiquidityActionObjects(Transform uiRoot)
-        {
+            RemoveChild(uiRoot, LegacyReservationPanelName);
             RemoveChild(uiRoot, CentralBankButtonName);
             RemoveChild(uiRoot, LiquidityActionPanelName);
 
             var marketPanel = uiRoot.Find(MarketAreaMarketPanelName);
             if (marketPanel != null)
             {
+                RemoveChild(marketPanel, LegacyReservationPanelName);
                 RemoveChild(marketPanel, CentralBankButtonName);
                 RemoveChild(marketPanel, LiquidityActionPanelName);
             }
@@ -1093,39 +1055,6 @@ namespace AssetManager
                     new Vector2(14f, 10f),
                     isTapeRow ? 14 : isPreviewColumn ? 14 : 16,
                     TextAnchor.UpperLeft);
-            }
-        }
-
-        private static void ApplyReservationLayout(
-            GameObject panel,
-            Text title,
-            IReadOnlyList<Button> buttons)
-        {
-            SetRect(
-                panel,
-                new Vector2(0.5f, 1f),
-                new Vector2(0.5f, 1f),
-                new Vector2(0.5f, 1f),
-                new Vector2(0f, -84f),
-                new Vector2(900f, 126f));
-            SetTextRect(title, new Vector2(18f, -16f), new Vector2(150f, 34f), 18, TextAnchor.MiddleLeft);
-
-            for (var i = 0; i < buttons.Count; i++)
-            {
-                var button = buttons[i];
-                if (button == null)
-                {
-                    continue;
-                }
-
-                SetRect(
-                    button.gameObject,
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(180f + (i * 230f), -18f),
-                    new Vector2(212f, 90f));
-                SetButtonTextInset(button, new Vector2(10f, 8f), new Vector2(10f, 8f), 14, TextAnchor.UpperLeft);
             }
         }
 
@@ -1523,13 +1452,16 @@ namespace AssetManager
 
             card.name = name;
             card.transform.SetParent(panel, false);
-            SetRect(
-                card,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(18f + ((cardNumber - 1) * 96f), -54f),
-                new Vector2(88f, 122f));
+            if (WasCreatedThisPass(card))
+            {
+                SetRect(
+                    card,
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(40f + ((cardNumber - 1) * 144f), -54f),
+                    new Vector2(124f, 215f));
+            }
 
             var legacyButton = card.GetComponent<Button>();
             if (legacyButton != null)
@@ -1557,13 +1489,16 @@ namespace AssetManager
                 : CreateLayoutObject(buttonObjectName);
 
             buttonObject.transform.SetParent(card, false);
-            SetRect(
-                buttonObject,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                Vector2.zero,
-                new Vector2(88f, 84f));
+            if (WasCreatedThisPass(buttonObject))
+            {
+                SetRect(
+                    buttonObject,
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    Vector2.zero,
+                    new Vector2(124f, 200f));
+            }
 
             var image = buttonObject.GetComponent<Image>();
             if (image == null)
@@ -1609,11 +1544,11 @@ namespace AssetManager
                 card,
                 cardName + OwnedStockCardSellButtonSuffix,
                 string.Empty,
+                new Vector2(0f, 0f),
+                new Vector2(0f, 0f),
                 new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(0f, -90f),
-                new Vector2(88f, 30f));
+                new Vector2(0f, 15f),
+                new Vector2(124f, 30f));
 
             if (WasCreatedThisPass(button.gameObject))
             {
@@ -1750,34 +1685,6 @@ namespace AssetManager
             }
 
             return background;
-        }
-
-        private static IReadOnlyList<Button> EnsureReservationCardButtons(Transform panel)
-        {
-            var buttons = new List<Button>();
-            for (var i = 0; i < 3; i++)
-            {
-                var button = EnsureButton(
-                    panel,
-                    ReservationCardButtonPrefix + (i + 1),
-                    "비어 있음",
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(188f + (i * 204f), -18f),
-                    new Vector2(188f, 76f));
-
-                var text = button.GetComponentInChildren<Text>();
-                if (WasCreatedThisPass(text.gameObject))
-                {
-                    text.alignment = TextAnchor.MiddleLeft;
-                    text.fontSize = 14;
-                }
-
-                buttons.Add(button);
-            }
-
-            return buttons;
         }
 
         private static Text EnsureRunStatusText(Transform uiRoot)

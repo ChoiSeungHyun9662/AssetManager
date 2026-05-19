@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace AssetManager
@@ -21,8 +22,11 @@ namespace AssetManager
         private readonly List<Text> cardTexts = new List<Text>();
         private readonly List<Button> sellButtons = new List<Button>();
         private readonly List<int> displayedStockSlotIndexes = new List<int>();
+        private readonly List<bool> cardButtonHoverStates = new List<bool>();
+        private readonly List<bool> sellButtonHoverStates = new List<bool>();
+        private readonly List<bool> sellButtonCanShowStates = new List<bool>();
         private Action<int> onStockSaleSelected;
-        private int? selectedSaleStockSlotIndex;
+        private Coroutine deferredVisibilityUpdate;
 
         public Text SummaryText => summaryText;
         public Text OwnedCardsText => ownedCardsText;
@@ -53,7 +57,8 @@ namespace AssetManager
 
         public void ClearSaleSelection()
         {
-            selectedSaleStockSlotIndex = null;
+            StopDeferredVisibilityUpdate();
+            ClearHoverStates();
             UpdateSellButtonVisibility();
         }
 
@@ -77,10 +82,7 @@ namespace AssetManager
         {
             var visibleStockSlotIndexes = CollectVisibleStockSlotIndexes(run.OwnedAssets);
             displayedStockSlotIndexes.Clear();
-            if (!IsSelectedStockSlotVisible(visibleStockSlotIndexes))
-            {
-                selectedSaleStockSlotIndex = null;
-            }
+            EnsureHoverStateCount(ownedStockCards.Count);
 
             for (var displayIndex = 0; displayIndex < ownedStockCards.Count; displayIndex++)
             {
@@ -92,6 +94,9 @@ namespace AssetManager
                 {
                     displayedStockSlotIndexes.Add(-1);
                     SetCardText(displayIndex, string.Empty);
+                    SetSellButtonCanShow(displayIndex, false);
+                    SetHoverState(displayIndex, true, false, false);
+                    SetHoverState(displayIndex, false, false, false);
                     SetSellButtonActive(displayIndex, false);
                     continue;
                 }
@@ -101,7 +106,7 @@ namespace AssetManager
                 var card = run.OwnedAssets.StockSlots[stockSlotIndex];
                 SetCardText(displayIndex, FormatCard(card));
                 StyleCardButton(displayIndex, card);
-                WireCardButton(displayIndex, stockSlotIndex, run, card);
+                WireCardButton(displayIndex, run, card);
                 WireSellButton(displayIndex, stockSlotIndex, run, card);
             }
         }
@@ -133,7 +138,7 @@ namespace AssetManager
                 : new Color(0.12f, 0.18f, 0.17f, 0.98f);
         }
 
-        private void WireCardButton(int displayIndex, int stockSlotIndex, RunSessionState run, AssetCardRuntimeData card)
+        private void WireCardButton(int displayIndex, RunSessionState run, AssetCardRuntimeData card)
         {
             if (displayIndex >= cardButtons.Count || cardButtons[displayIndex] == null)
             {
@@ -142,14 +147,8 @@ namespace AssetManager
 
             var button = cardButtons[displayIndex];
             button.onClick.RemoveAllListeners();
-            button.interactable = run.State == RunState.Playing
-                && run.BusinessDay.Phase == BusinessDayPhase.AwaitingAction
-                && card != null
-                && card.State == AssetCardRuntimeState.Owned;
-            if (button.interactable)
-            {
-                button.onClick.AddListener(() => ToggleSaleSelection(stockSlotIndex));
-            }
+            button.interactable = CanShowSellButton(run, card);
+            ConfigureHoverTrigger(button.gameObject, displayIndex, true);
         }
 
         private void WireSellButton(int displayIndex, int stockSlotIndex, RunSessionState run, AssetCardRuntimeData card)
@@ -162,25 +161,42 @@ namespace AssetManager
             var button = sellButtons[displayIndex];
             button.onClick.RemoveAllListeners();
             SetButtonText(button, "매도 +" + GetSaleCash(run, card) + "$");
-            SetSellButtonActive(displayIndex, selectedSaleStockSlotIndex == stockSlotIndex);
-            button.interactable = run.State == RunState.Playing
-                && run.BusinessDay.Phase == BusinessDayPhase.AwaitingAction;
+            SetSellButtonCanShow(displayIndex, CanShowSellButton(run, card));
+            SetSellButtonActive(displayIndex, ShouldShowSellButton(displayIndex));
+            button.interactable = sellButtonCanShowStates[displayIndex];
+            ConfigureHoverTrigger(button.gameObject, displayIndex, false);
             if (button.interactable)
             {
                 button.onClick.AddListener(() =>
                 {
-                    selectedSaleStockSlotIndex = null;
+                    StopDeferredVisibilityUpdate();
+                    SetHoverState(displayIndex, true, false, false);
+                    SetHoverState(displayIndex, false, false, false);
                     UpdateSellButtonVisibility();
                     onStockSaleSelected?.Invoke(stockSlotIndex);
                 });
             }
         }
 
-        private void ToggleSaleSelection(int stockSlotIndex)
+        private void SetHoverState(int displayIndex, bool isCardButton, bool isHovered, bool deferVisibilityUpdate)
         {
-            selectedSaleStockSlotIndex = selectedSaleStockSlotIndex == stockSlotIndex
-                ? (int?)null
-                : stockSlotIndex;
+            EnsureHoverStateCount(displayIndex + 1);
+            if (isCardButton)
+            {
+                cardButtonHoverStates[displayIndex] = isHovered;
+            }
+            else
+            {
+                sellButtonHoverStates[displayIndex] = isHovered;
+            }
+
+            if (deferVisibilityUpdate)
+            {
+                ScheduleDeferredVisibilityUpdate();
+                return;
+            }
+
+            StopDeferredVisibilityUpdate();
             UpdateSellButtonVisibility();
         }
 
@@ -203,8 +219,108 @@ namespace AssetManager
                 var stockSlotIndex = i < displayedStockSlotIndexes.Count
                     ? displayedStockSlotIndexes[i]
                     : -1;
-                SetSellButtonActive(i, selectedSaleStockSlotIndex.HasValue
-                    && selectedSaleStockSlotIndex.Value == stockSlotIndex);
+                SetSellButtonActive(i, stockSlotIndex >= 0 && ShouldShowSellButton(i));
+            }
+        }
+
+        private bool ShouldShowSellButton(int displayIndex)
+        {
+            return GetHoverState(sellButtonCanShowStates, displayIndex)
+                && (GetHoverState(cardButtonHoverStates, displayIndex)
+                    || GetHoverState(sellButtonHoverStates, displayIndex));
+        }
+
+        private static bool CanShowSellButton(RunSessionState run, AssetCardRuntimeData card)
+        {
+            return run.State == RunState.Playing
+                && run.BusinessDay.Phase == BusinessDayPhase.AwaitingAction
+                && card != null
+                && card.State == AssetCardRuntimeState.Owned;
+        }
+
+        private void SetSellButtonCanShow(int displayIndex, bool canShow)
+        {
+            EnsureHoverStateCount(displayIndex + 1);
+            sellButtonCanShowStates[displayIndex] = canShow;
+        }
+
+        private void ClearHoverStates()
+        {
+            for (var i = 0; i < cardButtonHoverStates.Count; i++)
+            {
+                cardButtonHoverStates[i] = false;
+            }
+
+            for (var i = 0; i < sellButtonHoverStates.Count; i++)
+            {
+                sellButtonHoverStates[i] = false;
+            }
+        }
+
+        private void EnsureHoverStateCount(int count)
+        {
+            EnsureBoolListCount(cardButtonHoverStates, count);
+            EnsureBoolListCount(sellButtonHoverStates, count);
+            EnsureBoolListCount(sellButtonCanShowStates, count);
+        }
+
+        private static void EnsureBoolListCount(List<bool> values, int count)
+        {
+            while (values.Count < count)
+            {
+                values.Add(false);
+            }
+        }
+
+        private static bool GetHoverState(IReadOnlyList<bool> values, int index)
+        {
+            return index >= 0 && index < values.Count && values[index];
+        }
+
+        private void ConfigureHoverTrigger(GameObject target, int displayIndex, bool isCardButton)
+        {
+            var trigger = target.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = target.AddComponent<EventTrigger>();
+            }
+
+            trigger.triggers.Clear();
+            AddHoverTrigger(trigger, EventTriggerType.PointerEnter, () => SetHoverState(displayIndex, isCardButton, true, false));
+            AddHoverTrigger(trigger, EventTriggerType.PointerExit, () => SetHoverState(displayIndex, isCardButton, false, true));
+        }
+
+        private static void AddHoverTrigger(EventTrigger trigger, EventTriggerType eventType, Action action)
+        {
+            var entry = new EventTrigger.Entry
+            {
+                eventID = eventType
+            };
+            entry.callback.AddListener(_ => action());
+            trigger.triggers.Add(entry);
+        }
+
+        private void ScheduleDeferredVisibilityUpdate()
+        {
+            if (deferredVisibilityUpdate == null && gameObject.activeInHierarchy)
+            {
+                deferredVisibilityUpdate = StartCoroutine(UpdateSellButtonVisibilityNextFrame());
+            }
+        }
+
+        private System.Collections.IEnumerator UpdateSellButtonVisibilityNextFrame()
+        {
+            yield return null;
+            deferredVisibilityUpdate = null;
+            UpdateSellButtonVisibility();
+        }
+
+        private void StopDeferredVisibilityUpdate()
+        {
+            if (deferredVisibilityUpdate != null)
+            {
+                StopCoroutine(deferredVisibilityUpdate);
+                deferredVisibilityUpdate = null;
             }
         }
 
@@ -237,24 +353,6 @@ namespace AssetManager
             }
 
             return indexes;
-        }
-
-        private bool IsSelectedStockSlotVisible(IReadOnlyList<int> visibleStockSlotIndexes)
-        {
-            if (!selectedSaleStockSlotIndex.HasValue)
-            {
-                return true;
-            }
-
-            for (var i = 0; i < visibleStockSlotIndexes.Count; i++)
-            {
-                if (visibleStockSlotIndexes[i] == selectedSaleStockSlotIndex.Value)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static int GetSaleCash(RunSessionState run, AssetCardRuntimeData card)

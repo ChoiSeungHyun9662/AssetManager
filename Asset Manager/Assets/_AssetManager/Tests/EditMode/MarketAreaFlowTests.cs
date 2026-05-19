@@ -36,7 +36,7 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void ReservedCardDetailHookRecordsMarketTapeSourceAndHidesReserveButton()
+        public void ReservedMarketCardDetailRecordsMarketTapeSourceAndHidesReserveButton()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             var marketCard = FindFirstReservableMarketCard(run.MarketTape);
@@ -45,7 +45,7 @@ namespace AssetManager.Tests
                 AssetCardRuntimeState.Reserved,
                 null);
 
-            var detailRun = MarketAreaFlow.OpenReservedCardDetail(run, reservedCard);
+            var detailRun = MarketAreaFlow.OpenMarketCardDetail(run, reservedCard);
 
             Assert.That(detailRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
             Assert.That(detailRun.CardDetail.SelectedCard, Is.SameAs(reservedCard));

@@ -71,6 +71,7 @@ Status: done
 - Empty stock slots no longer render blank frames and have no click target.
 - After foil merge, an internal state such as `[FOIL, null, Other]` is shown as `[FOIL][Other]`; the displayed card keeps its original `StockSlots` index for later actions such as sale.
 - The legacy `Portfolio Slot 1~8` scene objects were renamed/restructured to `Owned Stock Card 1~8`.
+- Follow-up sale UI now uses hover on each `Owned Stock Card` Card Button to reveal its child Sell Button; card click is not the reveal trigger.
 
 ## Blocked by
 

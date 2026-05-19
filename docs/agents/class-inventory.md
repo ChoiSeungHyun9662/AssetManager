@@ -64,7 +64,7 @@ Current runtime flow:
 
 - `RunStatusFormatter` now keeps player resources out of the top status bar; resource counts live in the bottom chip tray.
 - `ResourceHud` now renders the bottom tray as separate resource object lanes: cash as `<value>$`, professional resources and Deal as image-only chip stacks, plus short message text.
-- `ProjectShell` creates those tray lanes and image placeholders only when they are missing, preserving existing Editor-authored RectTransform layout on later bootstraps; it also removes legacy root-level Market Tape zone duplicates so the zone panels live under `Market Area Market Panel`, removes legacy Market Tape zone title Text objects, and keeps Reservation/Central Bank overlays directly under `UI Root`.
+- `ProjectShell` creates those tray lanes and image placeholders only when they are missing, preserving existing Editor-authored RectTransform layout on later bootstraps; it also removes legacy root-level Market Tape zone duplicates so the zone panels live under `Market Area Market Panel`, removes legacy Market Tape zone title Text objects, and removes legacy Reservation/Central Bank overlays.
 
 ## Issue 16 Inventory Notes
 
@@ -112,7 +112,7 @@ Current runtime flow:
 - Reservations now live on `MarketTapeSlotState.IsReserved`; `ReservationState` remains only as a compatibility/capacity shell and no longer stores newly reserved cards.
 - `ReservationAction` locks the selected stock in its existing market slot, grants one Deal subject to the normal cap, increases redemption pressure, checks failure immediately, and consumes the business day without advancing the market tape.
 - Reserved stock purchases are opened and confirmed as market-slot purchases. Buying the reserved stock clears that locked slot and uses market tape pull behavior to fill the gap.
-- `CardDetailState` hides Reserve for reserved cards, consumable resource cards, previews, and extra-buy purchases. `ReservationView` is hidden because the market card itself now carries reservation state.
+- `CardDetailState` hides Reserve for reserved cards, consumable resource cards, previews, and extra-buy purchases. The separate Reservation Panel UI is removed because the market card slot itself carries reservation state.
 
 ## Stock Overhaul Issue 06 Notes
 
@@ -138,14 +138,14 @@ Current runtime flow:
 - Stock sale rewards use the current quarter inflation modifier: normal stocks pay base 1 plus inflation, foil stocks pay base 3 plus inflation.
 - Sold runtime stock cards are marked `Removed` and the sold portfolio slot remains empty, so sold stocks do not return to market supply.
 - Stock sale rewards flow through the same revenue counters as dividends and quarter-end settlement income, while consumable resource cash remains funding cash.
-- `PortfolioSummaryView` now separates stock-card selection from sale confirmation: clicking an owned stock card toggles that card's child sell button, clicking the sell button calls the sale rule through `MainGameShellBootstrap`, and explicit non-sale UI interactions clear the pending sale button.
+- `PortfolioSummaryView` now separates stock-card hover from sale confirmation: hovering an owned stock card reveals that card's child sell button, moving between the card and sell button keeps it visible, clicking the sell button calls the sale rule through `MainGameShellBootstrap`, and explicit non-sale UI interactions clear the pending sale button.
 
 ## Shell And Editor Setup
 
 | Type | File | Purpose |
 | --- | --- | --- |
 | `ProjectShellRoots` | `Runtime/ProjectShell.cs` | Small return value for the ensured Game Root and UI Canvas. |
-| `ProjectShell` | `Runtime/ProjectShell.cs` | Central scene/UI factory for MVP shell objects, names, paths, Canvas settings, placeholder panels, status HUD, market tape UI, portfolio slot board UI, Payment Pot UI, and temporary controls; applies default layout only to UI objects it creates in the current bootstrap pass, keeps Market Tape zone panels under `Market Area Market Panel`, and removes legacy 중앙 은행/GainLiquidity UI from the new play path. |
+| `ProjectShell` | `Runtime/ProjectShell.cs` | Central scene/UI factory for MVP shell objects, names, paths, Canvas settings, placeholder panels, status HUD, market tape UI, portfolio slot board UI, Payment Pot UI, and temporary controls; applies default layout only to UI objects it creates in the current bootstrap pass, keeps Market Tape zone panels under `Market Area Market Panel`, and removes legacy Reservation Panel plus 중앙 은행/GainLiquidity UI from the new play path. |
 | `ProjectShell.PlaceholderPanel` | `Runtime/ProjectShell.cs` | Private helper return value for placeholder panel GameObject/Text pairs. |
 | `BootstrapSceneLoader` | `Runtime/BootstrapSceneLoader.cs` | Play-mode component that moves from Bootstrap scene to MainGame scene. |
 | `AssetManagerProjectSetup` | `Editor/AssetManagerProjectSetup.cs` | Unity editor menu commands for creating/verifying scenes, build scene entries, static data asset, and required shell objects. |
@@ -258,10 +258,9 @@ Important distinction:
 | `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD time/progress/pressure text from `RunSessionState` without player resource counts. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, professional resource chip stacks, Deal chip stack, manual Sprite slots, current short resource message, and runtime chip stack instances anchored to the configured base images. |
-| `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary plus an `OwnedAssetState.StockSlots`-derived compressed owned-stock-card row; empty slots are skipped, occupied cards show stock name, rarity, effective value, dividend, and foil state, and selected cards reveal a child sell button. |
+| `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary plus an `OwnedAssetState.StockSlots`-derived compressed owned-stock-card row; empty slots are skipped, occupied cards show stock name, rarity, effective value, dividend, and foil state, and hovered cards reveal a child sell button that remains visible while hovering the sell button. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 UI; displays 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 summaries. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders the clickable 1x8 market tape: stock cards show cost, 운용가치, 운용 수익, tags, and reservation state, while consumable resource cards show cash cost, 희귀도, and provided resource without a display name. |
-| `ReservationView` | `Runtime/ReservationView.cs` | Legacy reservation panel component kept for scene compatibility, now hidden because reservation state is shown on the market card slot itself. |
 | `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Legacy GainLiquidity view for 중앙 은행 resource-object choices; no longer created or wired by the new play flow. |
 | `CardDetailView` | `Runtime/CardDetailView.cs` | Shows the 카드 상세보기 replacement panel, selected card display data, Payment Pot professional-cost slots, final cash cost, chip placement/recovery buttons, buy availability, 예약 visibility/availability, and preview-only detail without transaction controls. |
 | `MarketTapeDevControls` | `Runtime/MarketTapeDevControls.cs` | Temporary Market-state-only development buttons for 시장 테이프 진행 and 시장 테이프 갱신. |

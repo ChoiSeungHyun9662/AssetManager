@@ -232,6 +232,8 @@
 ## 12. 구현 데이터 제안
 
 예약은 별도 예약 구역이 아니라 시장 슬롯 상태로 관리한다.
+별도 `Reservation Panel`과 예약 카드 버튼 목록은 만들지 않는다.
+예약 상태와 예약 주식 매수는 시장 슬롯 카드 표면에서 처리한다.
 
 ```csharp
 public class MarketSlot
@@ -263,6 +265,7 @@ const int MaxReservedStockCount = 3;
 
 ```text
 - 예약 구역은 제거한다.
+- Reservation Panel은 제거한다.
 - 예약은 시장 슬롯 안의 주식을 잠근다.
 - 주식 카드만 예약 가능하다.
 - 소모형 자원 카드는 예약 불가다.

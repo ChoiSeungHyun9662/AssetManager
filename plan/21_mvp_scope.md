@@ -250,6 +250,10 @@ MVP에서는 두 덱 모두 고갈되는 예외가 발생하지 않도록 충분
 ```text
 - 일반 주식 매도
 - 호일 주식 매도
+- 보유 주식 Card Button 호버 시 Sell Button 표시
+- Card Button과 Sell Button 사이 커서 이동 중 Sell Button 유지
+- Card Button/Sell Button 모두 호버 해제 시 Sell Button 숨김
+- Card Button 클릭으로 Sell Button을 표시하지 않음
 - 매도 수익 지급
 - 매도 수익을 분기 수익에 포함
 - 매도한 주식 제거

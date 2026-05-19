@@ -2,6 +2,7 @@ using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
@@ -265,10 +266,11 @@ namespace AssetManager.Tests
             var scene = SceneManager.CreateScene("MainGameShellBootstrapKeepsMarketOverlaysUnderUiRootTests");
             SceneManager.SetActiveScene(scene);
 
+            const string legacyReservationPanelName = "Reservation Panel";
             var uiRoot = new GameObject(ProjectShell.UiRootName);
             var marketPanel = new GameObject(ProjectShell.MarketAreaMarketPanelName, typeof(RectTransform));
             marketPanel.transform.SetParent(uiRoot.transform, false);
-            CreateChild(marketPanel.transform, ProjectShell.ReservationPanelName);
+            CreateChild(marketPanel.transform, legacyReservationPanelName);
             CreateChild(marketPanel.transform, ProjectShell.CentralBankButtonName);
 
             var shell = new GameObject("Main Game Shell");
@@ -284,9 +286,9 @@ namespace AssetManager.Tests
             var updatedUiRoot = GameObject.Find(ProjectShell.UiRootName).transform;
             var updatedMarketPanel = updatedUiRoot.Find(ProjectShell.MarketAreaMarketPanelName);
 
-            Assert.That(updatedUiRoot.Find(ProjectShell.ReservationPanelName), Is.Not.Null);
+            Assert.That(updatedUiRoot.Find(legacyReservationPanelName), Is.Null);
             Assert.That(updatedUiRoot.Find(ProjectShell.CentralBankButtonName), Is.Null);
-            Assert.That(updatedMarketPanel.Find(ProjectShell.ReservationPanelName), Is.Null);
+            Assert.That(updatedMarketPanel.Find(legacyReservationPanelName), Is.Null);
             Assert.That(updatedMarketPanel.Find(ProjectShell.CentralBankButtonName), Is.Null);
 
             yield return SceneManager.UnloadSceneAsync(scene);
@@ -685,6 +687,7 @@ namespace AssetManager.Tests
                 FindUiObject(ProjectShell.PortfolioOwnedCardsTextName).GetComponent<Text>().text,
                 Is.Empty);
             var firstOwnedStockCard = FindUiObject("Owned Stock Card 1");
+            var firstOwnedStockCardButton = FindUiObject("Owned Stock Card 1 Card Button");
             var firstOwnedStockCardText = FindUiObject("Owned Stock Card 1 Text").GetComponent<Text>().text;
             var firstSellButton = FindUiObject("Owned Stock Card 1 Sell Button").GetComponent<Button>();
             Assert.That(firstOwnedStockCard.activeSelf, Is.True);
@@ -700,21 +703,43 @@ namespace AssetManager.Tests
 
             var cashBeforeSale = bootstrap.CurrentRun.Resources.Cash;
             var quarterRevenueBeforeSale = bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash;
-            FindUiObject("Owned Stock Card 1 Card Button").GetComponent<Button>().onClick.Invoke();
+            firstOwnedStockCardButton.GetComponent<Button>().onClick.Invoke();
 
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(cashBeforeSale));
             Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(quarterRevenueBeforeSale));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.Count, Is.EqualTo(1));
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
+
+            EnterPointer(firstOwnedStockCardButton);
+            yield return null;
             Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
             Assert.That(firstSellButton.GetComponentInChildren<Text>().text, Is.EqualTo("매도 +1$"));
 
-            FindUiObject("Owned Stock Card 1 Card Button").GetComponent<Button>().onClick.Invoke();
+            ExitPointer(firstOwnedStockCardButton);
             yield return null;
             Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
 
-            FindUiObject("Owned Stock Card 1 Card Button").GetComponent<Button>().onClick.Invoke();
+            EnterPointer(firstOwnedStockCardButton);
+            yield return null;
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
+
+            EnterPointer(firstSellButton.gameObject);
+            ExitPointer(firstOwnedStockCardButton);
+            yield return null;
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
+
+            EnterPointer(firstOwnedStockCardButton);
+            ExitPointer(firstSellButton.gameObject);
+            yield return null;
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
+
+            ExitPointer(firstOwnedStockCardButton);
+            yield return null;
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
+
+            EnterPointer(firstOwnedStockCardButton);
             yield return null;
             Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
 
@@ -729,7 +754,7 @@ namespace AssetManager.Tests
             FindUiObject(ProjectShell.CardDetailCloseButtonName).GetComponent<Button>().onClick.Invoke();
             yield return null;
 
-            FindUiObject("Owned Stock Card 1 Card Button").GetComponent<Button>().onClick.Invoke();
+            EnterPointer(firstOwnedStockCardButton);
             yield return null;
             Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
 
@@ -845,7 +870,7 @@ namespace AssetManager.Tests
                 Is.Not.EqualTo(FindUiObject("Owned Stock Card 2 Card Button").GetComponent<Image>().color));
             Assert.That(FindUiObject(ProjectShell.PortfolioOwnedCardsTextName).GetComponent<Text>().text, Is.Empty);
 
-            FindUiObject("Owned Stock Card 2 Card Button").GetComponent<Button>().onClick.Invoke();
+            EnterPointer(FindUiObject("Owned Stock Card 2 Card Button"));
             yield return null;
 
             var secondSellButton = FindUiObject("Owned Stock Card 2 Sell Button").GetComponent<Button>();
@@ -991,7 +1016,6 @@ namespace AssetManager.Tests
             Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays - 1));
             Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Is.EqualTo(previousSlotIds));
             Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.False);
-            Assert.That(FindUiObject(ProjectShell.ReservationPanelName).activeSelf, Is.False);
             Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("환매 압력 +1"));
             Assert.That(
                 FindUiObject(ProjectShell.RunStatusTextName).GetComponent<Text>().text,
@@ -1067,10 +1091,6 @@ namespace AssetManager.Tests
             Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Is.Empty);
             Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Does.Not.Contain(selectedCard.Card.Id));
             Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Is.Not.EqualTo(previousSlotIds));
-            Assert.That(FindUiObject(ProjectShell.ReservationPanelName).activeSelf, Is.False);
-            Assert.That(
-                FindUiObject(ProjectShell.ReservationCardButtonPrefix + "1").GetComponentInChildren<Text>().text,
-                Is.EqualTo("비어 있음"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -1489,6 +1509,23 @@ namespace AssetManager.Tests
             Assert.That(finalText, Does.Contain("운용 코멘트"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        private static void EnterPointer(GameObject target)
+        {
+            ExecutePointerEvent(target, ExecuteEvents.pointerEnterHandler);
+        }
+
+        private static void ExitPointer(GameObject target)
+        {
+            ExecutePointerEvent(target, ExecuteEvents.pointerExitHandler);
+        }
+
+        private static void ExecutePointerEvent<T>(GameObject target, ExecuteEvents.EventFunction<T> eventFunction)
+            where T : IEventSystemHandler
+        {
+            Assert.That(EventSystem.current, Is.Not.Null);
+            ExecuteEvents.Execute(target, new PointerEventData(EventSystem.current), eventFunction);
         }
 
         private static GameObject FindUiObject(string objectName)

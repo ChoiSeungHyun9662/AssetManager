@@ -15,7 +15,7 @@ Status: done
 
 ## Existing implementation conflicts
 
-- `ReservationState`와 `ReservationView`는 별도 예약 구역 3칸을 가진다.
+- 기존 `ReservationState`와 `ReservationView`는 별도 예약 구역 3칸을 가진다.
 - `ReservationAction`은 시장 카드를 예약 구역으로 이동시키고, 예약한 세로줄만 시장 테이프 진행처럼 처리한다.
 - `PurchasePayment`는 예약 카드 구매를 `Reserved` source로 별도 처리하고 시장 테이프에는 영향을 주지 않는다.
 - `RedemptionPressure`가 예약 패널티를 담당한다.
@@ -45,7 +45,8 @@ Status: done
 - `CardDetailState` hides Reserve for reserved cards, consumable resource cards, preview cards, and extra-buy purchases.
 - `MarketAreaFlow.OpenReservedCardDetail` now opens reserved cards as `PurchaseSource.MarketTape`; reserved purchases are treated as market-slot purchases.
 - `PurchasePayment` finds the purchased card by market slot and uses the market tape pull path after the slot is emptied.
-- `ReservationView` is hidden because reservation is displayed on the market card itself instead of in a separate holding area.
+- `ReservationView` and the scene `Reservation Panel` were removed because reservation is displayed on the market card itself instead of in a separate holding area.
+- Legacy `Reservation Panel` scene objects are treated as disconnected UI and removed by shell cleanup if found.
 - `docs/agents/class-inventory.md` was updated for stock overhaul issue 05.
 
 ## Verification notes

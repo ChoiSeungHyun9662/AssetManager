@@ -37,12 +37,16 @@ Status: done
 - [x] 배당금은 영업일 시작 시 보유 주식에서 발생하고 수익에 포함된다.
 - [x] 소모형 자원 카드로 얻은 현금은 수익에 포함되지 않는다.
 - [x] 분기 목표 판정은 현재 현금이 아니라 현재 분기 수익을 기준으로 한다.
+- [x] 보유 주식 Card Button 호버 시 해당 Sell Button이 표시된다.
+- [x] Card Button과 Sell Button 사이로 커서를 이동하는 동안 Sell Button이 유지된다.
+- [x] Card Button과 Sell Button을 모두 벗어나면 Sell Button이 숨겨진다.
+- [x] Card Button 클릭은 Sell Button 표시 조건이 아니다.
 
 ## Implementation notes
 
 - Added `StockSaleAction` as the public rule service for portfolio slot sales.
 - Selling a stock leaves the portfolio slot empty, marks that runtime card `Removed`, pays inflation-adjusted sale cash through the revenue path, and does not consume a business day.
-- Owned stock cards now use a two-step sale affordance: clicking a card toggles that card's child sell button, and clicking the sell button confirms the sale.
+- Owned stock cards now use a hover sale affordance: hovering a card's Card Button reveals that card's child Sell Button, moving between the Card Button and Sell Button keeps it visible, leaving both hides it, and clicking the Sell Button confirms the sale.
 - The visible portfolio row is compressed from `OwnedAssetState.StockSlots` by skipping empty slots; each displayed card keeps its original stock slot index so sale removes the correct internal slot.
 - Any explicit non-sale UI interaction clears the pending sale button. Empty slots are not rendered, so they have no click target.
 - Visible revenue labels now use 수익/배당금 language while keeping existing internal `EarnedCash` compatibility names.
@@ -51,8 +55,17 @@ Status: done
 
 - RED: `StockSaleActionTests` first failed because `StockSaleAction` did not exist.
 - GREEN: `StockSaleActionTests` passed after adding normal/foil sale behavior.
-- RED: `MainGameShellBootstrapCardDetailPaymentPlacesRecoversAndConfirmsMarketPurchase` failed until card click no longer sold immediately and instead revealed a child sell button.
-- GREEN: PlayMode passed after wiring owned stock cards to toggle per-card sell buttons, confirm sale through the child button, clear pending sale on non-sale interactions, and preserve correct `StockSlots` sale indices after compressed display.
+- RED: `MainGameShellBootstrapCardDetailPaymentPlacesRecoversAndConfirmsMarketPurchase` failed until card click no longer sold immediately and instead used a child sell button.
+- GREEN: PlayMode passed after wiring owned stock cards to reveal per-card sell buttons on hover, keep them visible across Card Button/Sell Button pointer transitions, hide them after leaving both targets, confirm sale through the child button, clear pending sale on non-sale interactions, and preserve correct `StockSlots` sale indices after compressed display.
+
+## Post-completion correction
+
+2026-05-19 UX decision supersedes the previous click-to-toggle sale affordance:
+
+- `Owned Stock Card 1~8 Card Button` hover reveals `Owned Stock Card 1~8 Sell Button`.
+- Moving the pointer from Card Button to Sell Button, or from Sell Button back to Card Button, keeps the Sell Button visible.
+- Leaving both Card Button and Sell Button hides the Sell Button.
+- Card Button click no longer reveals or toggles the Sell Button.
 
 ## Blocked by
 

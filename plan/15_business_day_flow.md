@@ -170,6 +170,9 @@
 ## 10. 주식 매도
 
 주식 매도는 영업일을 소비하지 않는다.
+포트폴리오의 보유 주식 Card Button 호버가 해당 Sell Button을 표시하며, Card Button과 Sell Button 사이 이동 중에는 표시를 유지한다.
+두 영역을 모두 벗어나면 Sell Button을 숨긴다.
+Card Button 클릭은 Sell Button 표시 조건이 아니다.
 
 ```text
 일반 주식 매도

@@ -131,7 +131,6 @@ namespace AssetManager.Tests
             Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(1));
             Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Is.EqualTo(previousSlotIds));
-            Assert.That(FindUiObject(ProjectShell.ReservationPanelName).activeSelf, Is.False);
 
             yield return SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene());
         }
