@@ -202,7 +202,7 @@ namespace AssetManager.Tests
             var finalText = FindUiObject(ProjectShell.FinalSettlementPlaceholderTextName).GetComponent<Text>().text;
             Assert.That(finalText, Does.Contain("최종 운용가치 7"));
             Assert.That(finalText, Does.Contain("최종 평가 Core"));
-            Assert.That(finalText, Does.Contain("총 운용 수익"));
+            Assert.That(finalText, Does.Contain("총 수익"));
 
             yield return SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene());
         }

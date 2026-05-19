@@ -44,6 +44,7 @@ Status: ready-for-agent
 - 예약된 주식은 진행, 당김, 갱신의 영향을 받지 않는다.
 - 최대 3개의 주식을 동시에 예약할 수 있다.
 - 포트폴리오는 최대 8칸이다.
+- 포트폴리오는 읽기 전용 1x8 카드 보드로 표시하며, 빈 슬롯은 텍스트 없는 빈 카드 프레임으로 남긴다.
 - 동일 주식 3장을 보유하면 즉시 호일 주식 1장으로 합쳐진다.
 - 호일 완성 후 시장과 덱에 남은 같은 종목 주식은 모두 이번 게임에서 제거된다.
 - 주식 매도는 영업일을 소비하지 않으며, 일반 주식은 현금 1 x 인플레이션, 호일 주식은 현금 3 x 인플레이션을 지급한다.
@@ -131,6 +132,17 @@ Status: ready-for-agent
 74. As a designer, I want market draw weights to be configurable, so that the 75/25 ratio can be tuned if playtests require it.
 75. As a developer, I want the overhaul tracked as a separate PRD from the original MVP, so that already-completed MVP work can be mapped rather than duplicated.
 
+## Portfolio Display Delta
+
+Issue `07a-readonly-portfolio-card-board.md` adds a UI-only delta between foil merge and stock sale.
+
+- The portfolio display should use the existing 8 stock slot model and render as a read-only 1x8 card board.
+- The board should preserve `OwnedAssetState.StockSlots` order, including empty holes left by foil merge.
+- Empty portfolio slots should remain visible as blank card frames with no "empty" label.
+- Owned stock slots should show stock name, grade, current value, dividend, and foil state.
+- Portfolio cards should not show cost, buy, reserve, payment, or sale controls in this issue.
+- Card click, hover enlargement, and sale interaction remain later scope, starting with stock sale work.
+
 ## Implementation Decisions
 
 - Treat this overhaul as a delta over the existing MVP, not a fresh rewrite by default.
@@ -159,6 +171,7 @@ Status: ready-for-agent
 - Reserve action grants deal, increases 월세 밀림, checks bankruptcy, and consumes a business day.
 - Buying a reserved stock releases the reservation and fills the resulting empty slot via market tape pull.
 - Use a portfolio slot model with maximum 8 occupied stock slots.
+- Render the portfolio slot model as a read-only 1x8 card board before adding sale interaction.
 - Block non-foil stock purchases when the portfolio is full.
 - Allow a purchase that immediately completes a foil even when the portfolio is full.
 - Merge three owned copies of the same stock into one foil stock immediately.
@@ -187,6 +200,7 @@ Status: ready-for-agent
 - Market deck tests should cover 75/25 weighted selection at the decision boundary, fallback behavior, consumable recycle, and non-returning stock removal.
 - Reservation tests should cover stock-only reservation, max 3 reservation cap, deal grant at cap, 월세 밀림 increase, bankruptcy check, and reserved stock purchase release.
 - Portfolio tests should cover 8-slot blocking, full-portfolio foil exception, merge placement, empty slot preservation, leftmost empty insertion, and same-stock removal from market/deck.
+- Portfolio display tests should cover 8 visible slot frames, leftmost insertion after purchase, blank frames for empty slots, foil visual distinction, and no legacy owned-card text list in the new play path.
 - Payment tests should cover cash cost, investment philosophy cost, deal substitution, deal cash discount before inflation, and consumable resource card payment without deal.
 - Resource tests should cover total investment philosophy cap 10, per-type cap 5, overflow discard, and cash/deal exclusion from philosophy caps.
 - Revenue tests should cover dividend revenue, stock sale revenue, quarter-end settlement revenue, and exclusion of consumable resource cash from revenue.

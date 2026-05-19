@@ -2,8 +2,8 @@
 
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
-Last reviewed: 2026-05-17
-Covered implementation slices: issues 00-17, stock overhaul issues 01-06
+Last reviewed: 2026-05-19
+Covered implementation slices: issues 00-17, stock overhaul issues 01-08
 
 ## Update Workflow
 
@@ -127,12 +127,25 @@ Current runtime flow:
 - `OwnedAssetState` exposes `StockSlots` for ordered portfolio slots with preserved empty holes, while `OwnedCards` remains the occupied-card view used by scoring and summaries.
 - `PurchasePayment` merges the third owned copy of a stock into one foil owned card in the earliest matching owned slot, leaves the other matching portfolio slots empty, allows the purchase even when the 8-slot portfolio is full, removes remaining same-stock available/reserved runtime cards, clears same-stock market and reservation slots, and pulls empty market slots afterward.
 
+## Stock Overhaul Issue 07a Notes
+
+- `PortfolioSummaryView` now renders the portfolio as an `Owned Stock Card 1~N` compressed card row from `OwnedAssetState.StockSlots` instead of a text list from `OwnedCards`; it walks stock slots left-to-right, skips empty holes, and occupied cards show stock name, rarity, effective value, dividend, and foil state.
+- `ProjectShell` creates eight named owned-stock-card containers under the portfolio panel, each with a card button, text child, and hidden sell button, while keeping the legacy owned-cards text object empty for compatibility with older scene objects and tests.
+
+## Stock Overhaul Issue 08 Notes
+
+- `StockSaleAction` is the public rule service for selling an owned stock from a portfolio slot without consuming a 영업일.
+- Stock sale rewards use the current quarter inflation modifier: normal stocks pay base 1 plus inflation, foil stocks pay base 3 plus inflation.
+- Sold runtime stock cards are marked `Removed` and the sold portfolio slot remains empty, so sold stocks do not return to market supply.
+- Stock sale rewards flow through the same revenue counters as dividends and quarter-end settlement income, while consumable resource cash remains funding cash.
+- `PortfolioSummaryView` now separates stock-card selection from sale confirmation: clicking an owned stock card toggles that card's child sell button, clicking the sell button calls the sale rule through `MainGameShellBootstrap`, and explicit non-sale UI interactions clear the pending sale button.
+
 ## Shell And Editor Setup
 
 | Type | File | Purpose |
 | --- | --- | --- |
 | `ProjectShellRoots` | `Runtime/ProjectShell.cs` | Small return value for the ensured Game Root and UI Canvas. |
-| `ProjectShell` | `Runtime/ProjectShell.cs` | Central scene/UI factory for MVP shell objects, names, paths, Canvas settings, placeholder panels, status HUD, market tape UI, Payment Pot UI, and temporary controls; applies default layout only to UI objects it creates in the current bootstrap pass, keeps Market Tape zone panels under `Market Area Market Panel`, and removes legacy 중앙 은행/GainLiquidity UI from the new play path. |
+| `ProjectShell` | `Runtime/ProjectShell.cs` | Central scene/UI factory for MVP shell objects, names, paths, Canvas settings, placeholder panels, status HUD, market tape UI, portfolio slot board UI, Payment Pot UI, and temporary controls; applies default layout only to UI objects it creates in the current bootstrap pass, keeps Market Tape zone panels under `Market Area Market Panel`, and removes legacy 중앙 은행/GainLiquidity UI from the new play path. |
 | `ProjectShell.PlaceholderPanel` | `Runtime/ProjectShell.cs` | Private helper return value for placeholder panel GameObject/Text pairs. |
 | `BootstrapSceneLoader` | `Runtime/BootstrapSceneLoader.cs` | Play-mode component that moves from Bootstrap scene to MainGame scene. |
 | `AssetManagerProjectSetup` | `Editor/AssetManagerProjectSetup.cs` | Unity editor menu commands for creating/verifying scenes, build scene entries, static data asset, and required shell objects. |
@@ -161,8 +174,8 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | --- | --- | --- |
 | `ResourceState` | `Runtime/RunModels.cs` | Current 현금, 독서, 명상, 인내, 딜, plus investment philosophy total lookup. Old Research/Credit/Commodity property names remain as aliases. |
 | `RunCalendarState` | `Runtime/RunModels.cs` | Current 회계년도, 분기, and remaining 영업일. |
-| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 운용 수익 counters, tracked 조달 현금, and completed 분기 운용 수익 records for 4Q 휴가 summaries. |
-| `QuarterPerformanceRecord` | `Runtime/RunModels.cs` | Completed 회계년도/분기 운용 수익 row recorded at 분기 마감 for later 회계년도 summary display. |
+| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 수익 counters, tracked 조달 현금, and completed 분기 수익 records for 4Q 휴가 summaries. Internal property names still use `EarnedCash` for compatibility. |
+| `QuarterPerformanceRecord` | `Runtime/RunModels.cs` | Completed 회계년도/분기 수익 row recorded at 분기 마감 for later 회계년도 summary display. |
 | `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one physical market card instance and whether it is available, reserved, owned, or removed; owned cards can carry purchase source, acquired order, foil state, and effective value/income derived from base or foil card data. |
 | `MarketTapeSlotState` | `Runtime/RunModels.cs` | One 1x8 market tape slot: optional visible market card plus whether the slot is reservation-locked. |
 | `MarketTapeState` | `Runtime/RunModels.cs` | Current ordered 1x8 market tape slots, with `CurrentMarketCards` projecting visible slot cards for older callers during the migration. |
@@ -203,8 +216,10 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunCalendar` | `Runtime/RunCalendar.cs` | Factory for the MVP calendar: 1/2회계년도 1Q-3Q have 4 영업일; 3회계년도 1Q-4Q have 5 영업일. |
 | `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, applies 보유 자산 영업일 시작 운용 수익 through ResourceLedger, settles the last 영업일 into 분기 마감, blocks schedule progress after 런 실패, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
 | `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for entering/closing buyable 카드 상세보기 or 예비 시장 preview detail, and gating 다음 영업일 to Market state only. |
-| `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 운용 수익, capped investment philosophy resources, and capped 딜. |
+| `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 수익 cash, capped investment philosophy resources, and capped 딜. |
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
+| `StockSaleAction` | `Runtime/StockSaleAction.cs` | Public rule service for selling owned stock slots, leaving an empty portfolio slot, removing the sold runtime stock from the run, and adding sale cash as 수익 without consuming a 영업일. |
+| `StockSaleActionResult` | `Runtime/StockSaleAction.cs` | Return data for stock sale attempts, including the updated run, success flag, and short feedback message. |
 | `QuarterSettlement` | `Runtime/QuarterSettlement.cs` | Public rule service for 분기 마감 정산, 정산 수익 application, 목표 달성률, 환매 압력 increase, and QuarterEndResult creation. |
 | `QuarterSettlementResult` | `Runtime/QuarterSettlement.cs` | Return data for 분기 마감, including the updated run and the stored QuarterEndResult fields. |
 | `FiscalYearSummary` | `Runtime/FiscalYearSummary.cs` | Public rule service for 4Q 휴가 summary data: 현재 운용가치, 회계년도 운용 수익, completed 분기별 운용 수익, 보유 자산 수, and 환매 압력. |
@@ -243,7 +258,7 @@ Important distinction:
 | `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD time/progress/pressure text from `RunSessionState` without player resource counts. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, professional resource chip stacks, Deal chip stack, manual Sprite slots, current short resource message, and runtime chip stack instances anchored to the configured base images. |
-| `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary: 보유 자산 수, 현재 운용가치, 이번 분기 운용 수익, and a short ordered 보유 자산 list. |
+| `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary plus an `OwnedAssetState.StockSlots`-derived compressed owned-stock-card row; empty slots are skipped, occupied cards show stock name, rarity, effective value, dividend, and foil state, and selected cards reveal a child sell button. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 UI; displays 분기 마감, 4Q 휴가, 런 실패, and 최종 정산 summaries. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders the clickable 1x8 market tape: stock cards show cost, 운용가치, 운용 수익, tags, and reservation state, while consumable resource cards show cash cost, 희귀도, and provided resource without a display name. |
 | `ReservationView` | `Runtime/ReservationView.cs` | Legacy reservation panel component kept for scene compatibility, now hidden because reservation state is shown on the market card slot itself. |
@@ -267,6 +282,7 @@ Important distinction:
 | 소모형 자원 카드 and retired GainLiquidity path | `PurchasePaymentTests`, `MainGameShellBootstrapTests`, `MvpSmokeScenarioTests` |
 | 예약 action, 예약 구역 UI, and 예약 카드 매수 | `ReservationActionTests`, `PurchasePaymentTests`, `BusinessDayFlowTests`, `MarketTapeTests`, `MainGameShellBootstrapTests` |
 | 분기 마감, 4Q 휴가, 최종 정산, and 환매 압력 실패 | `QuarterSettlementTests`, `FiscalYearSummaryTests`, `FinalSettlementTests`, `BusinessDayFlowTests`, `ResourceLedgerTests`, `ReservationActionTests`, `MainGameShellBootstrapTests` |
+| 주식 매도 and 수익 tracking | `StockSaleActionTests`, `MainGameShellBootstrapTests`, `BusinessDayFlowTests`, `QuarterSettlementTests`, `ResourceLedgerTests`, `PurchasePaymentTests` |
 
 ## Notes For Next Cleanup
 

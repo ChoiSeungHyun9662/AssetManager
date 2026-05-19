@@ -85,6 +85,31 @@ namespace AssetManager.Editor
                 throw new InvalidOperationException("UI Root is missing the run status text.");
             }
 
+            var portfolioPanel = uiRoot.transform.Find(ProjectShell.PortfolioSummaryPanelName);
+            if (portfolioPanel == null)
+            {
+                throw new InvalidOperationException("UI Root is missing the portfolio summary panel.");
+            }
+
+            for (var i = 1; i <= OwnedAssetState.DefaultMaxStockSlots; i++)
+            {
+                var ownedStockCard = portfolioPanel.Find(ProjectShell.OwnedStockCardPrefix + i);
+                if (ownedStockCard == null)
+                {
+                    throw new InvalidOperationException("Portfolio summary panel is missing " + ProjectShell.OwnedStockCardPrefix + i + ".");
+                }
+
+                if (ownedStockCard.Find(ProjectShell.OwnedStockCardPrefix + i + ProjectShell.OwnedStockCardButtonSuffix) == null)
+                {
+                    throw new InvalidOperationException(ProjectShell.OwnedStockCardPrefix + i + " is missing its card button.");
+                }
+
+                if (ownedStockCard.Find(ProjectShell.OwnedStockCardPrefix + i + ProjectShell.OwnedStockCardSellButtonSuffix) == null)
+                {
+                    throw new InvalidOperationException(ProjectShell.OwnedStockCardPrefix + i + " is missing its sell button.");
+                }
+            }
+
             Debug.Log("Asset Manager project shell verification passed.");
         }
 

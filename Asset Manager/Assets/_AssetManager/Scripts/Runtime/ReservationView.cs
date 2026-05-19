@@ -74,7 +74,7 @@ namespace AssetManager
             builder.Append("  |  운용가치 ");
             builder.Append(card.Card.ManagementValue);
             builder.AppendLine();
-            builder.Append("운용 수익 ");
+            builder.Append("배당금 ");
             builder.Append(card.Card.Income);
             return builder.ToString();
         }

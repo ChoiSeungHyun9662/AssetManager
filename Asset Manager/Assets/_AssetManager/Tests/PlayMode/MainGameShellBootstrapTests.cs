@@ -80,6 +80,34 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapHidesOwnedStockCardsOnNewRun()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPortfolioBoardTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.StockSlots, Is.Empty);
+            for (var i = 1; i <= 8; i++)
+            {
+                var card = FindUiObject("Owned Stock Card " + i);
+                Assert.That(card.activeSelf, Is.False);
+            }
+
+            Assert.That(FindUiObject(ProjectShell.PortfolioOwnedCardsTextName).GetComponent<Text>().text, Is.Empty);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapResourceDevButtonsUpdateResourceHud()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapResourceHudTests");
@@ -652,10 +680,184 @@ namespace AssetManager.Tests
                 Does.Contain("현재 운용가치 " + selectedCard.Card.ManagementValue));
             Assert.That(
                 FindUiObject(ProjectShell.PortfolioSummaryTextName).GetComponent<Text>().text,
-                Does.Contain("분기 운용 수익 " + selectedCard.Card.Income));
+                Does.Contain("분기 수익 " + selectedCard.Card.Income));
             Assert.That(
                 FindUiObject(ProjectShell.PortfolioOwnedCardsTextName).GetComponent<Text>().text,
-                Does.Contain(selectedCard.Card.DisplayName));
+                Is.Empty);
+            var firstOwnedStockCard = FindUiObject("Owned Stock Card 1");
+            var firstOwnedStockCardText = FindUiObject("Owned Stock Card 1 Text").GetComponent<Text>().text;
+            var firstSellButton = FindUiObject("Owned Stock Card 1 Sell Button").GetComponent<Button>();
+            Assert.That(firstOwnedStockCard.activeSelf, Is.True);
+            Assert.That(firstOwnedStockCardText, Does.Contain(selectedCard.Card.DisplayName));
+            Assert.That(firstOwnedStockCardText, Does.Contain("등급 " + selectedCard.Card.Rarity));
+            Assert.That(firstOwnedStockCardText, Does.Contain("가치 " + selectedCard.Card.ManagementValue));
+            Assert.That(firstOwnedStockCardText, Does.Contain("배당금 " + selectedCard.Card.Income));
+            Assert.That(firstOwnedStockCardText, Does.Not.Contain("₩"));
+            Assert.That(firstOwnedStockCardText, Does.Not.Contain("구매"));
+            Assert.That(firstOwnedStockCardText, Does.Not.Contain("예약"));
+            Assert.That(firstOwnedStockCardText, Does.Not.Contain("매도"));
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
+
+            var cashBeforeSale = bootstrap.CurrentRun.Resources.Cash;
+            var quarterRevenueBeforeSale = bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash;
+            FindUiObject("Owned Stock Card 1 Card Button").GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(cashBeforeSale));
+            Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(quarterRevenueBeforeSale));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.Count, Is.EqualTo(1));
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
+            Assert.That(firstSellButton.GetComponentInChildren<Text>().text, Is.EqualTo("매도 +1$"));
+
+            FindUiObject("Owned Stock Card 1 Card Button").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
+
+            FindUiObject("Owned Stock Card 1 Card Button").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
+
+            var otherMarketSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape);
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (otherMarketSlotIndex + 1))
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+            yield return null;
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
+
+            FindUiObject(ProjectShell.CardDetailCloseButtonName).GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            FindUiObject("Owned Stock Card 1 Card Button").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
+
+            firstSellButton.onClick.Invoke();
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(cashBeforeSale + 1));
+            Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(quarterRevenueBeforeSale + 1));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.Count, Is.EqualTo(0));
+            Assert.That(FindUiObject("Owned Stock Card 1").activeSelf, Is.False);
+            Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapPortfolioBoardShowsFoilMergeResultAndBlankConsumedSlot()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPortfolioFoilBoardTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var stock = new AssetCardData(
+                "portfolio-foil-ui-stock",
+                "Portfolio Foil UI Stock",
+                "Portfolio foil board UI test stock",
+                AssetRarity.Rare,
+                0,
+                new ProfessionalResourceCost[0],
+                2,
+                1,
+                new TagData[0],
+                false,
+                9,
+                4);
+            var firstOwned = new AssetCardRuntimeData(
+                stock,
+                AssetCardRuntimeState.Owned,
+                PurchaseSource.MarketTape,
+                1,
+                false,
+                "portfolio-foil-ui-stock-1");
+            var secondOwned = new AssetCardRuntimeData(
+                stock,
+                AssetCardRuntimeState.Owned,
+                PurchaseSource.MarketTape,
+                2,
+                false,
+                "portfolio-foil-ui-stock-2");
+            var otherStock = new AssetCardData(
+                "portfolio-other-ui-stock",
+                "Portfolio Other UI Stock",
+                "Portfolio board UI test stock",
+                AssetRarity.Common,
+                0,
+                new ProfessionalResourceCost[0],
+                3,
+                0,
+                new TagData[0]);
+            var otherOwned = new AssetCardRuntimeData(
+                otherStock,
+                AssetCardRuntimeState.Owned,
+                PurchaseSource.MarketTape,
+                3,
+                false,
+                "portfolio-other-ui-stock-1");
+            var thirdCopy = new AssetCardRuntimeData(
+                stock,
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape,
+                null,
+                false,
+                "portfolio-foil-ui-stock-3");
+            var run = WithOwnedAssets(
+                bootstrap.CurrentRun,
+                new OwnedAssetState(new[] { firstOwned, secondOwned, otherOwned }));
+            run = WithCurrentMarketCard(run, thirdCopy, 0);
+            SetCurrentRun(bootstrap, run);
+            RefreshRunUi(bootstrap);
+
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            FindUiObject(ProjectShell.CardDetailBuyButtonName).GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            var firstCard = FindUiObject("Owned Stock Card 1");
+            var secondCard = FindUiObject("Owned Stock Card 2");
+            var thirdCard = FindUiObject("Owned Stock Card 3");
+            var firstCardText = FindUiObject("Owned Stock Card 1 Text").GetComponent<Text>().text;
+            var secondCardText = FindUiObject("Owned Stock Card 2 Text").GetComponent<Text>().text;
+
+            Assert.That(firstCard.activeSelf, Is.True);
+            Assert.That(secondCard.activeSelf, Is.True);
+            Assert.That(thirdCard.activeSelf, Is.False);
+            Assert.That(firstCardText, Does.Contain(stock.DisplayName));
+            Assert.That(firstCardText, Does.Contain("FOIL"));
+            Assert.That(firstCardText, Does.Contain("가치 " + stock.FoilValue));
+            Assert.That(firstCardText, Does.Contain("배당금 " + stock.FoilDividend));
+            Assert.That(secondCardText, Does.Contain(otherStock.DisplayName));
+            Assert.That(
+                FindUiObject("Owned Stock Card 1 Card Button").GetComponent<Image>().color,
+                Is.Not.EqualTo(FindUiObject("Owned Stock Card 2 Card Button").GetComponent<Image>().color));
+            Assert.That(FindUiObject(ProjectShell.PortfolioOwnedCardsTextName).GetComponent<Text>().text, Is.Empty);
+
+            FindUiObject("Owned Stock Card 2 Card Button").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            var secondSellButton = FindUiObject("Owned Stock Card 2 Sell Button").GetComponent<Button>();
+            Assert.That(secondSellButton.gameObject.activeSelf, Is.True);
+
+            secondSellButton.onClick.Invoke();
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(stock.Id));
+            Assert.That(FindUiObject("Owned Stock Card 1").activeSelf, Is.True);
+            Assert.That(FindUiObject("Owned Stock Card 2").activeSelf, Is.False);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -1143,7 +1345,7 @@ namespace AssetManager.Tests
             Assert.That(panel.activeSelf, Is.True);
 
             var text = GameObject.Find(ProjectShell.QuarterSettlementPlaceholderTextName).GetComponent<Text>().text;
-            Assert.That(text, Does.Contain("분기 운용 수익"));
+            Assert.That(text, Does.Contain("분기 수익"));
             Assert.That(text, Does.Contain("분기 목표"));
             Assert.That(text, Does.Contain("목표 달성률"));
             Assert.That(text, Does.Contain("환매 압력 +3"));
@@ -1185,7 +1387,7 @@ namespace AssetManager.Tests
             var failureText = FindUiObject(ProjectShell.RunFailurePlaceholderTextName).GetComponent<Text>().text;
             Assert.That(failureText, Does.Contain("대규모 환매 발생"));
             Assert.That(failureText, Does.Contain("도달 지점 1회계년도 2Q"));
-            Assert.That(failureText, Does.Contain("총 운용 수익 2"));
+            Assert.That(failureText, Does.Contain("총 수익 2"));
             Assert.That(failureText, Does.Contain("환매 압력 10/10"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
@@ -1226,8 +1428,8 @@ namespace AssetManager.Tests
             var vacationText = FindUiObject(ProjectShell.VacationPlaceholderTextName).GetComponent<Text>().text;
             Assert.That(vacationText, Does.Contain("4Q 휴가: 1회계년도 요약"));
             Assert.That(vacationText, Does.Contain("현재 운용가치"));
-            Assert.That(vacationText, Does.Contain("올해 운용 수익"));
-            Assert.That(vacationText, Does.Contain("분기별 운용 수익"));
+            Assert.That(vacationText, Does.Contain("올해 수익"));
+            Assert.That(vacationText, Does.Contain("분기별 수익"));
             Assert.That(vacationText, Does.Contain("보유 자산"));
             Assert.That(vacationText, Does.Contain("환매 압력"));
 
@@ -1281,7 +1483,7 @@ namespace AssetManager.Tests
             var finalText = FindUiObject(ProjectShell.FinalSettlementPlaceholderTextName).GetComponent<Text>().text;
             Assert.That(finalText, Does.Contain("최종 운용가치 7"));
             Assert.That(finalText, Does.Contain("최종 평가 Core"));
-            Assert.That(finalText, Does.Contain("총 운용 수익"));
+            Assert.That(finalText, Does.Contain("총 수익"));
             Assert.That(finalText, Does.Contain("보유 자산 2"));
             Assert.That(finalText, Does.Contain("환매 압력"));
             Assert.That(finalText, Does.Contain("운용 코멘트"));

@@ -61,6 +61,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             CurrentRun = BusinessDayFlow.AdvanceToNextBusinessDay(CurrentRun);
             RefreshRunUi();
         }
@@ -77,6 +78,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             CurrentRun = zone == MarketTapeZone.UpcomingMarket
                 ? MarketAreaFlow.OpenMarketPreviewCardDetail(CurrentRun, selectedCard)
                 : MarketAreaFlow.OpenMarketCardDetail(CurrentRun, selectedCard);
@@ -94,6 +96,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             CurrentRun = MarketAreaFlow.OpenReservedCardDetail(CurrentRun, selectedCard);
             resourceFeedbackMessage = string.Empty;
             RefreshRunUi();
@@ -106,6 +109,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             CurrentRun = MarketAreaFlow.CloseCardDetail(CurrentRun);
             RefreshRunUi();
         }
@@ -117,6 +121,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             resourceFeedbackMessage = string.Empty;
             RefreshRunUi();
         }
@@ -128,6 +133,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             CurrentRun = LiquidityAction.Close(CurrentRun);
             resourceFeedbackMessage = string.Empty;
             RefreshRunUi();
@@ -160,6 +166,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             ApplyPaymentResult(PurchasePayment.ConfirmPurchase(CurrentRun));
         }
 
@@ -170,7 +177,18 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             ApplyReservationResult(ReservationAction.ConfirmReservation(CurrentRun));
+        }
+
+        public void SellStockSlot(int stockSlotIndex)
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            ApplyStockSaleResult(StockSaleAction.ConfirmSale(CurrentRun, stockSlotIndex));
         }
 
 
@@ -221,6 +239,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             CurrentRun = ResourceLedger.AddFundingCash(CurrentRun, 1);
             resourceFeedbackMessage = string.Empty;
             RefreshRunUi();
@@ -233,6 +252,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             CurrentRun = ResourceLedger.AddEarnedCash(CurrentRun, 1);
             resourceFeedbackMessage = string.Empty;
             RefreshRunUi();
@@ -260,6 +280,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             ApplyResourceResult(ResourceLedger.AddDeal(CurrentRun, 1));
         }
 
@@ -270,6 +291,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             if (CurrentRun.BusinessDay.Phase == BusinessDayPhase.QuarterSettlement)
             {
                 CurrentRun = BusinessDayFlow.ContinueAfterQuarterSettlement(CurrentRun);
@@ -289,6 +311,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             CurrentRun = MarketTape.Advance(CurrentRun);
             RefreshRunUi();
         }
@@ -300,6 +323,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             CurrentRun = MarketTape.Refresh(CurrentRun);
             RefreshRunUi();
         }
@@ -317,6 +341,7 @@ namespace AssetManager
             runProgressControls = ProjectShell.EnsureRunProgressControls(uiRoot);
 
             marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
+            portfolioSummaryView.SetStockSaleSelectedHandler(SellStockSlot);
             reservationView.SetReservedCardSelectedHandler(OpenReservedCardDetail);
 
             cardDetailView.CloseButton.onClick.RemoveListener(CloseCardDetail);
@@ -393,6 +418,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             ApplyResourceResult(ResourceLedger.AddProfessionalResource(CurrentRun, resourceType, 1));
         }
 
@@ -410,6 +436,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             ApplyLiquidityActionResult(LiquidityAction.Select(CurrentRun, resourceType));
         }
 
@@ -427,6 +454,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             ApplyPaymentResult(PurchasePayment.PlaceChip(CurrentRun, resourceType));
         }
 
@@ -437,6 +465,7 @@ namespace AssetManager
                 return;
             }
 
+            ClearPortfolioSaleSelection();
             ApplyPaymentResult(PurchasePayment.RemoveChip(CurrentRun, slotIndex));
         }
 
@@ -452,6 +481,21 @@ namespace AssetManager
             CurrentRun = result.Run;
             resourceFeedbackMessage = result.Message;
             RefreshRunUi();
+        }
+
+        private void ApplyStockSaleResult(StockSaleActionResult result)
+        {
+            CurrentRun = result.Run;
+            resourceFeedbackMessage = result.Message;
+            RefreshRunUi();
+        }
+
+        private void ClearPortfolioSaleSelection()
+        {
+            if (portfolioSummaryView != null)
+            {
+                portfolioSummaryView.ClearSaleSelection();
+            }
         }
 
         private void BindPaymentSlotButtons()

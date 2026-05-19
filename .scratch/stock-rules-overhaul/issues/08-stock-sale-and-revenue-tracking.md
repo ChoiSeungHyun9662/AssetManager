@@ -1,6 +1,6 @@
 # 08. 주식 매도와 수익 추적 전환
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -29,14 +29,30 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 보유 일반 주식을 매도하면 현금 1 x 인플레이션을 얻는다.
-- [ ] 보유 호일 주식을 매도하면 현금 3 x 인플레이션을 얻는다.
-- [ ] 주식 매도는 영업일을 소비하지 않고 하루에 여러 번 수행할 수 있다.
-- [ ] 매도한 주식은 포트폴리오에서 제거되고 이번 게임의 주식 덱에 돌아오지 않는다.
-- [ ] 매도 수익은 현재 분기 수익, 현재 회계연도 수익, 총 수익에 포함된다.
-- [ ] 배당금은 영업일 시작 시 보유 주식에서 발생하고 수익에 포함된다.
-- [ ] 소모형 자원 카드로 얻은 현금은 수익에 포함되지 않는다.
-- [ ] 분기 목표 판정은 현재 현금이 아니라 현재 분기 수익을 기준으로 한다.
+- [x] 보유 일반 주식을 매도하면 현금 1 x 인플레이션을 얻는다.
+- [x] 보유 호일 주식을 매도하면 현금 3 x 인플레이션을 얻는다.
+- [x] 주식 매도는 영업일을 소비하지 않고 하루에 여러 번 수행할 수 있다.
+- [x] 매도한 주식은 포트폴리오에서 제거되고 이번 게임의 주식 덱에 돌아오지 않는다.
+- [x] 매도 수익은 현재 분기 수익, 현재 회계연도 수익, 총 수익에 포함된다.
+- [x] 배당금은 영업일 시작 시 보유 주식에서 발생하고 수익에 포함된다.
+- [x] 소모형 자원 카드로 얻은 현금은 수익에 포함되지 않는다.
+- [x] 분기 목표 판정은 현재 현금이 아니라 현재 분기 수익을 기준으로 한다.
+
+## Implementation notes
+
+- Added `StockSaleAction` as the public rule service for portfolio slot sales.
+- Selling a stock leaves the portfolio slot empty, marks that runtime card `Removed`, pays inflation-adjusted sale cash through the revenue path, and does not consume a business day.
+- Owned stock cards now use a two-step sale affordance: clicking a card toggles that card's child sell button, and clicking the sell button confirms the sale.
+- The visible portfolio row is compressed from `OwnedAssetState.StockSlots` by skipping empty slots; each displayed card keeps its original stock slot index so sale removes the correct internal slot.
+- Any explicit non-sale UI interaction clears the pending sale button. Empty slots are not rendered, so they have no click target.
+- Visible revenue labels now use 수익/배당금 language while keeping existing internal `EarnedCash` compatibility names.
+
+## Verification
+
+- RED: `StockSaleActionTests` first failed because `StockSaleAction` did not exist.
+- GREEN: `StockSaleActionTests` passed after adding normal/foil sale behavior.
+- RED: `MainGameShellBootstrapCardDetailPaymentPlacesRecoversAndConfirmsMarketPurchase` failed until card click no longer sold immediately and instead revealed a child sell button.
+- GREEN: PlayMode passed after wiring owned stock cards to toggle per-card sell buttons, confirm sale through the child button, clear pending sale on non-sale interactions, and preserve correct `StockSlots` sale indices after compressed display.
 
 ## Blocked by
 

@@ -43,7 +43,7 @@ Status: done
 | `16-market-asset-card-icon-language.md` | done | 수정 필요 | 카드 정보의 아이콘 중심 문법은 유지 가능하다. 3구역 시장, 자산 카드, 운용 가치/운용 수익/태그 중심 표시는 주식 카드와 소모형 자원 카드 표시 규칙으로 다시 작성해야 한다. |
 | `17-payment-pot-background-and-cost-slot-visuals.md` | ready-for-agent | 폐기됨 | 카드 상세보기의 Payment Pot 전제가 새 PRD와 충돌한다. 비용 슬롯/딜 시각화는 필요하지만, 별도 카드 상세보기 화면 안의 Payment Pot으로 구현하면 안 된다. |
 | `18-card-detail-action-board-and-preview-state.md` | ready-for-agent | 폐기됨 | 카드 상세보기 액션 보드, 예비 시장 미리보기, Market Peek은 모두 새 규칙과 충돌한다. 새 규칙은 단일 시장 상태와 호버 확대를 사용한다. |
-| `19-right-context-reservation-and-portfolio-board.md` | ready-for-agent | 수정 필요 | 포트폴리오 보드 방향은 유효하지만 예약 구역 3칸은 제거된다. 시장 슬롯 예약 상태, 포트폴리오 8칸, 가치/배당금/수익 요약 중심으로 다시 써야 한다. |
+| `19-right-context-reservation-and-portfolio-board.md` | ready-for-agent | 수정 필요 | 포트폴리오 보드 방향은 유효하지만 예약 구역 3칸은 제거된다. 읽기 전용 1x8 포트폴리오 카드 보드는 `07a-readonly-portfolio-card-board.md`로 분리하고, 시장 슬롯 예약 상태와 수익 요약은 관련 후속 이슈에서 다시 써야 한다. |
 | `20-quarter-result-board-in-shared-frame.md` | ready-for-agent | 수정 필요 | 공통 프레임 안의 분기 결과판 방향은 유지 가능하다. 운용 수익/환매 압력을 수익/월세 밀림으로 바꾸고 새 수익 구성과 파산 판정을 반영해야 한다. |
 | `21-ui-gameplay-spec-integration-qa.md` | ready-for-human | 수정 필요 | 통합 QA 목적은 유지된다. 다만 검수 대상이 카드 상세보기, Payment Pot, 3구역 시장, GainLiquidity가 아니라 새 주식 규칙 흐름으로 바뀐다. |
 
@@ -125,6 +125,13 @@ Status: done
    - 동일 주식 3장 매수 시 즉시 호일 주식으로 합친다.
    - 호일 완성 후 시장/덱/예약 슬롯의 같은 종목 주식을 제거한다.
 
+7a. 읽기 전용 1x8 포트폴리오 카드 보드
+   - 기존 포트폴리오 텍스트 보유 목록을 1x8 카드 보드로 대체한다.
+   - `OwnedAssetState.StockSlots`의 순서와 빈 슬롯을 그대로 표시한다.
+   - 빈 슬롯은 텍스트 없는 빈 카드 프레임으로 보여준다.
+   - 보유 주식 슬롯은 이름, 등급, 현재 가치, 배당금, 호일 여부를 표시한다.
+   - 구매/예약/결제/매도 조작은 넣지 않고, 매도 조작은 주식 매도 이슈로 넘긴다.
+
 8. 주식 매도
    - 주식 매도는 영업일을 소비하지 않는다.
    - 일반 주식은 현금 1 x 인플레이션, 호일 주식은 현금 3 x 인플레이션을 지급한다.
@@ -149,7 +156,7 @@ Status: done
 
 12. 주식 개편 전용 QA
     - 기존 MVP QA를 새 PRD 기준으로 재작성한다.
-    - 1x8 시장, 당김, 예약, 소모형 자원 카드, 8칸 포트폴리오, 호일, 매도, 월세 밀림, 파산, 최종 정산을 검증한다.
+    - 1x8 시장, 당김, 예약, 소모형 자원 카드, 읽기 전용 1x8 포트폴리오 보드, 호일, 매도, 월세 밀림, 파산, 최종 정산을 검증한다.
 
 ## 권장 후속 작업
 
@@ -172,6 +179,7 @@ Status: done
 | `05-market-slot-reservation.md` | AFK | 기존 예약 구역을 시장 슬롯 예약으로 대체 |
 | `06-stock-purchase-payment-and-portfolio-cap.md` | AFK | 기존 매수/결제 기반에 주식 매수, 딜 범위, 8칸 제한 적용 |
 | `07-foil-merge-and-stock-removal.md` | AFK | 기존 보유 카드 흐름에 호일 합성과 종목 제거 추가 |
+| `07a-readonly-portfolio-card-board.md` | AFK | 기존 텍스트 보유 목록을 `OwnedAssetState.StockSlots` 기반 읽기 전용 1x8 포트폴리오 카드 보드로 대체 |
 | `08-stock-sale-and-revenue-tracking.md` | AFK | 기존 수익 추적에 주식 매도와 새 수익 정의 추가 |
 | `09-extra-buy-action-overhaul.md` | AFK | 기존 추가 매수권을 새 시장/카드 타입에 맞춤 |
 | `10-hover-card-and-single-market-state.md` | AFK | 카드 상세보기/GainLiquidity 제거와 호버 확대 도입 |

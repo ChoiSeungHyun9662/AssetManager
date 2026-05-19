@@ -94,7 +94,7 @@ namespace AssetManager
             }
 
             return string.Format(
-                "분기 마감: {0}회계년도 {1}Q\n분기 운용 수익 {2} / 분기 목표 {3}\n목표 달성률 {4}% | 환매 압력 +{5} | 현재 환매 압력 {6}/{7}",
+                "분기 마감: {0}회계년도 {1}Q\n분기 수익 {2} / 분기 목표 {3}\n목표 달성률 {4}% | 환매 압력 +{5} | 현재 환매 압력 {6}/{7}",
                 run.Calendar.FiscalYear,
                 run.Calendar.Quarter,
                 result.QuarterEarnedCash,
@@ -109,7 +109,7 @@ namespace AssetManager
         {
             var summary = FiscalYearSummary.Create(run);
             return string.Format(
-                "4Q 휴가: {0}회계년도 요약\n현재 운용가치 {1} | 올해 운용 수익 {2}\n분기별 운용 수익 {3}\n보유 자산 {4} | 환매 압력 {5}/{6}",
+                "4Q 휴가: {0}회계년도 요약\n현재 운용가치 {1} | 올해 수익 {2}\n분기별 수익 {3}\n보유 자산 {4} | 환매 압력 {5}/{6}",
                 summary.FiscalYear,
                 summary.CurrentManagementValue,
                 summary.FiscalYearEarnedCash,
@@ -140,7 +140,7 @@ namespace AssetManager
         {
             var settlement = FinalSettlement.Create(run);
             return string.Format(
-                "최종 정산\n최종 운용가치 {0} | 최종 평가 {1}\n총 운용 수익 {2} | 보유 자산 {3}\n환매 압력 {4}/{5}\n운용 코멘트: {6}",
+                "최종 정산\n최종 운용가치 {0} | 최종 평가 {1}\n총 수익 {2} | 보유 자산 {3}\n환매 압력 {4}/{5}\n운용 코멘트: {6}",
                 settlement.FinalManagementValue,
                 settlement.FinalRating.DisplayName,
                 settlement.TotalEarnedCash,
@@ -157,7 +157,7 @@ namespace AssetManager
                 : run.FailureReason;
 
             return string.Format(
-                "런 실패: {0}\n도달 지점 {1}회계년도 {2}Q\n현재 운용가치 {3} | 총 운용 수익 {4} | 보유 자산 {5}\n환매 압력 {6}/{7}",
+                "런 실패: {0}\n도달 지점 {1}회계년도 {2}Q\n현재 운용가치 {3} | 총 수익 {4} | 보유 자산 {5}\n환매 압력 {6}/{7}",
                 failureReason,
                 run.Calendar.FiscalYear,
                 run.Calendar.Quarter,

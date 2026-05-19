@@ -97,6 +97,10 @@ namespace AssetManager
         public const string PortfolioSummaryPanelName = "Portfolio Summary Panel";
         public const string PortfolioSummaryTextName = "Portfolio Summary Text";
         public const string PortfolioOwnedCardsTextName = "Portfolio Owned Cards Text";
+        public const string OwnedStockCardPrefix = "Owned Stock Card ";
+        public const string OwnedStockCardButtonSuffix = " Card Button";
+        public const string OwnedStockCardTextSuffix = " Text";
+        public const string OwnedStockCardSellButtonSuffix = " Sell Button";
         public const string ResourceDevFundingCashButtonName = "Resource Dev Funding Cash Button";
         public const string ResourceDevEarnedCashButtonName = "Resource Dev Earned Cash Button";
         public const string ResourceDevResearchButtonName = "Resource Dev Research Button";
@@ -430,6 +434,10 @@ namespace AssetManager
                 new Vector2(784f, 84f),
                 17,
                 TextAnchor.UpperLeft);
+            var ownedStockCards = EnsureOwnedStockCards(panel.transform);
+            var ownedStockCardButtons = CollectOwnedStockCardButtons(ownedStockCards);
+            var ownedStockCardTexts = CollectOwnedStockCardTexts(ownedStockCards);
+            var ownedStockSellButtons = CollectOwnedStockSellButtons(ownedStockCards);
 
             var view = uiRoot.GetComponent<PortfolioSummaryView>();
             if (view == null)
@@ -437,7 +445,14 @@ namespace AssetManager
                 view = uiRoot.gameObject.AddComponent<PortfolioSummaryView>();
             }
 
-            view.Bind(panel, summaryText, ownedCardsText);
+            view.Bind(
+                panel,
+                summaryText,
+                ownedCardsText,
+                ownedStockCards,
+                ownedStockCardButtons,
+                ownedStockCardTexts,
+                ownedStockSellButtons);
             return view;
         }
 
@@ -946,7 +961,7 @@ namespace AssetManager
             var earnedCashButton = EnsureButton(
                 uiRoot,
                 ResourceDevEarnedCashButtonName,
-                "운용 수익 +1",
+                "수익 +1",
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
@@ -1480,6 +1495,202 @@ namespace AssetManager
             }
 
             return buttons;
+        }
+
+        private static IReadOnlyList<GameObject> EnsureOwnedStockCards(Transform panel)
+        {
+            var cards = new List<GameObject>();
+            for (var i = 0; i < OwnedAssetState.DefaultMaxStockSlots; i++)
+            {
+                var cardNumber = i + 1;
+                var card = EnsureOwnedStockCardContainer(panel, cardNumber);
+                EnsureOwnedStockCardButton(card.transform, cardNumber);
+                EnsureOwnedStockSellButton(card.transform, cardNumber);
+                cards.Add(card);
+            }
+
+            return cards;
+        }
+
+        private static GameObject EnsureOwnedStockCardContainer(Transform panel, int cardNumber)
+        {
+            var name = OwnedStockCardPrefix + cardNumber;
+            var legacyName = "Portfolio Slot " + cardNumber;
+            var existing = panel.Find(name) ?? panel.Find(legacyName);
+            var card = existing != null
+                ? existing.gameObject
+                : CreateLayoutObject(name);
+
+            card.name = name;
+            card.transform.SetParent(panel, false);
+            SetRect(
+                card,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(18f + ((cardNumber - 1) * 96f), -54f),
+                new Vector2(88f, 122f));
+
+            var legacyButton = card.GetComponent<Button>();
+            if (legacyButton != null)
+            {
+                DestroyObject(legacyButton);
+            }
+
+            var legacyImage = card.GetComponent<Image>();
+            if (legacyImage != null)
+            {
+                DestroyObject(legacyImage);
+            }
+
+            RemoveChildIfPresent(card.transform, legacyName + " Text");
+            return card;
+        }
+
+        private static Button EnsureOwnedStockCardButton(Transform card, int cardNumber)
+        {
+            var cardName = OwnedStockCardPrefix + cardNumber;
+            var buttonObjectName = cardName + OwnedStockCardButtonSuffix;
+            var existing = card.Find(buttonObjectName);
+            var buttonObject = existing != null
+                ? existing.gameObject
+                : CreateLayoutObject(buttonObjectName);
+
+            buttonObject.transform.SetParent(card, false);
+            SetRect(
+                buttonObject,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                Vector2.zero,
+                new Vector2(88f, 84f));
+
+            var image = buttonObject.GetComponent<Image>();
+            if (image == null)
+            {
+                image = buttonObject.AddComponent<Image>();
+            }
+
+            if (WasCreatedThisPass(buttonObject))
+            {
+                image.color = new Color(0.08f, 0.10f, 0.12f, 0.72f);
+            }
+
+            var button = buttonObject.GetComponent<Button>();
+            if (button == null)
+            {
+                button = buttonObject.AddComponent<Button>();
+            }
+
+            button.targetGraphic = image;
+            var text = EnsureChildText(buttonObject.transform, cardName + OwnedStockCardTextSuffix, string.Empty);
+            if (WasCreatedThisPass(text.gameObject))
+            {
+                var rectTransform = text.GetComponent<RectTransform>();
+                rectTransform.offsetMin = new Vector2(6f, 6f);
+                rectTransform.offsetMax = new Vector2(-6f, -6f);
+                text.alignment = TextAnchor.MiddleCenter;
+                text.fontSize = 13;
+                text.color = Color.white;
+                text.horizontalOverflow = HorizontalWrapMode.Wrap;
+                text.verticalOverflow = VerticalWrapMode.Truncate;
+                text.resizeTextForBestFit = true;
+                text.resizeTextMinSize = 9;
+                text.resizeTextMaxSize = 13;
+            }
+
+            return button;
+        }
+
+        private static Button EnsureOwnedStockSellButton(Transform card, int cardNumber)
+        {
+            var cardName = OwnedStockCardPrefix + cardNumber;
+            var button = EnsureButton(
+                card,
+                cardName + OwnedStockCardSellButtonSuffix,
+                string.Empty,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, -90f),
+                new Vector2(88f, 30f));
+
+            if (WasCreatedThisPass(button.gameObject))
+            {
+                var text = button.GetComponentInChildren<Text>();
+                if (text != null)
+                {
+                    text.fontSize = 13;
+                }
+            }
+
+            button.gameObject.SetActive(false);
+            return button;
+        }
+
+        private static IReadOnlyList<Button> CollectOwnedStockCardButtons(IReadOnlyList<GameObject> cards)
+        {
+            var buttons = new List<Button>();
+            for (var i = 0; i < cards.Count; i++)
+            {
+                buttons.Add(FindOwnedStockCardChild<Button>(
+                    cards[i],
+                    OwnedStockCardPrefix + (i + 1) + OwnedStockCardButtonSuffix));
+            }
+
+            return buttons;
+        }
+
+        private static IReadOnlyList<Text> CollectOwnedStockCardTexts(IReadOnlyList<GameObject> cards)
+        {
+            var texts = new List<Text>();
+            for (var i = 0; i < cards.Count; i++)
+            {
+                texts.Add(FindOwnedStockCardChild<Text>(
+                    cards[i],
+                    OwnedStockCardPrefix + (i + 1) + OwnedStockCardTextSuffix));
+            }
+
+            return texts;
+        }
+
+        private static IReadOnlyList<Button> CollectOwnedStockSellButtons(IReadOnlyList<GameObject> cards)
+        {
+            var buttons = new List<Button>();
+            for (var i = 0; i < cards.Count; i++)
+            {
+                buttons.Add(FindOwnedStockCardChild<Button>(
+                    cards[i],
+                    OwnedStockCardPrefix + (i + 1) + OwnedStockCardSellButtonSuffix));
+            }
+
+            return buttons;
+        }
+
+        private static T FindOwnedStockCardChild<T>(GameObject card, string childName)
+            where T : Component
+        {
+            var child = FindChildRecursive(card.transform, childName);
+            return child != null ? child.GetComponent<T>() : null;
+        }
+
+        private static Transform FindChildRecursive(Transform parent, string childName)
+        {
+            if (parent.name == childName)
+            {
+                return parent;
+            }
+
+            for (var i = 0; i < parent.childCount; i++)
+            {
+                var match = FindChildRecursive(parent.GetChild(i), childName);
+                if (match != null)
+                {
+                    return match;
+                }
+            }
+
+            return null;
         }
 
         private static IReadOnlyList<Button> EnsureCardDetailPaymentSlotButtons(Transform panel)

@@ -3,6 +3,7 @@ using AssetManager.Editor;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEngine;
 
 namespace AssetManager.Tests
 {
@@ -34,6 +35,24 @@ namespace AssetManager.Tests
 
             Assert.That(scene.GetRootGameObjects().Any(root => root.name == ProjectShell.GameRootName), Is.True);
             Assert.That(scene.GetRootGameObjects().Any(root => root.name == ProjectShell.UiRootName), Is.True);
+
+            var uiRoot = scene.GetRootGameObjects().Single(root => root.name == ProjectShell.UiRootName);
+            var portfolioPanel = FindChild(uiRoot.transform, ProjectShell.PortfolioSummaryPanelName);
+            Assert.That(portfolioPanel, Is.Not.Null);
+            for (var i = 1; i <= OwnedAssetState.DefaultMaxStockSlots; i++)
+            {
+                var ownedStockCard = portfolioPanel.Find(ProjectShell.OwnedStockCardPrefix + i);
+                Assert.That(
+                    ownedStockCard,
+                    Is.Not.Null,
+                    "Expected owned stock card " + i + " to be saved in MainGame scene for Editor layout edits.");
+                Assert.That(
+                    ownedStockCard.Find(ProjectShell.OwnedStockCardPrefix + i + ProjectShell.OwnedStockCardButtonSuffix),
+                    Is.Not.Null);
+                Assert.That(
+                    ownedStockCard.Find(ProjectShell.OwnedStockCardPrefix + i + ProjectShell.OwnedStockCardSellButtonSuffix),
+                    Is.Not.Null);
+            }
         }
 
         [Test]
@@ -57,6 +76,25 @@ namespace AssetManager.Tests
 
             Assert.That(bootstrap, Is.Not.Null);
             Assert.That(bootstrap.StaticData, Is.SameAs(staticData));
+        }
+
+        private static Transform FindChild(Transform parent, string objectName)
+        {
+            if (parent.name == objectName)
+            {
+                return parent;
+            }
+
+            for (var i = 0; i < parent.childCount; i++)
+            {
+                var match = FindChild(parent.GetChild(i), objectName);
+                if (match != null)
+                {
+                    return match;
+                }
+            }
+
+            return null;
         }
     }
 }
