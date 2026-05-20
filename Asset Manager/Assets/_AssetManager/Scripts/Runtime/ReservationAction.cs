@@ -40,12 +40,12 @@ namespace AssetManager
 
             if (pressureResult.DidFail)
             {
-                return new ReservationActionResult(pressuredRun, true, "대규모 환매: 환매 압력 한도 도달");
+                return new ReservationActionResult(pressuredRun, true, "파산: 월세 밀림 한도 도달");
             }
 
             if (message == string.Empty)
             {
-                message = "환매 압력 +1";
+                message = "월세 밀림 +1";
             }
 
             return new ReservationActionResult(ConsumeBusinessDayWithoutMarketAdvance(pressuredRun), true, message);
@@ -90,7 +90,7 @@ namespace AssetManager
         {
             if (run.State != RunState.Playing
                 || run.BusinessDay.Phase != BusinessDayPhase.AwaitingAction
-                || run.BusinessDay.MarketArea != MarketAreaState.CardDetail
+                || run.BusinessDay.MarketArea != MarketAreaState.Market
                 || run.CardDetail.SelectedCard == null
                 || run.CardDetail.PurchaseSource != PurchaseSource.MarketTape
                 || run.CardDetail.IsOpenedDuringExtraBuy)

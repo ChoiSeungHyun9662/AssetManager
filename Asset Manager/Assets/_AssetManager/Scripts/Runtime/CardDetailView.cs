@@ -122,7 +122,7 @@ namespace AssetManager
             var isCardDetail = run.BusinessDay.MarketArea == MarketAreaState.CardDetail;
             SetActive(panel, isCardDetail);
 
-            if (!isCardDetail || run.CardDetail.DisplayData == null)
+            if (run.CardDetail.DisplayData == null)
             {
                 return;
             }

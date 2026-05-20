@@ -5,7 +5,7 @@ namespace AssetManager.Tests
     public sealed class ReservationActionTests
     {
         [Test]
-        public void MarketCardReservationLocksCardInMarketSlotGrantsDealAndPressureAndConsumesBusinessDay()
+        public void MarketCardReservationLocksCardInMarketSlotGrantsDealAddsRentArrearsAndConsumesBusinessDay()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
@@ -30,6 +30,7 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays - 1));
             Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(result.Run.CardDetail.SelectedCard, Is.Null);
+            Assert.That(result.Message, Is.EqualTo("월세 밀림 +1"));
         }
 
         [Test]
@@ -82,12 +83,12 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
             Assert.That(result.Run.Resources.Deal, Is.EqualTo(deal));
             Assert.That(result.Run.RedemptionPressure.CurrentPressure, Is.EqualTo(pressure));
-            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
+            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(result.Message, Is.EqualTo("예약 구역이 가득 찼습니다."));
         }
 
         [Test]
-        public void ReservationAtNinePressureFailsRunImmediately()
+        public void ReservationAtNineRentArrearsBankruptsRunImmediately()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = WithRedemptionPressure(run, 9);
@@ -98,6 +99,8 @@ namespace AssetManager.Tests
             Assert.That(result.Succeeded, Is.True);
             Assert.That(result.Run.State, Is.EqualTo(RunState.Failed));
             Assert.That(result.Run.RedemptionPressure.CurrentPressure, Is.EqualTo(10));
+            Assert.That(result.Run.FailureReason, Is.EqualTo("파산"));
+            Assert.That(result.Message, Is.EqualTo("파산: 월세 밀림 한도 도달"));
             Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(result.Run.CardDetail.SelectedCard, Is.Null);
         }

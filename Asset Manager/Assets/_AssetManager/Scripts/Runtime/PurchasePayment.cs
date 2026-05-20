@@ -259,7 +259,7 @@ namespace AssetManager
         {
             return run.State == RunState.Playing
                 && run.BusinessDay.Phase == BusinessDayPhase.AwaitingAction
-                && run.BusinessDay.MarketArea == MarketAreaState.CardDetail
+                && run.BusinessDay.MarketArea == MarketAreaState.Market
                 && run.CardDetail.PendingPayment != null;
         }
 
@@ -310,6 +310,12 @@ namespace AssetManager
                 && !ContainsCard(run.Reservation.ReservedCards, run.CardDetail.SelectedCard.RuntimeId))
             {
                 return "매수 출처를 찾을 수 없습니다.";
+            }
+
+            if (run.CardDetail.IsOpenedDuringExtraBuy
+                && !ExtraBuyAction.CanPurchaseCandidate(run.CardDetail.SelectedCard))
+            {
+                return "Extra buy cannot purchase this card.";
             }
 
             if (!run.OwnedAssets.CanAcceptStockPurchase(run.CardDetail.SelectedCard.Card))

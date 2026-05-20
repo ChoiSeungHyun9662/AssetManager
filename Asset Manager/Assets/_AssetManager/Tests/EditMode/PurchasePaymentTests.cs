@@ -152,16 +152,16 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Resources.Deal, Is.EqualTo(run.Resources.Deal));
             Assert.That(result.Run.OwnedAssets.OwnedCards, Is.Empty);
             Assert.That(FindCard(result.Run.AssetCards, selectedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Available));
-            Assert.That(result.Run.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(MarketTapeContainsRuntimeCard(result.Run.MarketTape, selectedCard.RuntimeId), Is.True);
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays));
-            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
+            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
         }
 
         [Test]
         public void IncompletePurchaseConfirmationLeavesResourcesCardMarketAndBusinessDayUnchanged()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+            var selectedCard = FindFirstAvailableMarketSlotCard(run.MarketTape);
             run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
 
             var result = PurchasePayment.ConfirmPurchase(run);
@@ -173,9 +173,9 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Resources.Deal, Is.EqualTo(run.Resources.Deal));
             Assert.That(result.Run.OwnedAssets.OwnedCards, Is.Empty);
             Assert.That(FindCard(result.Run.AssetCards, selectedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Available));
-            Assert.That(result.Run.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(MarketTapeContainsRuntimeCard(result.Run.MarketTape, selectedCard.RuntimeId), Is.True);
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays));
-            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
+            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
         }
 
         [Test]
@@ -255,9 +255,9 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Resources.Deal, Is.EqualTo(run.Resources.Deal));
             Assert.That(result.Run.OwnedAssets.OwnedCards, Has.Count.EqualTo(8));
             Assert.That(FindCard(result.Run.AssetCards, selectedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Available));
-            Assert.That(result.Run.MarketTape.CurrentMarketCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(MarketTapeContainsRuntimeCard(result.Run.MarketTape, selectedCard.RuntimeId), Is.True);
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays));
-            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.CardDetail));
+            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
         }
 
         [Test]
@@ -586,7 +586,44 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void ExtraBuyCanPurchaseReservedCardAndThenConsumesBusinessDay()
+        public void ExtraBuyCanPurchaseAllowedConsumableResourceCardAndThenConsumesBusinessDay()
+        {
+            var run = ExtraBuyAction.BeginChoice(RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults()));
+            var resourceCard = new AssetCardData(
+                "extra-buy-cash-resource-card",
+                string.Empty,
+                "Extra buy allowed resource card.",
+                AssetRarity.Common,
+                1,
+                new ProfessionalResourceCost[0],
+                0,
+                0,
+                new TagData[0],
+                cardDomain: CardDomain.ConsumableResource,
+                providedResourceType: ResourceType.Cash,
+                providedResourceAmount: 2,
+                canBePurchasedWithExtraBuy: true);
+            var runtimeCard = new AssetCardRuntimeData(resourceCard, AssetCardRuntimeState.Available, PurchaseSource.MarketTape);
+            run = WithCurrentMarketCard(run, runtimeCard, 0);
+            var cashBeforePurchase = run.Resources.Cash;
+            var remainingBusinessDays = run.Calendar.RemainingBusinessDays;
+            run = MarketAreaFlow.OpenMarketCardDetail(run, runtimeCard);
+
+            var result = PurchasePayment.ConfirmPurchase(run);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.Run.Resources.Cash, Is.EqualTo(cashBeforePurchase - resourceCard.CashCost + 2));
+            Assert.That(result.Run.OwnedAssets.OwnedCards, Has.Count.EqualTo(0));
+            Assert.That(FindCard(result.Run.AssetCards, resourceCard.Id).State, Is.EqualTo(AssetCardRuntimeState.Removed));
+            Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays - 1));
+            Assert.That(result.Run.BusinessDay.HasExtraBuyAction, Is.False);
+            Assert.That(result.Run.BusinessDay.IsAwaitingExtraBuyChoice, Is.False);
+            Assert.That(result.Run.BusinessDay.IsBuyingWithExtraBuy, Is.False);
+            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+        }
+
+        [Test]
+        public void ExtraBuyCannotPurchaseReservedStockOrConsumeExtraBuyRight()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = MarketAreaFlow.OpenMarketCardDetail(run, FindFirstAvailableMarketSlotCard(run.MarketTape));
@@ -604,16 +641,14 @@ namespace AssetManager.Tests
             extraBuyRun = ResourceLedger.AddProfessionalResource(extraBuyRun, ResourceType.Research, 1).Run;
             extraBuyRun = ResourceLedger.AddProfessionalResource(extraBuyRun, ResourceType.Credit, 1).Run;
             extraBuyRun = MarketAreaFlow.OpenMarketCardDetail(extraBuyRun, reservedCard);
-            extraBuyRun = PurchasePayment.PlaceChip(extraBuyRun, ResourceType.Research).Run;
-            extraBuyRun = PurchasePayment.PlaceChip(extraBuyRun, ResourceType.Credit).Run;
 
-            var result = PurchasePayment.ConfirmPurchase(extraBuyRun);
-
-            Assert.That(result.Succeeded, Is.True);
-            Assert.That(result.Run.OwnedAssets.OwnedCards, Has.Count.EqualTo(2));
-            Assert.That(result.Run.Reservation.ReservedCards, Is.Empty);
-            Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays - 1));
-            Assert.That(result.Run.BusinessDay.HasExtraBuyAction, Is.False);
+            Assert.That(extraBuyRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
+            Assert.That(extraBuyRun.BusinessDay.HasExtraBuyAction, Is.True);
+            Assert.That(extraBuyRun.BusinessDay.IsAwaitingExtraBuyChoice, Is.True);
+            Assert.That(extraBuyRun.BusinessDay.IsBuyingWithExtraBuy, Is.False);
+            Assert.That(extraBuyRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
+            Assert.That(CountReservedSlots(extraBuyRun.MarketTape), Is.EqualTo(1));
+            Assert.That(extraBuyRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
         }
 
         [Test]
@@ -764,6 +799,19 @@ namespace AssetManager.Tests
             foreach (var slot in tape.Slots)
             {
                 if (!slot.IsEmpty && slot.Card.Card.Id == stockId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool MarketTapeContainsRuntimeCard(MarketTapeState tape, string runtimeId)
+        {
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty && slot.Card.RuntimeId == runtimeId)
                 {
                     return true;
                 }

@@ -7,6 +7,13 @@ namespace AssetManager
             return card != null && card.GrantsExtraBuyAction;
         }
 
+        public static bool CanPurchaseCandidate(AssetCardRuntimeData card)
+        {
+            return card != null
+                && card.State == AssetCardRuntimeState.Available
+                && card.Card.CanBePurchasedWithExtraBuy;
+        }
+
         public static RunSessionState BeginChoice(RunSessionState run)
         {
             return WithBusinessDay(
@@ -26,7 +33,7 @@ namespace AssetManager
                 run,
                 new BusinessDayState(
                     run.BusinessDay.Phase,
-                    MarketAreaState.CardDetail,
+                    MarketAreaState.Market,
                     true,
                     false,
                     true),

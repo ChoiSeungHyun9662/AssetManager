@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace AssetManager
@@ -11,23 +12,34 @@ namespace AssetManager
         [SerializeField]
         private GameObject marketPanel;
 
+        [SerializeField]
+        private GameObject hoverCardPanel;
+
+        [SerializeField]
+        private Text hoverCardText;
+
         private readonly List<Button> sellImminentButtons = new List<Button>();
         private readonly List<Button> currentMarketButtons = new List<Button>();
         private readonly List<Button> upcomingMarketButtons = new List<Button>();
         private Action<AssetCardRuntimeData, MarketTapeZone> onMarketCardSelected;
 
         public GameObject MarketPanel => marketPanel;
+        public GameObject HoverCardPanel => hoverCardPanel;
         public IReadOnlyList<Button> SellImminentButtons => sellImminentButtons;
         public IReadOnlyList<Button> CurrentMarketButtons => currentMarketButtons;
         public IReadOnlyList<Button> UpcomingMarketButtons => upcomingMarketButtons;
 
         public void Bind(
             GameObject market,
+            GameObject hoverPanel,
+            Text hoverText,
             IEnumerable<Button> sellImminentCardButtons,
             IEnumerable<Button> currentMarketCardButtons,
             IEnumerable<Button> upcomingMarketCardButtons)
         {
             marketPanel = market;
+            hoverCardPanel = hoverPanel;
+            hoverCardText = hoverText;
 
             ReplaceButtons(sellImminentButtons, sellImminentCardButtons);
             ReplaceButtons(currentMarketButtons, currentMarketCardButtons);
@@ -42,6 +54,7 @@ namespace AssetManager
         public void Show(RunSessionState run)
         {
             SetActive(marketPanel, run.BusinessDay.MarketArea == MarketAreaState.Market);
+            HideHoverCard();
 
             ShowCards(sellImminentButtons, Array.Empty<AssetCardRuntimeData>(), MarketTapeZone.SellImminent);
             ShowSlots(currentMarketButtons, run.MarketTape.Slots);
@@ -74,6 +87,7 @@ namespace AssetManager
                 var card = slot.Card;
                 SetButtonText(button, FormatCard(card, slot.IsReserved));
                 StyleCardButton(button, card, MarketTapeZone.CurrentMarket, slot.IsReserved);
+                ConfigureHoverTrigger(button.gameObject, card, slot.IsReserved);
                 button.onClick.AddListener(() => onMarketCardSelected?.Invoke(card, MarketTapeZone.CurrentMarket));
             }
         }
@@ -104,8 +118,44 @@ namespace AssetManager
                 var card = cards[i];
                 SetButtonText(button, FormatCard(card, false));
                 StyleCardButton(button, card, zone, false);
+                ConfigureHoverTrigger(button.gameObject, card, false);
                 button.onClick.AddListener(() => onMarketCardSelected?.Invoke(card, zone));
             }
+        }
+
+        private void ConfigureHoverTrigger(GameObject target, AssetCardRuntimeData card, bool isReserved)
+        {
+            var trigger = target.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = target.AddComponent<EventTrigger>();
+            }
+
+            trigger.triggers.Clear();
+            AddHoverTrigger(trigger, EventTriggerType.PointerEnter, () => ShowHoverCard(card, isReserved));
+            AddHoverTrigger(trigger, EventTriggerType.PointerExit, HideHoverCard);
+        }
+
+        private static void AddHoverTrigger(EventTrigger trigger, EventTriggerType eventType, Action action)
+        {
+            var entry = new EventTrigger.Entry { eventID = eventType };
+            entry.callback.AddListener(_ => action());
+            trigger.triggers.Add(entry);
+        }
+
+        private void ShowHoverCard(AssetCardRuntimeData card, bool isReserved)
+        {
+            if (hoverCardText != null)
+            {
+                hoverCardText.text = FormatCard(card, isReserved);
+            }
+
+            SetActive(hoverCardPanel, true);
+        }
+
+        private void HideHoverCard()
+        {
+            SetActive(hoverCardPanel, false);
         }
 
         private static string FormatCard(AssetCardRuntimeData card, bool isReserved)

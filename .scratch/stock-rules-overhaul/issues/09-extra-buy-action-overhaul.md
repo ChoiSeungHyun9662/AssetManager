@@ -1,6 +1,6 @@
 # 09. 추가 매수권 새 규칙 정합화
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -29,14 +29,26 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 추가 매수권은 다음 영업일로 이월되지 않는다.
-- [ ] 추가 매수권은 중첩되지 않는다.
-- [ ] 추가 매수권 상태에서 주식 예약은 불가능하다.
-- [ ] 추가 매수권 사용 후에는 즉시 영업일을 종료한다.
-- [ ] 추가 매수로 다시 추가 매수권이 발생하더라도 해당 효과는 무시된다.
-- [ ] 추가 매수 전후 시장 빈칸은 시장 테이프 당김으로 처리한다.
-- [ ] 추가 매수 후보는 주식 카드와, 허용된 경우 소모형 자원 카드까지 포함할 수 있다.
-- [ ] 추가 매수권을 사용하지 않고 다음 영업일로 넘기면 권리는 폐기된다.
+- [x] 추가 매수권은 다음 영업일로 이월되지 않는다.
+- [x] 추가 매수권은 중첩되지 않는다.
+- [x] 추가 매수권 상태에서 주식 예약은 불가능하다.
+- [x] 추가 매수권 사용 후에는 즉시 영업일을 종료한다.
+- [x] 추가 매수로 다시 추가 매수권이 발생하더라도 해당 효과는 무시된다.
+- [x] 추가 매수 전후 시장 빈칸은 시장 테이프 당김으로 처리한다.
+- [x] 추가 매수 후보는 주식 카드와, 허용된 경우 소모형 자원 카드까지 포함할 수 있다.
+- [x] 추가 매수권을 사용하지 않고 다음 영업일로 넘기면 권리는 폐기된다.
+
+## Implementation notes
+
+- `AssetCardData.CanBePurchasedWithExtraBuy` gates consumable resource cards; stock cards remain eligible by default.
+- Reserved stocks and non-opt-in consumable resource cards cannot enter an extra-buy purchase.
+- Extra-buy purchases keep the normal market purchase/payment path, including 1x8 market tape pull after the purchased slot is emptied.
+- A purchase made with an extra-buy right clears the right and consumes the business day; nested extra-buy grants from that purchase are ignored.
+
+## Verification
+
+- EditMode: `AssetManager.Tests.EditMode` passed on 2026-05-20.
+- PlayMode: `AssetManager.Tests.PlayMode` passed on 2026-05-20.
 
 ## Blocked by
 

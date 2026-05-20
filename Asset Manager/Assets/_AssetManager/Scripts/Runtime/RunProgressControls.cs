@@ -94,14 +94,14 @@ namespace AssetManager
             }
 
             return string.Format(
-                "분기 마감: {0}회계년도 {1}Q\n분기 수익 {2} / 분기 목표 {3}\n목표 달성률 {4}% | 환매 압력 +{5} | 현재 환매 압력 {6}/{7}",
+                "분기 마감: {0}회계년도 {1}Q\n현재 분기 수익 {2} / 분기 목표 {3}\n목표 달성률 {4}% | 월세 밀림 +{5} | 현재 월세 밀림 {6}/{7}",
                 run.Calendar.FiscalYear,
                 run.Calendar.Quarter,
-                result.QuarterEarnedCash,
-                result.TargetEarnedCash,
+                result.QuarterRevenue,
+                result.QuarterRevenueTarget,
                 (int)(result.AchievementRate * 100d),
-                result.RedemptionPressureIncrease,
-                result.CurrentRedemptionPressure,
+                result.RentArrearsIncrease,
+                result.CurrentRentArrears,
                 run.RedemptionPressure.MaxPressure);
         }
 
@@ -109,14 +109,14 @@ namespace AssetManager
         {
             var summary = FiscalYearSummary.Create(run);
             return string.Format(
-                "4Q 휴가: {0}회계년도 요약\n현재 운용가치 {1} | 올해 수익 {2}\n분기별 수익 {3}\n보유 자산 {4} | 환매 압력 {5}/{6}",
+                "4Q 휴가: {0}회계년도 요약\n현재 가치 {1} | 올해 수익 {2}\n분기별 수익 {3}\n보유 주식 {4} | 월세 밀림 {5}/{6}",
                 summary.FiscalYear,
-                summary.CurrentManagementValue,
-                summary.FiscalYearEarnedCash,
+                summary.CurrentValue,
+                summary.FiscalYearRevenue,
                 FormatQuarterEarnedCash(summary),
-                summary.OwnedAssetCount,
-                summary.CurrentRedemptionPressure,
-                summary.MaxRedemptionPressure);
+                summary.OwnedStockCount,
+                summary.CurrentRentArrears,
+                summary.MaxRentArrears);
         }
 
         private static string FormatQuarterEarnedCash(FiscalYearSummaryResult summary)
@@ -140,14 +140,14 @@ namespace AssetManager
         {
             var settlement = FinalSettlement.Create(run);
             return string.Format(
-                "최종 정산\n최종 운용가치 {0} | 최종 평가 {1}\n총 수익 {2} | 보유 자산 {3}\n환매 압력 {4}/{5}\n운용 코멘트: {6}",
-                settlement.FinalManagementValue,
+                "최종 정산\n최종 가치 {0} | 최종 평가 {1}\n총 수익 {2} | 보유 주식 {3}\n월세 밀림 {4}/{5}\n최종 코멘트: {6}",
+                settlement.FinalValue,
                 settlement.FinalRating.DisplayName,
                 settlement.TotalEarnedCash,
-                settlement.OwnedAssetCount,
-                settlement.CurrentRedemptionPressure,
-                settlement.MaxRedemptionPressure,
-                settlement.ManagementComment);
+                settlement.OwnedStockCount,
+                settlement.CurrentRentArrears,
+                settlement.MaxRentArrears,
+                settlement.FinalComment);
         }
 
         private static string FormatRunFailure(RunSessionState run)
@@ -157,7 +157,7 @@ namespace AssetManager
                 : run.FailureReason;
 
             return string.Format(
-                "런 실패: {0}\n도달 지점 {1}회계년도 {2}Q\n현재 운용가치 {3} | 총 수익 {4} | 보유 자산 {5}\n환매 압력 {6}/{7}",
+                "{0}\n도달 지점 {1}회계년도 {2}Q\n현재 가치 {3} | 총 수익 {4} | 보유 주식 {5}\n월세 밀림 {6}/{7}",
                 failureReason,
                 run.Calendar.FiscalYear,
                 run.Calendar.Quarter,

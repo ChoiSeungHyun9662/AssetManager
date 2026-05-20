@@ -109,11 +109,16 @@ namespace AssetManager
         }
 
         public int FinalManagementValue { get; }
+        public int FinalValue => FinalManagementValue;
         public FinalRatingData FinalRating { get; }
         public int TotalEarnedCash { get; }
         public int OwnedAssetCount { get; }
+        public int OwnedStockCount => OwnedAssetCount;
         public int CurrentRedemptionPressure { get; }
+        public int CurrentRentArrears => CurrentRedemptionPressure;
         public int MaxRedemptionPressure { get; }
+        public int MaxRentArrears => MaxRedemptionPressure;
         public string ManagementComment { get; }
+        public string FinalComment => ManagementComment;
     }
 }

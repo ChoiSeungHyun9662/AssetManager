@@ -53,6 +53,8 @@ namespace AssetManager
         public const string MarketTapeSellImminentCardButtonPrefix = "Market Tape Sell Imminent Card Button ";
         public const string MarketTapeCurrentMarketCardButtonPrefix = "Market Tape Current Market Card Button ";
         public const string MarketTapeUpcomingMarketCardButtonPrefix = "Market Tape Upcoming Market Card Button ";
+        public const string MarketCardHoverPanelName = "Market Card Hover Panel";
+        public const string MarketCardHoverTextName = "Market Card Hover Text";
         public const string MarketTapeAdvanceButtonName = "Market Tape Advance Button";
         public const string MarketTapeRefreshButtonName = "Market Tape Refresh Button";
         public const string CentralBankButtonName = "Central Bank Button";
@@ -491,6 +493,27 @@ namespace AssetManager
                 upcomingMarketPanel.transform,
                 MarketTapeUpcomingMarketCardButtonPrefix,
                 0);
+            var hoverPanel = EnsurePanel(
+                marketPanel.transform,
+                MarketCardHoverPanelName,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -300f),
+                new Vector2(360f, 300f),
+                new Color(0.08f, 0.10f, 0.12f, 0.98f));
+            var hoverText = EnsurePanelText(
+                hoverPanel.transform,
+                MarketCardHoverTextName,
+                new Vector2(18f, -18f),
+                new Vector2(324f, 264f),
+                24,
+                TextAnchor.UpperLeft);
+            var hoverImage = hoverPanel.GetComponent<Image>();
+            if (hoverImage != null)
+            {
+                hoverImage.raycastTarget = false;
+            }
 
             ApplyMarketTapeLayout(
                 marketPanel,
@@ -500,6 +523,7 @@ namespace AssetManager
                 sellImminentButtons,
                 currentMarketButtons,
                 upcomingMarketButtons);
+            ApplyMarketCardHoverLayout(hoverPanel, hoverText);
 
             var view = uiRoot.GetComponent<MarketTapeView>();
             if (view == null)
@@ -509,9 +533,12 @@ namespace AssetManager
 
             view.Bind(
                 marketPanel,
+                hoverPanel,
+                hoverText,
                 sellImminentButtons,
                 currentMarketButtons,
                 upcomingMarketButtons);
+            hoverPanel.SetActive(false);
             return view;
         }
 
@@ -1055,6 +1082,24 @@ namespace AssetManager
                     new Vector2(14f, 10f),
                     isTapeRow ? 14 : isPreviewColumn ? 14 : 16,
                     TextAnchor.UpperLeft);
+            }
+        }
+
+        private static void ApplyMarketCardHoverLayout(GameObject hoverPanel, Text hoverText)
+        {
+            SetRect(
+                hoverPanel,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -292f),
+                new Vector2(360f, 300f));
+            SetTextRect(hoverText, new Vector2(18f, -18f), new Vector2(324f, 264f), 24, TextAnchor.UpperLeft);
+            if (hoverText != null)
+            {
+                hoverText.resizeTextForBestFit = true;
+                hoverText.resizeTextMinSize = 16;
+                hoverText.resizeTextMaxSize = 24;
             }
         }
 

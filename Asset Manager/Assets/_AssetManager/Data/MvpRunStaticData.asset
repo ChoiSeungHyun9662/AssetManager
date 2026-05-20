@@ -788,7 +788,7 @@ MonoBehaviour:
   - commentId: seed-watch
     ratingId: seed
     pressureLevelId: watch
-    comment: Small portfolio, rising pressure.
+    comment: Small portfolio, rent piling up.
   - commentId: seed-critical
     ratingId: seed
     pressureLevelId: critical
@@ -800,11 +800,11 @@ MonoBehaviour:
   - commentId: core-watch
     ratingId: core
     pressureLevelId: watch
-    comment: Good value with some pressure.
+    comment: Good value with rent piling up.
   - commentId: core-critical
     ratingId: core
     pressureLevelId: critical
-    comment: "\uC131\uACFC\uB294 \uCDA9\uBD84\uD558\uC9C0\uB9CC \uD658\uB9E4 \uC555\uB825\uC774
+    comment: "\uC131\uACFC\uB294 \uCDA9\uBD84\uD558\uC9C0\uB9CC \uC6D4\uC138 \uBC00\uB9BC\uC774
       \uB192\uC2B5\uB2C8\uB2E4."
   - commentId: flagship-stable
     ratingId: flagship
@@ -813,7 +813,7 @@ MonoBehaviour:
   - commentId: flagship-watch
     ratingId: flagship
     pressureLevelId: watch
-    comment: Strong value under pressure.
+    comment: Strong value despite late rent.
   - commentId: flagship-critical
     ratingId: flagship
     pressureLevelId: critical

@@ -98,7 +98,7 @@ namespace AssetManager.Tests
 
             Assert.That(run.State, Is.EqualTo(RunState.Failed));
             Assert.That(run.RedemptionPressure.CurrentPressure, Is.EqualTo(10));
-            Assert.That(run.FailureReason, Is.EqualTo("대규모 환매 발생"));
+            Assert.That(run.FailureReason, Is.EqualTo("파산"));
             Assert.That(run.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.QuarterSettlement));
 
             var continuedRun = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
@@ -266,6 +266,38 @@ namespace AssetManager.Tests
             Assert.That(run.Calendar.Quarter, Is.EqualTo(4));
             Assert.That(run.Calendar.RemainingBusinessDays, Is.EqualTo(0));
             Assert.That(run.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.FinalSettlement));
+        }
+
+        [Test]
+        public void ContinueAfterFailedThirdQuarterSettlementDoesNotStartVacation()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = WithCalendar(run, new RunCalendarState(1, 3, 0));
+            run = WithBusinessDay(run, new BusinessDayState(BusinessDayPhase.QuarterSettlement, MarketAreaState.Market));
+            run = WithState(run, RunState.Failed, "파산");
+
+            var continuedRun = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
+
+            Assert.That(continuedRun.State, Is.EqualTo(RunState.Failed));
+            Assert.That(continuedRun.Calendar.FiscalYear, Is.EqualTo(1));
+            Assert.That(continuedRun.Calendar.Quarter, Is.EqualTo(3));
+            Assert.That(continuedRun.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.QuarterSettlement));
+        }
+
+        [Test]
+        public void ContinueAfterFailedFinalPlayableQuarterSettlementDoesNotStartFinalSettlement()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = WithCalendar(run, new RunCalendarState(3, 4, 0));
+            run = WithBusinessDay(run, new BusinessDayState(BusinessDayPhase.QuarterSettlement, MarketAreaState.Market));
+            run = WithState(run, RunState.Failed, "파산");
+
+            var continuedRun = BusinessDayFlow.ContinueAfterQuarterSettlement(run);
+
+            Assert.That(continuedRun.State, Is.EqualTo(RunState.Failed));
+            Assert.That(continuedRun.Calendar.FiscalYear, Is.EqualTo(3));
+            Assert.That(continuedRun.Calendar.Quarter, Is.EqualTo(4));
+            Assert.That(continuedRun.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.QuarterSettlement));
         }
 
         [Test]
@@ -447,6 +479,46 @@ namespace AssetManager.Tests
                 new RedemptionPressureState(currentPressure, run.RedemptionPressure.MaxPressure),
                 run.CardDetail,
                 run.LiquidityAction);
+        }
+
+        private static RunSessionState WithBusinessDay(RunSessionState run, BusinessDayState businessDay)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                businessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason);
+        }
+
+        private static RunSessionState WithState(RunSessionState run, RunState state, string failureReason)
+        {
+            return new RunSessionState(
+                state,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                failureReason);
         }
 
         private static AssetCardRuntimeData FindCard(System.Collections.Generic.IEnumerable<AssetCardRuntimeData> cards, string cardId)

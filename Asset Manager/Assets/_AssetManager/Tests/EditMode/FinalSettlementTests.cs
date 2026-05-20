@@ -5,7 +5,7 @@ namespace AssetManager.Tests
     public sealed class FinalSettlementTests
     {
         [Test]
-        public void CreateFinalSettlementRatesOwnedAssetsOnlyAndUsesPressureForComment()
+        public void CreateFinalSettlementRatesOwnedStocksOnlyAndUsesRentArrearsForComment()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             var secondStock = run.StaticData.AssetCards[3];
@@ -29,12 +29,12 @@ namespace AssetManager.Tests
 
             var settlement = FinalSettlement.Create(run);
 
-            Assert.That(settlement.FinalManagementValue, Is.EqualTo(7));
+            Assert.That(settlement.FinalValue, Is.EqualTo(7));
             Assert.That(settlement.FinalRating.DisplayName, Is.EqualTo("Core"));
             Assert.That(settlement.TotalEarnedCash, Is.EqualTo(0));
-            Assert.That(settlement.OwnedAssetCount, Is.EqualTo(2));
-            Assert.That(settlement.CurrentRedemptionPressure, Is.EqualTo(8));
-            Assert.That(settlement.ManagementComment, Is.EqualTo("성과는 충분하지만 환매 압력이 높습니다."));
+            Assert.That(settlement.OwnedStockCount, Is.EqualTo(2));
+            Assert.That(settlement.CurrentRentArrears, Is.EqualTo(8));
+            Assert.That(settlement.FinalComment, Is.EqualTo("성과는 충분하지만 월세 밀림이 높습니다."));
         }
 
         private static RunSessionState WithResources(RunSessionState run, ResourceState resources)

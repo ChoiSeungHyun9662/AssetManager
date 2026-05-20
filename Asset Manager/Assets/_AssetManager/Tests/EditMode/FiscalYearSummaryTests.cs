@@ -24,8 +24,8 @@ namespace AssetManager.Tests
             var summary = FiscalYearSummary.Create(run);
 
             Assert.That(summary.FiscalYear, Is.EqualTo(1));
-            Assert.That(summary.CurrentManagementValue, Is.EqualTo(ownedCard.Card.ManagementValue));
-            Assert.That(summary.FiscalYearEarnedCash, Is.EqualTo(6));
+            Assert.That(summary.CurrentValue, Is.EqualTo(ownedCard.Card.ManagementValue));
+            Assert.That(summary.FiscalYearRevenue, Is.EqualTo(6));
             Assert.That(summary.QuarterEarnedCash, Has.Count.EqualTo(3));
             Assert.That(summary.QuarterEarnedCash[0].Quarter, Is.EqualTo(1));
             Assert.That(summary.QuarterEarnedCash[0].EarnedCash, Is.EqualTo(1));
@@ -33,8 +33,8 @@ namespace AssetManager.Tests
             Assert.That(summary.QuarterEarnedCash[1].EarnedCash, Is.EqualTo(2));
             Assert.That(summary.QuarterEarnedCash[2].Quarter, Is.EqualTo(3));
             Assert.That(summary.QuarterEarnedCash[2].EarnedCash, Is.EqualTo(3));
-            Assert.That(summary.OwnedAssetCount, Is.EqualTo(1));
-            Assert.That(summary.CurrentRedemptionPressure, Is.EqualTo(run.RedemptionPressure.CurrentPressure));
+            Assert.That(summary.OwnedStockCount, Is.EqualTo(1));
+            Assert.That(summary.CurrentRentArrears, Is.EqualTo(run.RedemptionPressure.CurrentPressure));
         }
 
         private static RunSessionState CompleteCurrentQuarterWithEarnedCash(RunSessionState run, int earnedCash)

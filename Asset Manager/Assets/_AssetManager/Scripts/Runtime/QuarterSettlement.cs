@@ -130,10 +130,15 @@ namespace AssetManager
         public RunSessionState Run { get; }
         public QuarterEndResult QuarterEnd { get; }
         public int SettlementIncome => QuarterEnd.SettlementIncome;
+        public int SettlementRevenue => SettlementIncome;
         public int QuarterEarnedCash => QuarterEnd.QuarterEarnedCash;
+        public int QuarterRevenue => QuarterEarnedCash;
         public int TargetEarnedCash => QuarterEnd.TargetEarnedCash;
+        public int QuarterRevenueTarget => TargetEarnedCash;
         public double AchievementRate => QuarterEnd.AchievementRate;
         public int RedemptionPressureIncrease => QuarterEnd.RedemptionPressureIncrease;
+        public int RentArrearsIncrease => RedemptionPressureIncrease;
         public int CurrentRedemptionPressure => QuarterEnd.CurrentRedemptionPressure;
+        public int CurrentRentArrears => CurrentRedemptionPressure;
     }
 }

@@ -158,8 +158,8 @@ namespace AssetManager.Tests
             Assert.That(FindUiObject(ProjectShell.ContinueScheduleButtonName).activeSelf, Is.False);
 
             var failureText = FindUiObject(ProjectShell.RunFailurePlaceholderTextName).GetComponent<Text>().text;
-            Assert.That(failureText, Does.Contain("대규모 환매 발생"));
-            Assert.That(failureText, Does.Contain("환매 압력 10/10"));
+            Assert.That(failureText, Does.Contain("파산"));
+            Assert.That(failureText, Does.Contain("월세 밀림 10/10"));
 
             yield return SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene());
         }
@@ -199,7 +199,7 @@ namespace AssetManager.Tests
             Assert.That(FindUiObject(ProjectShell.FinalSettlementPlaceholderPanelName).activeSelf, Is.True);
 
             var finalText = FindUiObject(ProjectShell.FinalSettlementPlaceholderTextName).GetComponent<Text>().text;
-            Assert.That(finalText, Does.Contain("최종 운용가치 7"));
+            Assert.That(finalText, Does.Contain("최종 가치 7"));
             Assert.That(finalText, Does.Contain("최종 평가 Core"));
             Assert.That(finalText, Does.Contain("총 수익"));
 

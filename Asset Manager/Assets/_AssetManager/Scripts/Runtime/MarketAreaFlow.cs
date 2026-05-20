@@ -25,14 +25,7 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(selectedCard));
             }
 
-            if (run.BusinessDay.Phase != BusinessDayPhase.AwaitingAction
-                || run.BusinessDay.MarketArea != MarketAreaState.Market
-                || run.BusinessDay.IsAwaitingExtraBuyChoice)
-            {
-                return run;
-            }
-
-            return WithMarketArea(run, MarketAreaState.CardDetail, CardDetailState.OpenPreview(selectedCard));
+            return run;
         }
 
         public static RunSessionState CloseCardDetail(RunSessionState run)
@@ -42,7 +35,7 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
-            if (run.BusinessDay.MarketArea != MarketAreaState.CardDetail)
+            if (run.CardDetail.SelectedCard == null)
             {
                 return run;
             }
@@ -90,6 +83,11 @@ namespace AssetManager
             }
 
             var isExtraBuy = run.BusinessDay.IsAwaitingExtraBuyChoice;
+            if (isExtraBuy && !ExtraBuyAction.CanPurchaseCandidate(selectedCard))
+            {
+                return run;
+            }
+
             var cardDetail = CardDetailState.Open(
                 selectedCard,
                 purchaseSource,
@@ -98,7 +96,7 @@ namespace AssetManager
 
             return isExtraBuy
                 ? ExtraBuyAction.BeginPurchase(run, cardDetail)
-                : WithMarketArea(run, MarketAreaState.CardDetail, cardDetail);
+                : WithMarketArea(run, MarketAreaState.Market, cardDetail);
         }
 
         private static RunSessionState WithMarketArea(

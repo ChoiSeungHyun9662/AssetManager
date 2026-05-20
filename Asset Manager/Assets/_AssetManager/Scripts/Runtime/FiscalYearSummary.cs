@@ -54,10 +54,15 @@ namespace AssetManager
 
         public int FiscalYear { get; }
         public int CurrentManagementValue { get; }
+        public int CurrentValue => CurrentManagementValue;
         public int FiscalYearEarnedCash { get; }
+        public int FiscalYearRevenue => FiscalYearEarnedCash;
         public IReadOnlyList<QuarterPerformanceRecord> QuarterEarnedCash { get; }
         public int OwnedAssetCount { get; }
+        public int OwnedStockCount => OwnedAssetCount;
         public int CurrentRedemptionPressure { get; }
+        public int CurrentRentArrears => CurrentRedemptionPressure;
         public int MaxRedemptionPressure { get; }
+        public int MaxRentArrears => MaxRedemptionPressure;
     }
 }

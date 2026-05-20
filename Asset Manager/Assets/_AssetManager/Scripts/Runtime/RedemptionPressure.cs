@@ -4,7 +4,7 @@ namespace AssetManager
 {
     public static class RedemptionPressure
     {
-        public const string FailureReason = "대규모 환매 발생";
+        public const string FailureReason = "파산";
 
         public static RedemptionPressureResult AddPressure(RunSessionState run, int amount)
         {

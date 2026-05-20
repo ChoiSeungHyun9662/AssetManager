@@ -186,6 +186,9 @@ namespace AssetManager
         [SerializeField]
         private int providedResourceAmount;
 
+        [SerializeField]
+        private bool canBePurchasedWithExtraBuy;
+
         public AssetCardData()
         {
         }
@@ -207,7 +210,8 @@ namespace AssetManager
             int maxDeckCopies = 1,
             CardDomain cardDomain = CardDomain.Stock,
             ResourceType providedResourceType = ResourceType.Cash,
-            int providedResourceAmount = 0)
+            int providedResourceAmount = 0,
+            bool canBePurchasedWithExtraBuy = false)
         {
             this.id = id;
             this.displayName = displayName;
@@ -226,6 +230,7 @@ namespace AssetManager
             this.grantsExtraBuyAction = grantsExtraBuyAction;
             this.providedResourceType = providedResourceType;
             this.providedResourceAmount = providedResourceAmount;
+            this.canBePurchasedWithExtraBuy = canBePurchasedWithExtraBuy;
         }
 
         public string Id => id;
@@ -247,6 +252,7 @@ namespace AssetManager
         public bool GrantsExtraBuyAction => grantsExtraBuyAction;
         public ResourceType ProvidedResourceType => providedResourceType;
         public int ProvidedResourceAmount => providedResourceAmount;
+        public bool CanBePurchasedWithExtraBuy => cardDomain == CardDomain.Stock || canBePurchasedWithExtraBuy;
     }
 
     [Serializable]
@@ -938,11 +944,16 @@ namespace AssetManager
         }
 
         public int SettlementIncome { get; }
+        public int SettlementRevenue => SettlementIncome;
         public int QuarterEarnedCash { get; }
+        public int QuarterRevenue => QuarterEarnedCash;
         public int TargetEarnedCash { get; }
+        public int QuarterRevenueTarget => TargetEarnedCash;
         public double AchievementRate { get; }
         public int RedemptionPressureIncrease { get; }
+        public int RentArrearsIncrease => RedemptionPressureIncrease;
         public int CurrentRedemptionPressure { get; }
+        public int CurrentRentArrears => CurrentRedemptionPressure;
     }
 
     public sealed class RunSessionState

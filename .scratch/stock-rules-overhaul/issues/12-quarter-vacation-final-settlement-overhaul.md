@@ -1,6 +1,6 @@
 # 12. 분기, 휴가, 최종 정산 새 기준 반영
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -29,14 +29,21 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 분기 마감은 현재 분기 수익과 분기 목표를 비교해 달성률을 표시한다.
-- [ ] 분기 수익에는 배당금, 주식 매도 수익, 분기 정산 수익이 포함된다.
-- [ ] 분기 마감에서 월세 밀림 증가량과 현재 월세 밀림을 표시한다.
-- [ ] 1, 2회계연도 4Q 휴가는 보상/패널티 없이 현재 가치, 올해 수익, 보유 주식 수, 월세 밀림을 표시한다.
-- [ ] 3회계연도 4Q 마감 후 파산이 아니면 최종 정산으로 이동한다.
-- [ ] 최종 가치는 보유 주식 가치의 합계로 계산한다.
-- [ ] 최종 평가는 최종 가치 기준으로 결정한다.
-- [ ] 최종 코멘트는 최종 평가 등급과 월세 밀림 단계 조합으로 선택한다.
+- [x] 분기 마감은 현재 분기 수익과 분기 목표를 비교해 달성률을 표시한다.
+- [x] 분기 수익에는 배당금, 주식 매도 수익, 분기 정산 수익이 포함된다.
+- [x] 분기 마감에서 월세 밀림 증가량과 현재 월세 밀림을 표시한다.
+- [x] 1, 2회계연도 4Q 휴가는 보상/패널티 없이 현재 가치, 올해 수익, 보유 주식 수, 월세 밀림을 표시한다.
+- [x] 3회계연도 4Q 마감 후 파산이 아니면 최종 정산으로 이동한다.
+- [x] 최종 가치는 보유 주식 가치의 합계로 계산한다.
+- [x] 최종 평가는 최종 가치 기준으로 결정한다.
+- [x] 최종 코멘트는 최종 평가 등급과 월세 밀림 단계 조합으로 선택한다.
+
+## Implementation notes
+
+- Added stock-overhaul aliases to quarter, vacation, and final-settlement result objects while preserving old property names for compatibility.
+- Updated `RunProgressControls` summaries to show current quarter revenue, current value, owned stock count, rent arrears, final value, and final comment terminology.
+- Added EditMode regressions for failed quarter settlement not entering 4Q vacation or final settlement.
+- Verified with `scripts/Run-UnityBatchmode.ps1 -Mode EditMode -AssemblyNames AssetManager.Tests.EditMode` and `scripts/Run-UnityBatchmode.ps1 -Mode PlayMode -AssemblyNames AssetManager.Tests.PlayMode`.
 
 ## Blocked by
 

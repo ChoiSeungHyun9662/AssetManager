@@ -5,7 +5,7 @@ namespace AssetManager.Tests
     public sealed class QuarterSettlementTests
     {
         [Test]
-        public void SettleQuarterAppliesSettlementIncomeBeforeAchievementAndExcludesFundingCash()
+        public void SettleQuarterAppliesSettlementRevenueBeforeAchievementAndExcludesFundingCash()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             var ownedCard = new AssetCardRuntimeData(
@@ -17,11 +17,11 @@ namespace AssetManager.Tests
 
             var result = QuarterSettlement.Settle(run);
 
-            Assert.That(result.QuarterEarnedCash, Is.EqualTo(ownedCard.Card.ManagementValue));
-            Assert.That(result.SettlementIncome, Is.EqualTo(ownedCard.Card.ManagementValue));
-            Assert.That(result.TargetEarnedCash, Is.EqualTo(3));
+            Assert.That(result.QuarterRevenue, Is.EqualTo(ownedCard.Card.ManagementValue));
+            Assert.That(result.SettlementRevenue, Is.EqualTo(ownedCard.Card.ManagementValue));
+            Assert.That(result.QuarterRevenueTarget, Is.EqualTo(3));
             Assert.That(result.AchievementRate, Is.EqualTo(1d));
-            Assert.That(result.RedemptionPressureIncrease, Is.EqualTo(0));
+            Assert.That(result.RentArrearsIncrease, Is.EqualTo(0));
             Assert.That(result.Run.Resources.Cash, Is.EqualTo(run.Resources.Cash + ownedCard.Card.ManagementValue));
             Assert.That(result.Run.Performance.CurrentQuarterEarnedCash, Is.EqualTo(ownedCard.Card.ManagementValue));
             Assert.That(result.Run.Performance.FundingCash, Is.EqualTo(run.Performance.FundingCash));
@@ -32,7 +32,7 @@ namespace AssetManager.Tests
         [TestCase(3, 1)]
         [TestCase(2, 2)]
         [TestCase(1, 3)]
-        public void SettleQuarterIncreasesRedemptionPressureByAchievementBand(
+        public void SettleQuarterIncreasesRentArrearsByAchievementBand(
             int existingQuarterEarnedCash,
             int expectedPressureIncrease)
         {
@@ -44,7 +44,8 @@ namespace AssetManager.Tests
 
             var result = QuarterSettlement.Settle(run);
 
-            Assert.That(result.RedemptionPressureIncrease, Is.EqualTo(expectedPressureIncrease));
+            Assert.That(result.RentArrearsIncrease, Is.EqualTo(expectedPressureIncrease));
+            Assert.That(result.CurrentRentArrears, Is.EqualTo(expectedPressureIncrease));
             Assert.That(result.Run.RedemptionPressure.CurrentPressure, Is.EqualTo(expectedPressureIncrease));
         }
 

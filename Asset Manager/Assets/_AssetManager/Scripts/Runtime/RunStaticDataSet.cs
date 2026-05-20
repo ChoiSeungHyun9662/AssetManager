@@ -141,13 +141,13 @@ namespace AssetManager
             finalManagementComments = new List<FinalManagementCommentData>
             {
                 new FinalManagementCommentData("seed-stable", "seed", "stable", "Small but solvent."),
-                new FinalManagementCommentData("seed-watch", "seed", "watch", "Small portfolio, rising pressure."),
+                new FinalManagementCommentData("seed-watch", "seed", "watch", "Small portfolio, rent piling up."),
                 new FinalManagementCommentData("seed-critical", "seed", "critical", "Barely balanced the run."),
                 new FinalManagementCommentData("core-stable", "core", "stable", "A steady portfolio held together."),
-                new FinalManagementCommentData("core-watch", "core", "watch", "Good value with some pressure."),
-                new FinalManagementCommentData("core-critical", "core", "critical", "성과는 충분하지만 환매 압력이 높습니다."),
+                new FinalManagementCommentData("core-watch", "core", "watch", "Good value with rent piling up."),
+                new FinalManagementCommentData("core-critical", "core", "critical", "성과는 충분하지만 월세 밀림이 높습니다."),
                 new FinalManagementCommentData("flagship-stable", "flagship", "stable", "A flagship portfolio."),
-                new FinalManagementCommentData("flagship-watch", "flagship", "watch", "Strong value under pressure."),
+                new FinalManagementCommentData("flagship-watch", "flagship", "watch", "Strong value despite late rent."),
                 new FinalManagementCommentData("flagship-critical", "flagship", "critical", "Impressive and risky.")
             };
 
