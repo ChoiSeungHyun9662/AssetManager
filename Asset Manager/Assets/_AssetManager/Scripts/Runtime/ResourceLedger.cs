@@ -80,13 +80,10 @@ namespace AssetManager
                 return new ResourceLedgerResult(run, 0, 0, string.Empty);
             }
 
-            var totalCapacity = Math.Max(
-                0,
-                run.StaticData.ResourceConfig.InvestmentPhilosophyCap - run.Resources.InvestmentPhilosophyTotal);
             var typeCapacity = Math.Max(
                 0,
                 run.StaticData.ResourceConfig.InvestmentPhilosophyTypeCap - run.Resources.Get(resourceType));
-            var gainedAmount = Math.Min(amount, Math.Min(totalCapacity, typeCapacity));
+            var gainedAmount = Math.Min(amount, typeCapacity);
             var discardedAmount = amount - gainedAmount;
             var resources = AddInvestmentPhilosophyAmount(run.Resources, resourceType, gainedAmount);
             var message = discardedAmount > 0
@@ -108,6 +105,38 @@ namespace AssetManager
             return AddInvestmentPhilosophy(run, resourceType, amount);
         }
 
+        public static ResourceLedgerResult AddInvestmentPhilosophyMastery(
+            RunSessionState run,
+            ResourceType resourceType,
+            int amount)
+        {
+            ValidateRun(run);
+            ValidateAmount(amount);
+
+            if (!IsInvestmentPhilosophy(resourceType))
+            {
+                throw new ArgumentException("Only investment philosophy resources can gain mastery.", nameof(resourceType));
+            }
+
+            if (amount == 0)
+            {
+                return new ResourceLedgerResult(run, 0, 0, string.Empty);
+            }
+
+            var remainingCapacity = Math.Max(0, 5 - run.InvestmentPhilosophyMastery.Get(resourceType));
+            var gainedAmount = Math.Min(amount, remainingCapacity);
+            var discardedAmount = amount - gainedAmount;
+            var message = discardedAmount > 0
+                ? $"투자 철학 마스터리 한도: {GetResourceDisplayName(resourceType)} +{discardedAmount} 버림"
+                : string.Empty;
+
+            return new ResourceLedgerResult(
+                WithMastery(run, AddInvestmentPhilosophyMasteryAmount(run.InvestmentPhilosophyMastery, resourceType, gainedAmount)),
+                gainedAmount,
+                discardedAmount,
+                message);
+        }
+
         public static ResourceLedgerResult AddDeal(RunSessionState run, int amount)
         {
             ValidateRun(run);
@@ -118,13 +147,6 @@ namespace AssetManager
                 return new ResourceLedgerResult(run, 0, 0, string.Empty);
             }
 
-            var remainingCapacity = Math.Max(0, run.StaticData.ResourceConfig.MaxDeal - run.Resources.Deal);
-            var gainedAmount = Math.Min(amount, remainingCapacity);
-            var discardedAmount = amount - gainedAmount;
-            var message = discardedAmount > 0
-                ? "딜 한도: 추가 딜 버림"
-                : string.Empty;
-
             return new ResourceLedgerResult(
                 WithResourcesAndPerformance(
                     run,
@@ -133,11 +155,11 @@ namespace AssetManager
                         run.Resources.Reading,
                         run.Resources.Meditation,
                         run.Resources.Patience,
-                        run.Resources.Deal + gainedAmount),
+                        run.Resources.Deal + amount),
                     run.Performance),
-                gainedAmount,
-                discardedAmount,
-                message);
+                amount,
+                0,
+                string.Empty);
         }
 
         public static string GetResourceDisplayName(ResourceType resourceType)
@@ -199,6 +221,33 @@ namespace AssetManager
             }
         }
 
+        private static InvestmentPhilosophyMasteryState AddInvestmentPhilosophyMasteryAmount(
+            InvestmentPhilosophyMasteryState mastery,
+            ResourceType resourceType,
+            int amount)
+        {
+            switch (resourceType)
+            {
+                case ResourceType.Reading:
+                    return new InvestmentPhilosophyMasteryState(
+                        mastery.Reading + amount,
+                        mastery.Meditation,
+                        mastery.Patience);
+                case ResourceType.Meditation:
+                    return new InvestmentPhilosophyMasteryState(
+                        mastery.Reading,
+                        mastery.Meditation + amount,
+                        mastery.Patience);
+                case ResourceType.Patience:
+                    return new InvestmentPhilosophyMasteryState(
+                        mastery.Reading,
+                        mastery.Meditation,
+                        mastery.Patience + amount);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(resourceType), resourceType, null);
+            }
+        }
+
         private static void ValidateRun(RunSessionState run)
         {
             if (run == null)
@@ -235,7 +284,31 @@ namespace AssetManager
                 run.CardDetail,
                 run.LiquidityAction,
                 run.QuarterEndResult,
-                run.FailureReason);
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
+        }
+
+        private static RunSessionState WithMastery(
+            RunSessionState run,
+            InvestmentPhilosophyMasteryState mastery)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                mastery);
         }
     }
 

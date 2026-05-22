@@ -172,8 +172,7 @@ namespace AssetManager
                 return true;
             }
 
-            return run.Resources.InvestmentPhilosophyTotal < run.StaticData.ResourceConfig.InvestmentPhilosophyCap
-                && run.Resources.Get(resourceType) < run.StaticData.ResourceConfig.InvestmentPhilosophyTypeCap;
+            return run.Resources.Get(resourceType) < run.StaticData.ResourceConfig.InvestmentPhilosophyTypeCap;
         }
 
         private static bool HasAnyValidNextChoice(RunSessionState run)
@@ -213,7 +212,10 @@ namespace AssetManager
                 new BusinessDayState(run.BusinessDay.Phase, marketArea),
                 run.RedemptionPressure,
                 CardDetailState.Empty,
-                liquidityAction);
+                liquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
         }
     }
 

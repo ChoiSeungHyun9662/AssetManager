@@ -3,6 +3,13 @@ using System.Collections.Generic;
 
 namespace AssetManager
 {
+    public enum PurchaseFailureKind
+    {
+        None,
+        CostShortage,
+        NonCost
+    }
+
     public static class PurchasePayment
     {
         public static PurchasePaymentState CreateForCard(AssetCardData card)
@@ -97,17 +104,22 @@ namespace AssetManager
         public static bool CanConfirmPurchase(RunSessionState run)
         {
             ValidateRun(run);
-            return GetPurchaseValidationMessage(run) == string.Empty;
+            return GetPurchaseValidation(run).FailureKind == PurchaseFailureKind.None;
         }
 
         public static PurchasePaymentResult ConfirmPurchase(RunSessionState run)
         {
             ValidateRun(run);
 
-            var validationMessage = GetPurchaseValidationMessage(run);
-            if (validationMessage != string.Empty)
+            var validation = GetPurchaseValidation(run);
+            if (validation.FailureKind != PurchaseFailureKind.None)
             {
-                return new PurchasePaymentResult(run, false, validationMessage);
+                return new PurchasePaymentResult(
+                    run,
+                    false,
+                    validation.FailureKind == PurchaseFailureKind.CostShortage ? string.Empty : validation.Message,
+                    validation.FailureKind,
+                    run.CardDetail.SelectedCard != null ? run.CardDetail.SelectedCard.RuntimeId : string.Empty);
             }
 
             var payment = run.CardDetail.PendingPayment;
@@ -267,14 +279,12 @@ namespace AssetManager
         {
             return resourceType == ResourceType.Research
                 || resourceType == ResourceType.Credit
-                || resourceType == ResourceType.Commodity
-                || resourceType == ResourceType.Deal;
+                || resourceType == ResourceType.Commodity;
         }
 
         private static bool CanFillSlot(PaymentSlotState slot, ResourceType resourceType)
         {
-            return resourceType == ResourceType.Deal
-                || slot.RequiredResourceType == resourceType;
+            return slot.RequiredResourceType == resourceType;
         }
 
         private static int CountPlaced(PurchasePaymentState payment, ResourceType resourceType)
@@ -291,55 +301,68 @@ namespace AssetManager
             return count;
         }
 
-        private static string GetPurchaseValidationMessage(RunSessionState run)
+        private static PurchaseValidation GetPurchaseValidation(RunSessionState run)
         {
             if (!CanEditPendingPayment(run)
                 || run.CardDetail.SelectedCard == null
                 || !run.CardDetail.PurchaseSource.HasValue)
             {
-                return "매수할 수 없습니다.";
+                return PurchaseValidation.NonCost("매수할 수 없습니다.");
             }
 
             if (run.CardDetail.PurchaseSource == PurchaseSource.MarketTape
                 && !FindMarketTapeZone(run.MarketTape, run.CardDetail.SelectedCard.RuntimeId).HasValue)
             {
-                return "매수 출처를 찾을 수 없습니다.";
+                return PurchaseValidation.NonCost("매수 출처를 찾을 수 없습니다.");
             }
 
             if (run.CardDetail.PurchaseSource == PurchaseSource.Reserved
                 && !ContainsCard(run.Reservation.ReservedCards, run.CardDetail.SelectedCard.RuntimeId))
             {
-                return "매수 출처를 찾을 수 없습니다.";
+                return PurchaseValidation.NonCost("매수 출처를 찾을 수 없습니다.");
             }
 
             if (run.CardDetail.IsOpenedDuringExtraBuy
                 && !ExtraBuyAction.CanPurchaseCandidate(run.CardDetail.SelectedCard))
             {
-                return "Extra buy cannot purchase this card.";
+                return PurchaseValidation.NonCost("Extra buy cannot purchase this card.");
             }
 
-            if (!run.OwnedAssets.CanAcceptStockPurchase(run.CardDetail.SelectedCard.Card))
+            if (run.CardDetail.SelectedCard.Card.CardDomain == CardDomain.Stock
+                && !run.OwnedAssets.CanAcceptStockPurchase(run.CardDetail.SelectedCard.Card))
             {
-                return "주식 매도가 필요합니다";
+                return PurchaseValidation.NonCost("주식 매도가 필요합니다");
             }
 
             var payment = run.CardDetail.PendingPayment;
-            if (!AllSlotsFilled(payment))
+            if (!PurchaseCostsAreAvailable(run.Resources, payment))
             {
-                return "비용 슬롯을 모두 채워야 합니다.";
+                return PurchaseValidation.CostShortage();
             }
 
-            if (!PlacedResourcesAreAvailable(run.Resources, payment))
+            return PurchaseValidation.Success();
+        }
+
+        private static bool PurchaseCostsAreAvailable(ResourceState resources, PurchasePaymentState payment)
+        {
+            return payment.FinalCashCost <= resources.Cash
+                && CountRequired(payment, ResourceType.Reading) <= resources.Reading
+                && CountRequired(payment, ResourceType.Meditation) <= resources.Meditation
+                && CountRequired(payment, ResourceType.Patience) <= resources.Patience;
+        }
+
+        private static int CountRequired(PurchasePaymentState payment, ResourceType resourceType)
+        {
+            var count = 0;
+            foreach (var slot in payment.Slots)
             {
-                return "보유 자원이 부족합니다.";
+                if (slot.RequiredResourceType == resourceType)
+                {
+                    count++;
+                }
             }
 
-            if (payment.FinalCashCost > run.Resources.Cash)
-            {
-                return "현금이 부족합니다.";
-            }
-
-            return string.Empty;
+            return count;
         }
 
         private static bool AllSlotsFilled(PurchasePaymentState payment)
@@ -391,7 +414,11 @@ namespace AssetManager
                     run.CardDetail.DisplayData,
                     payment,
                     run.CardDetail.IsOpenedDuringExtraBuy,
-                    run.CardDetail.IsPreview));
+                    run.CardDetail.IsPreview),
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
         }
 
         private static IReadOnlyList<AssetCardRuntimeData> MarkCardOwned(
@@ -685,10 +712,10 @@ namespace AssetManager
                 run.Calendar,
                 new ResourceState(
                     run.Resources.Cash - payment.FinalCashCost,
-                    run.Resources.Research - CountPlaced(payment, ResourceType.Research),
-                    run.Resources.Credit - CountPlaced(payment, ResourceType.Credit),
-                    run.Resources.Commodity - CountPlaced(payment, ResourceType.Commodity),
-                    run.Resources.Deal - CountPlaced(payment, ResourceType.Deal)),
+                    run.Resources.Reading - CountRequired(payment, ResourceType.Reading),
+                    run.Resources.Meditation - CountRequired(payment, ResourceType.Meditation),
+                    run.Resources.Patience - CountRequired(payment, ResourceType.Patience),
+                    run.Resources.Deal),
                 run.Performance,
                 assetCards,
                 marketTape,
@@ -696,7 +723,11 @@ namespace AssetManager
                 ownedAssets,
                 run.BusinessDay,
                 run.RedemptionPressure,
-                CardDetailState.Empty);
+                CardDetailState.Empty,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
 
             if (!run.CardDetail.IsOpenedDuringExtraBuy && ExtraBuyAction.CanGrantFrom(run.CardDetail.SelectedCard.Card))
             {
@@ -741,19 +772,60 @@ namespace AssetManager
             public AssetCardRuntimeData FoilCard { get; }
             public IReadOnlyList<string> ConsumedRuntimeIds { get; }
         }
+
+        private sealed class PurchaseValidation
+        {
+            private PurchaseValidation(PurchaseFailureKind failureKind, string message)
+            {
+                FailureKind = failureKind;
+                Message = message ?? string.Empty;
+            }
+
+            public PurchaseFailureKind FailureKind { get; }
+            public string Message { get; }
+
+            public static PurchaseValidation Success()
+            {
+                return new PurchaseValidation(PurchaseFailureKind.None, string.Empty);
+            }
+
+            public static PurchaseValidation CostShortage()
+            {
+                return new PurchaseValidation(PurchaseFailureKind.CostShortage, string.Empty);
+            }
+
+            public static PurchaseValidation NonCost(string message)
+            {
+                return new PurchaseValidation(PurchaseFailureKind.NonCost, message);
+            }
+        }
     }
 
     public sealed class PurchasePaymentResult
     {
         public PurchasePaymentResult(RunSessionState run, bool succeeded, string message)
+            : this(run, succeeded, message, succeeded ? PurchaseFailureKind.None : PurchaseFailureKind.NonCost, string.Empty)
+        {
+        }
+
+        public PurchasePaymentResult(
+            RunSessionState run,
+            bool succeeded,
+            string message,
+            PurchaseFailureKind failureKind,
+            string failedCardRuntimeId)
         {
             Run = run ?? throw new ArgumentNullException(nameof(run));
             Succeeded = succeeded;
             Message = message ?? string.Empty;
+            FailureKind = succeeded ? PurchaseFailureKind.None : failureKind;
+            FailedCardRuntimeId = succeeded ? string.Empty : failedCardRuntimeId ?? string.Empty;
         }
 
         public RunSessionState Run { get; }
         public bool Succeeded { get; }
         public string Message { get; }
+        public PurchaseFailureKind FailureKind { get; }
+        public string FailedCardRuntimeId { get; }
     }
 }

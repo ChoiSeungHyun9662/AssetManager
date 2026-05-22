@@ -3,7 +3,7 @@
 Source feedback: `.scratch/stock-rules-overhaul/feedback/20260520_feedback.md`
 
 Status: in progress
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 This document records decisions confirmed during the grill-me pass. It is the implementation-facing interpretation of the feedback, not a replacement for the original feedback file.
 
@@ -36,9 +36,11 @@ This document records decisions confirmed during the grill-me pass. It is the im
 - A successful Deal drop consumes exactly 1 Deal.
 - Reading, Meditation, and Patience HUD lanes are the Deal drop targets.
 - Dropping a Deal on a philosophy HUD lane gives that philosophy +1 mastery.
-- Deal drag uses one pointer-following guide panel plus one Deal chip image.
+- Deal chip hover or drag shows the guide panel text: `드래그하여 투자 철학에 놓으면, 이 칩을 소모하여 해당 투자 철학 마스터리를 1 획득합니다.`
+- Deal drag temporarily hides one original Deal chip and shows one Deal chip image plus the guide panel following the pointer.
+- During Deal drag, the guide panel's bottom-right corner is positioned at the pointer.
 - Deal drop success is decided by pointer position, not panel overlap.
-- If the pointer is not inside a philosophy HUD lane on drop, the drag is cancelled and the Deal is not consumed.
+- If the pointer is not inside a philosophy HUD lane on drop, the drag is cancelled, the Deal is not consumed, and the hidden Deal chip is shown again.
 - Deal is no longer granted by reservation.
 - Deal is granted when the occupied portfolio stock-slot count first reaches 3, 5, and 8.
 - Occupied stock-slot count is based on how many portfolio slots contain stock cards. Two cards with the same `AssetCardData.Id` count as two if they occupy two slots.

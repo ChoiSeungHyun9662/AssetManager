@@ -92,7 +92,8 @@ namespace AssetManager
                 selectedCard,
                 purchaseSource,
                 isExtraBuy,
-                run.StaticData.GetInflationCostModifier(run.Calendar.FiscalYear, run.Calendar.Quarter));
+                run.StaticData.GetInflationCostModifier(run.Calendar.FiscalYear, run.Calendar.Quarter),
+                run.InvestmentPhilosophyMastery);
 
             return isExtraBuy
                 ? ExtraBuyAction.BeginPurchase(run, cardDetail)
@@ -116,7 +117,11 @@ namespace AssetManager
                 run.OwnedAssets,
                 new BusinessDayState(run.BusinessDay.Phase, marketArea),
                 run.RedemptionPressure,
-                cardDetail);
+                cardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
         }
     }
 }

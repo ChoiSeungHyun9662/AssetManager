@@ -757,6 +757,37 @@ namespace AssetManager
         }
     }
 
+    public sealed class InvestmentPhilosophyMasteryState
+    {
+        public static readonly InvestmentPhilosophyMasteryState Empty = new InvestmentPhilosophyMasteryState(0, 0, 0);
+
+        public InvestmentPhilosophyMasteryState(int reading, int meditation, int patience)
+        {
+            Reading = reading;
+            Meditation = meditation;
+            Patience = patience;
+        }
+
+        public int Reading { get; }
+        public int Meditation { get; }
+        public int Patience { get; }
+
+        public int Get(ResourceType resourceType)
+        {
+            switch (resourceType)
+            {
+                case ResourceType.Reading:
+                    return Reading;
+                case ResourceType.Meditation:
+                    return Meditation;
+                case ResourceType.Patience:
+                    return Patience;
+                default:
+                    return 0;
+            }
+        }
+    }
+
     public sealed class ReservationState
     {
         public ReservationState(int capacity, IEnumerable<AssetCardRuntimeData> reservedCards)
@@ -987,12 +1018,14 @@ namespace AssetManager
             CardDetailState cardDetail = null,
             LiquidityActionState liquidityAction = null,
             QuarterEndResult quarterEndResult = null,
-            string failureReason = "")
+            string failureReason = "",
+            InvestmentPhilosophyMasteryState investmentPhilosophyMastery = null)
         {
             State = state;
             StaticData = staticData;
             Calendar = calendar;
             Resources = resources;
+            InvestmentPhilosophyMastery = investmentPhilosophyMastery ?? InvestmentPhilosophyMasteryState.Empty;
             Performance = performance;
             AssetCards = new List<AssetCardRuntimeData>(assetCards).AsReadOnly();
             MarketTape = marketTape;
@@ -1010,6 +1043,7 @@ namespace AssetManager
         public RunStaticDataSet StaticData { get; }
         public RunCalendarState Calendar { get; }
         public ResourceState Resources { get; }
+        public InvestmentPhilosophyMasteryState InvestmentPhilosophyMastery { get; }
         public RunPerformanceState Performance { get; }
         public IReadOnlyList<AssetCardRuntimeData> AssetCards { get; }
         public MarketTapeState MarketTape { get; }

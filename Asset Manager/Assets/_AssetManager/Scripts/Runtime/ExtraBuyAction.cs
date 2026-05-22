@@ -65,7 +65,8 @@ namespace AssetManager
                 cardDetail,
                 run.LiquidityAction,
                 run.QuarterEndResult,
-                run.FailureReason);
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
         }
     }
 }

@@ -56,7 +56,12 @@ namespace AssetManager
                 run.Reservation,
                 run.OwnedAssets,
                 new BusinessDayState(nextPhase, MarketAreaState.Market),
-                run.RedemptionPressure);
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
 
             if (nextPhase == BusinessDayPhase.AwaitingAction)
             {
@@ -105,7 +110,12 @@ namespace AssetManager
                     run.Reservation,
                     run.OwnedAssets,
                     new BusinessDayState(BusinessDayPhase.FinalSettlement, MarketAreaState.Market),
-                    run.RedemptionPressure);
+                    run.RedemptionPressure,
+                    run.CardDetail,
+                    run.LiquidityAction,
+                    run.QuarterEndResult,
+                    run.FailureReason,
+                    run.InvestmentPhilosophyMastery);
             }
 
             var nextQuarter = run.Calendar.Quarter + 1;
@@ -125,7 +135,12 @@ namespace AssetManager
                 run.Reservation,
                 run.OwnedAssets,
                 new BusinessDayState(nextPhase, MarketAreaState.Market),
-                run.RedemptionPressure);
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
 
             return nextPhase == BusinessDayPhase.AwaitingAction
                 ? MarketTape.Refresh(nextRun)
@@ -165,7 +180,12 @@ namespace AssetManager
                 run.Reservation,
                 run.OwnedAssets,
                 new BusinessDayState(BusinessDayPhase.AwaitingAction, MarketAreaState.Market),
-                run.RedemptionPressure);
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
 
             return MarketTape.Refresh(nextRun);
         }

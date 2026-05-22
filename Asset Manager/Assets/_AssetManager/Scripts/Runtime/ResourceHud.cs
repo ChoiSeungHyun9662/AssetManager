@@ -114,9 +114,9 @@ namespace AssetManager
                 resourceText,
                 string.Empty);
             SetText(cashText, resources.Cash + "$");
-            SetText(researchText, string.Empty);
-            SetText(creditText, string.Empty);
-            SetText(commodityText, string.Empty);
+            SetText(researchText, FormatPhilosophy(resources.Reading, run.InvestmentPhilosophyMastery.Reading));
+            SetText(creditText, FormatPhilosophy(resources.Meditation, run.InvestmentPhilosophyMastery.Meditation));
+            SetText(commodityText, FormatPhilosophy(resources.Patience, run.InvestmentPhilosophyMastery.Patience));
             SetText(dealText, string.Empty);
             DisableImage(cashImage);
             ApplyChipStack(researchImage, researchChipSprite, resources.Research);
@@ -255,6 +255,16 @@ namespace AssetManager
             {
                 text.text = value;
             }
+        }
+
+        private static string FormatPhilosophy(int amount, int mastery)
+        {
+            if (mastery <= 0)
+            {
+                return amount.ToString();
+            }
+
+            return amount + " <size=14>+" + mastery + "</size>";
         }
     }
 }

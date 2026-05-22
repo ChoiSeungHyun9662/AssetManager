@@ -55,6 +55,10 @@ namespace AssetManager
         public const string MarketTapeUpcomingMarketCardButtonPrefix = "Market Tape Upcoming Market Card Button ";
         public const string MarketCardHoverPanelName = "Market Card Hover Panel";
         public const string MarketCardHoverTextName = "Market Card Hover Text";
+        public const string PurchaseConfirmationPanelName = "Purchase Confirmation Panel";
+        public const string PurchaseConfirmationCardTextName = "Purchase Confirmation Card Text";
+        public const string PurchaseConfirmationConfirmButtonName = "Purchase Confirmation Confirm Button";
+        public const string PurchaseConfirmationBackButtonName = "Purchase Confirmation Back Button";
         public const string MarketTapeAdvanceButtonName = "Market Tape Advance Button";
         public const string MarketTapeRefreshButtonName = "Market Tape Refresh Button";
         public const string CentralBankButtonName = "Central Bank Button";
@@ -146,6 +150,7 @@ namespace AssetManager
             EnsureResourceHud(uiRoot.transform);
             EnsurePortfolioSummaryView(uiRoot.transform);
             EnsureMarketTapeView(uiRoot.transform);
+            EnsurePurchaseConfirmationView(uiRoot.transform);
             RemoveLegacyDisconnectedUiObjects(uiRoot.transform);
             EnsureCardDetailView(uiRoot.transform);
             EnsureMarketTapeDevControls(uiRoot.transform);
@@ -335,21 +340,21 @@ namespace AssetManager
                 ResourceHudResearchTextName,
                 new Vector2(288f, -46f),
                 new Vector2(250f, 74f),
-                18,
+                34,
                 TextAnchor.UpperLeft);
             var creditText = EnsurePanelText(
                 panel.transform,
                 ResourceHudCreditTextName,
                 new Vector2(558f, -46f),
                 new Vector2(250f, 74f),
-                18,
+                34,
                 TextAnchor.UpperLeft);
             var commodityText = EnsurePanelText(
                 panel.transform,
                 ResourceHudCommodityTextName,
                 new Vector2(828f, -46f),
                 new Vector2(250f, 74f),
-                18,
+                34,
                 TextAnchor.UpperLeft);
             var dealText = EnsurePanelText(
                 panel.transform,
@@ -539,6 +544,69 @@ namespace AssetManager
                 currentMarketButtons,
                 upcomingMarketButtons);
             hoverPanel.SetActive(false);
+            return view;
+        }
+
+        public static PurchaseConfirmationView EnsurePurchaseConfirmationView(Transform uiRoot)
+        {
+            var panel = EnsurePanel(
+                uiRoot,
+                PurchaseConfirmationPanelName,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(620f, 500f),
+                new Color(0.04f, 0.06f, 0.08f, 0.98f));
+            panel.transform.SetAsLastSibling();
+
+            var image = panel.GetComponent<Image>();
+            if (image != null)
+            {
+                image.raycastTarget = true;
+            }
+
+            var cardText = EnsurePanelText(
+                panel.transform,
+                PurchaseConfirmationCardTextName,
+                new Vector2(30f, -58f),
+                new Vector2(560f, 330f),
+                24,
+                TextAnchor.UpperLeft);
+            if (cardText != null)
+            {
+                cardText.resizeTextForBestFit = true;
+                cardText.resizeTextMinSize = 16;
+                cardText.resizeTextMaxSize = 24;
+            }
+
+            var confirmButton = EnsureButton(
+                panel.transform,
+                PurchaseConfirmationConfirmButtonName,
+                "확인",
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 28f),
+                new Vector2(560f, 62f));
+            var backButton = EnsureButton(
+                panel.transform,
+                PurchaseConfirmationBackButtonName,
+                "돌아가기",
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-28f, -28f),
+                new Vector2(150f, 44f));
+
+            var view = uiRoot.GetComponent<PurchaseConfirmationView>();
+            if (view == null)
+            {
+                view = uiRoot.gameObject.AddComponent<PurchaseConfirmationView>();
+            }
+
+            view.Bind(panel, cardText, confirmButton, backButton);
+            panel.SetActive(false);
             return view;
         }
 

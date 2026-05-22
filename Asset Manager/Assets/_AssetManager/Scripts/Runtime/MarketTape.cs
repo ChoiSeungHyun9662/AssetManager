@@ -781,7 +781,11 @@ namespace AssetManager
                 run.OwnedAssets,
                 run.BusinessDay,
                 run.RedemptionPressure,
-                run.CardDetail);
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
         }
 
         private sealed class DrawRollSource

@@ -79,7 +79,12 @@ namespace AssetManager
                 run.Reservation,
                 run.OwnedAssets,
                 new BusinessDayState(nextPhase, MarketAreaState.Market),
-                run.RedemptionPressure);
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
 
             return nextPhase == BusinessDayPhase.QuarterSettlement
                 ? QuarterSettlement.Settle(nextRun).Run
@@ -136,7 +141,10 @@ namespace AssetManager
                 new BusinessDayState(run.BusinessDay.Phase, MarketAreaState.Market),
                 run.RedemptionPressure,
                 CardDetailState.Empty,
-                run.LiquidityAction);
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
         }
 
         private static IReadOnlyList<AssetCardRuntimeData> MarkCardReserved(

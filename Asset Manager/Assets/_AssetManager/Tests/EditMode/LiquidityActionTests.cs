@@ -96,49 +96,44 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void ProfessionalResourcesAreNotSelectableAtProfessionalResourceCap()
+        public void ProfessionalResourcesAreSelectableUntilTheirOwnTypeCap()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 4).Run;
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 3).Run;
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Commodity, 3).Run;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 5).Run;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 4).Run;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Commodity, 4).Run;
 
             var liquidityRun = LiquidityAction.Enter(run);
 
-            Assert.That(liquidityRun.Resources.ProfessionalTotal, Is.EqualTo(10));
+            Assert.That(liquidityRun.Resources.ProfessionalTotal, Is.EqualTo(13));
             Assert.That(LiquidityAction.CanSelect(liquidityRun, ResourceType.Cash), Is.True);
             Assert.That(LiquidityAction.CanSelect(liquidityRun, ResourceType.Research), Is.False);
-            Assert.That(LiquidityAction.CanSelect(liquidityRun, ResourceType.Credit), Is.False);
-            Assert.That(LiquidityAction.CanSelect(liquidityRun, ResourceType.Commodity), Is.False);
+            Assert.That(LiquidityAction.CanSelect(liquidityRun, ResourceType.Credit), Is.True);
+            Assert.That(LiquidityAction.CanSelect(liquidityRun, ResourceType.Commodity), Is.True);
             Assert.That(LiquidityAction.CanSelect(liquidityRun, ResourceType.Deal), Is.False);
 
             var blockedSelection = LiquidityAction.Select(liquidityRun, ResourceType.Research);
 
-            Assert.That(blockedSelection.Run.Resources.ProfessionalTotal, Is.EqualTo(10));
+            Assert.That(blockedSelection.Run.Resources.ProfessionalTotal, Is.EqualTo(13));
             Assert.That(blockedSelection.Run.LiquidityAction.SelectedResources, Is.Empty);
             Assert.That(blockedSelection.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.GainLiquidity));
         }
 
         [Test]
-        public void ReachingProfessionalResourceCapAutoEndsWhenNoValidNextChoiceRemains()
+        public void ReachingFormerTotalProfessionalResourceCapDoesNotAutoEndWhenATypeHasCapacity()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 3).Run;
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 3).Run;
-            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Commodity, 3).Run;
-            var remainingBusinessDays = run.Calendar.RemainingBusinessDays;
-            var startingCash = run.Resources.Cash;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 5).Run;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 4).Run;
+            run = ResourceLedger.AddProfessionalResource(run, ResourceType.Commodity, 1).Run;
 
-            var cashSelection = LiquidityAction.Select(
+            var creditSelection = LiquidityAction.Select(
                 LiquidityAction.Enter(run),
-                ResourceType.Cash);
-            var researchSelection = LiquidityAction.Select(cashSelection.Run, ResourceType.Research);
+                ResourceType.Credit);
 
-            Assert.That(researchSelection.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(researchSelection.Run.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays - 1));
-            Assert.That(researchSelection.Run.Resources.Cash, Is.EqualTo(startingCash + 1));
-            Assert.That(researchSelection.Run.Resources.ProfessionalTotal, Is.EqualTo(10));
-            Assert.That(researchSelection.Message, Is.Not.Empty);
+            Assert.That(creditSelection.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.GainLiquidity));
+            Assert.That(creditSelection.Run.Resources.ProfessionalTotal, Is.EqualTo(11));
+            Assert.That(creditSelection.Message, Is.Empty);
         }
 
         [Test]

@@ -31,7 +31,7 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 
 자산 매수는 비용 슬롯과 Payment Pot을 사용하지 않는다. 매수 시 현재 현금, 투자 철학 보유량, 투자 철학 마스터리를 기준으로 할인 후 비용을 계산하고 자동 지불한다. 비용 부족이면 시스템 메시지를 띄우지 않고 카드 떨림만 발생한다. 비용 외 실패는 카드 떨림과 기존 메시지를 함께 보여준다.
 
-딜은 매수 결제에서 빠진다. 플레이어는 보유 딜을 리소스 HUD에서 독서, 명상, 인내 HUD lane으로 드래그해 해당 투자 철학 마스터리를 1 올린다. 마스터리는 해당 철학의 시장 카드 비용을 표시, 검증, 지불 시점에만 할인한다. 카드 원본 비용은 바뀌지 않는다.
+딜은 매수 결제에서 빠진다. 플레이어는 보유 딜을 리소스 HUD에서 독서, 명상, 인내 HUD lane으로 드래그해 해당 투자 철학 마스터리를 1 올린다. 딜 칩을 호버하거나 드래그하면 안내 패널을 표시하고, 드래그 중에는 원래 딜 칩 하나를 숨긴 채 딜 이미지와 안내 패널을 포인터에 붙여 움직인다. 안내 패널의 우측 하단 모서리는 포인터 위치에 맞춘다. 마스터리는 해당 철학의 시장 카드 비용을 표시, 검증, 지불 시점에만 할인한다. 카드 원본 비용은 바뀌지 않는다.
 
 투자 철학 보유량과 투자 철학 마스터리는 각각 독서, 명상, 인내별 0-5 범위만 가진다. 기존 투자 철학 총합 10 제한과 딜 보유 한도는 제거한다. 철학 HUD는 보유량을 큰 정수로 표시하고, 마스터리가 1 이상일 때만 작은 `+N`을 붙인다.
 
@@ -75,7 +75,7 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 30. As a player, I want portfolio-area release to take priority over reservation threshold, so that dropping onto the portfolio always means immediate purchase.
 31. As a player, I want Deal removed from direct purchase payment, so that it has one clear purpose.
 32. As a player, I want to drag a Deal from the resource HUD onto Reading, Meditation, or Patience, so that I can convert Deal into mastery.
-33. As a player, I want Deal drag to show a pointer-following guide panel and Deal image, so that I understand the drop target action.
+33. As a player, I want Deal hover or drag to show the guide panel, and Deal drag to show a pointer-following Deal image with the guide panel's bottom-right corner at the pointer, so that I understand the drop target action.
 34. As a player, I want dropping Deal outside philosophy lanes to cancel without spending it, so that failed drag attempts are harmless.
 35. As a player, I want dropping Deal on a mastery-5 philosophy to fail without spending it, so that capped mastery cannot waste a Deal.
 36. As a player, I want Deal to have no holding cap, so that achievement rewards are not discarded.

@@ -66,12 +66,7 @@ namespace AssetManager.Tests
                 .Invoke();
             yield return null;
 
-            FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).GetComponent<Button>().onClick.Invoke();
-            FindUiObject(ProjectShell.CardDetailPlaceCreditButtonName).GetComponent<Button>().onClick.Invoke();
-            yield return null;
-
-            var buyButton = FindUiObject(ProjectShell.CardDetailBuyButtonName).GetComponent<Button>();
-            Assert.That(buyButton.interactable, Is.True);
+            var buyButton = FindUiObject(ProjectShell.PurchaseConfirmationConfirmButtonName).GetComponent<Button>();
 
             buyButton.onClick.Invoke();
             yield return null;
@@ -110,10 +105,7 @@ namespace AssetManager.Tests
             var selectedCard = bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card;
             var previousSlotIds = CollectSlotCardIds(bootstrap.CurrentRun.MarketTape);
 
-            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
-                .GetComponent<Button>()
-                .onClick
-                .Invoke();
+            OpenLegacyCardDetailForTest(bootstrap, selectedCard);
             yield return null;
 
             var reserveButton = FindUiObject(ProjectShell.CardDetailReserveButtonName).GetComponent<Button>();
@@ -145,7 +137,8 @@ namespace AssetManager.Tests
             RefreshRunUi(bootstrap);
             yield return null;
 
-            bootstrap.OpenMarketCardDetail(
+            OpenLegacyCardDetailForTest(
+                bootstrap,
                 bootstrap.CurrentRun.MarketTape.Slots[FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape)].Card);
             yield return null;
 
@@ -424,6 +417,12 @@ namespace AssetManager.Tests
             typeof(MainGameShellBootstrap)
                 .GetMethod("RefreshRunUi", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(bootstrap, new object[0]);
+        }
+
+        private static void OpenLegacyCardDetailForTest(MainGameShellBootstrap bootstrap, AssetCardRuntimeData card)
+        {
+            SetCurrentRun(bootstrap, MarketAreaFlow.OpenMarketCardDetail(bootstrap.CurrentRun, card));
+            RefreshRunUi(bootstrap);
         }
 
         private static void DestroyShellObjects()

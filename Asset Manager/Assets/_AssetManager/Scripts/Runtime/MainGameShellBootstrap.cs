@@ -20,11 +20,14 @@ namespace AssetManager
         private ResourceHud resourceHud;
         private PortfolioSummaryView portfolioSummaryView;
         private MarketTapeView marketTapeView;
+        private PurchaseConfirmationView purchaseConfirmationView;
         private CardDetailView cardDetailView;
         private MarketTapeDevControls marketTapeDevControls;
         private ResourceDevControls resourceDevControls;
         private RunProgressControls runProgressControls;
         private string resourceFeedbackMessage = string.Empty;
+        private string pendingPurchaseFailureCardRuntimeId = string.Empty;
+        private bool isPurchaseConfirmationOpen;
 
         private void Awake()
         {
@@ -49,6 +52,7 @@ namespace AssetManager
 
             CurrentRun = RunBootstrapper.CreateNewRun(data);
             resourceFeedbackMessage = string.Empty;
+            isPurchaseConfirmationOpen = false;
             BindRunUi(uiRoot);
             RefreshRunUi();
         }
@@ -56,6 +60,11 @@ namespace AssetManager
         public void AdvanceToNextBusinessDay()
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -77,10 +86,29 @@ namespace AssetManager
                 return;
             }
 
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
             ClearPortfolioSaleSelection();
             CurrentRun = zone == MarketTapeZone.UpcomingMarket
                 ? MarketAreaFlow.OpenMarketPreviewCardDetail(CurrentRun, selectedCard)
                 : MarketAreaFlow.OpenMarketCardDetail(CurrentRun, selectedCard);
+            if (zone != MarketTapeZone.UpcomingMarket && CurrentRun.CardDetail.SelectedCard != null)
+            {
+                if (PurchasePayment.CanConfirmPurchase(CurrentRun))
+                {
+                    isPurchaseConfirmationOpen = true;
+                    resourceFeedbackMessage = string.Empty;
+                    RefreshRunUi();
+                    return;
+                }
+
+                ApplyFailedPurchaseAndCloseWorkingState(PurchasePayment.ConfirmPurchase(CurrentRun));
+                return;
+            }
+
             resourceFeedbackMessage = CurrentRun.CardDetail.ShouldShowReserveButton
                 && !ReservationAction.CanReserve(CurrentRun)
                 ? "예약 구역이 가득 찼습니다."
@@ -91,6 +119,11 @@ namespace AssetManager
         public void CloseCardDetail()
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -107,6 +140,11 @@ namespace AssetManager
                 return;
             }
 
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
             ClearPortfolioSaleSelection();
             resourceFeedbackMessage = string.Empty;
             RefreshRunUi();
@@ -115,6 +153,11 @@ namespace AssetManager
         public void CloseLiquidityAction()
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -153,12 +196,31 @@ namespace AssetManager
             }
 
             ClearPortfolioSaleSelection();
+            isPurchaseConfirmationOpen = false;
             ApplyPaymentResult(PurchasePayment.ConfirmPurchase(CurrentRun));
+        }
+
+        public void ClosePurchaseConfirmation()
+        {
+            if (CurrentRun == null || !isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
+            isPurchaseConfirmationOpen = false;
+            CurrentRun = MarketAreaFlow.CloseCardDetail(CurrentRun);
+            resourceFeedbackMessage = string.Empty;
+            RefreshRunUi();
         }
 
         public void ConfirmReservation()
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -170,6 +232,11 @@ namespace AssetManager
         public void SellStockSlot(int stockSlotIndex)
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -225,6 +292,11 @@ namespace AssetManager
                 return;
             }
 
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
             ClearPortfolioSaleSelection();
             CurrentRun = ResourceLedger.AddFundingCash(CurrentRun, 1);
             resourceFeedbackMessage = string.Empty;
@@ -234,6 +306,11 @@ namespace AssetManager
         public void AddRevenueForDevelopment()
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -271,6 +348,11 @@ namespace AssetManager
                 return;
             }
 
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
             ClearPortfolioSaleSelection();
             ApplyResourceResult(ResourceLedger.AddDeal(CurrentRun, 1));
         }
@@ -278,6 +360,11 @@ namespace AssetManager
         public void ContinueSchedule()
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -302,6 +389,11 @@ namespace AssetManager
                 return;
             }
 
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
             ClearPortfolioSaleSelection();
             CurrentRun = MarketTape.Advance(CurrentRun);
             RefreshRunUi();
@@ -310,6 +402,11 @@ namespace AssetManager
         public void RefreshMarketTape()
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -325,13 +422,21 @@ namespace AssetManager
             resourceHud = ProjectShell.EnsureResourceHud(uiRoot);
             portfolioSummaryView = ProjectShell.EnsurePortfolioSummaryView(uiRoot);
             marketTapeView = ProjectShell.EnsureMarketTapeView(uiRoot);
+            purchaseConfirmationView = ProjectShell.EnsurePurchaseConfirmationView(uiRoot);
             cardDetailView = ProjectShell.EnsureCardDetailView(uiRoot);
             marketTapeDevControls = ProjectShell.EnsureMarketTapeDevControls(uiRoot);
             resourceDevControls = ProjectShell.EnsureResourceDevControls(uiRoot);
             runProgressControls = ProjectShell.EnsureRunProgressControls(uiRoot);
 
             marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
+            marketTapeView.SetCurrentMarketCardReleasedHandler(ReleaseCurrentMarketCard);
             portfolioSummaryView.SetStockSaleSelectedHandler(SellStockSlot);
+
+            purchaseConfirmationView.ConfirmButton.onClick.RemoveListener(ConfirmPurchase);
+            purchaseConfirmationView.ConfirmButton.onClick.AddListener(ConfirmPurchase);
+
+            purchaseConfirmationView.BackButton.onClick.RemoveListener(ClosePurchaseConfirmation);
+            purchaseConfirmationView.BackButton.onClick.AddListener(ClosePurchaseConfirmation);
 
             cardDetailView.CloseButton.onClick.RemoveListener(CloseCardDetail);
             cardDetailView.CloseButton.onClick.AddListener(CloseCardDetail);
@@ -393,7 +498,9 @@ namespace AssetManager
             runStatusHud.Show(CurrentRun);
             resourceHud.Show(CurrentRun, resourceFeedbackMessage);
             portfolioSummaryView.Show(CurrentRun);
-            marketTapeView.Show(CurrentRun);
+            marketTapeView.Show(CurrentRun, pendingPurchaseFailureCardRuntimeId);
+            purchaseConfirmationView.Show(CurrentRun, isPurchaseConfirmationOpen);
+            pendingPurchaseFailureCardRuntimeId = string.Empty;
             cardDetailView.Show(CurrentRun);
             marketTapeDevControls.Show(CurrentRun);
             resourceDevControls.Show(CurrentRun);
@@ -403,6 +510,11 @@ namespace AssetManager
         private void AddProfessionalResourceForDevelopment(ResourceType resourceType)
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -425,6 +537,11 @@ namespace AssetManager
                 return;
             }
 
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
             ClearPortfolioSaleSelection();
             ApplyLiquidityActionResult(LiquidityAction.Select(CurrentRun, resourceType));
         }
@@ -443,6 +560,11 @@ namespace AssetManager
                 return;
             }
 
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
             ClearPortfolioSaleSelection();
             ApplyPaymentResult(PurchasePayment.PlaceChip(CurrentRun, resourceType));
         }
@@ -450,6 +572,11 @@ namespace AssetManager
         private void RemovePaymentSlot(int slotIndex)
         {
             if (CurrentRun == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
             {
                 return;
             }
@@ -462,6 +589,18 @@ namespace AssetManager
         {
             CurrentRun = result.Run;
             resourceFeedbackMessage = result.Message;
+            pendingPurchaseFailureCardRuntimeId = result.Succeeded
+                ? string.Empty
+                : result.FailedCardRuntimeId;
+            RefreshRunUi();
+        }
+
+        private void ApplyFailedPurchaseAndCloseWorkingState(PurchasePaymentResult result)
+        {
+            isPurchaseConfirmationOpen = false;
+            CurrentRun = MarketAreaFlow.CloseCardDetail(result.Run);
+            resourceFeedbackMessage = result.Message;
+            pendingPurchaseFailureCardRuntimeId = result.FailedCardRuntimeId;
             RefreshRunUi();
         }
 
@@ -477,6 +616,54 @@ namespace AssetManager
             CurrentRun = result.Run;
             resourceFeedbackMessage = result.Message;
             RefreshRunUi();
+        }
+
+        private void ReleaseCurrentMarketCard(AssetCardRuntimeData selectedCard, Vector2 screenPosition)
+        {
+            if (CurrentRun == null || selectedCard == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
+            ClearPortfolioSaleSelection();
+            if (IsInsidePortfolio(screenPosition))
+            {
+                CurrentRun = MarketAreaFlow.OpenMarketCardDetail(CurrentRun, selectedCard);
+                if (CurrentRun.CardDetail.SelectedCard == null)
+                {
+                    RefreshRunUi();
+                    return;
+                }
+
+                var result = PurchasePayment.ConfirmPurchase(CurrentRun);
+                if (result.Succeeded)
+                {
+                    ApplyPaymentResult(result);
+                    return;
+                }
+
+                ApplyFailedPurchaseAndCloseWorkingState(result);
+                return;
+            }
+
+            OpenMarketCardDetail(selectedCard, MarketTapeZone.CurrentMarket);
+        }
+
+        private bool IsInsidePortfolio(Vector2 screenPosition)
+        {
+            if (portfolioSummaryView == null || portfolioSummaryView.Panel == null)
+            {
+                return false;
+            }
+
+            var rectTransform = portfolioSummaryView.Panel.GetComponent<RectTransform>();
+            return rectTransform != null
+                && RectTransformUtility.RectangleContainsScreenPoint(rectTransform, screenPosition);
         }
 
         private void ClearPortfolioSaleSelection()

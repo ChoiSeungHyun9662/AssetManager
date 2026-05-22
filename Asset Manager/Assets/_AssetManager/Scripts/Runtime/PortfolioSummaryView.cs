@@ -28,6 +28,7 @@ namespace AssetManager
         private Action<int> onStockSaleSelected;
         private Coroutine deferredVisibilityUpdate;
 
+        public GameObject Panel => panel;
         public Text SummaryText => summaryText;
         public Text OwnedCardsText => ownedCardsText;
         public IReadOnlyList<Text> CardTexts => cardTexts;

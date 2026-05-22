@@ -79,7 +79,7 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void DealChipPlacementCanFillAnyProfessionalSlotAndDiscountsCashCost()
+        public void DealChipPlacementIsRejectedForPurchasePayment()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ResourceLedger.AddDeal(run, 1).Run;
@@ -88,14 +88,13 @@ namespace AssetManager.Tests
 
             var placed = PurchasePayment.PlaceChip(run, ResourceType.Deal);
 
+            Assert.That(placed.Succeeded, Is.False);
             Assert.That(placed.Run.Resources.Deal, Is.EqualTo(1));
-            Assert.That(placed.Run.CardDetail.PendingPayment.Slots[0].RequiredResourceType, Is.EqualTo(ResourceType.Research));
-            Assert.That(placed.Run.CardDetail.PendingPayment.Slots[0].PlacedResourceType, Is.EqualTo(ResourceType.Deal));
-            Assert.That(placed.Run.CardDetail.PendingPayment.FinalCashCost, Is.EqualTo(0));
+            Assert.That(placed.Run.CardDetail.PendingPayment.FinalCashCost, Is.EqualTo(selectedCard.Card.CashCost));
         }
 
         [Test]
-        public void InflationCostModifierAppliesAfterDealDiscount()
+        public void InflationCostModifierAppliesWithoutDealDiscount()
         {
             var payment = new PurchasePaymentState(
                 "inflation-test-card",
@@ -107,7 +106,7 @@ namespace AssetManager.Tests
                 },
                 1);
 
-            Assert.That(payment.FinalCashCost, Is.EqualTo(4));
+            Assert.That(payment.FinalCashCost, Is.EqualTo(6));
         }
 
         [Test]
@@ -115,12 +114,132 @@ namespace AssetManager.Tests
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = WithCalendar(run, new RunCalendarState(1, 2, run.Calendar.RemainingBusinessDays));
-            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+            var selectedCard = FindFirstAvailableMarketSlotCard(run.MarketTape);
 
             run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
 
             Assert.That(run.CardDetail.PendingPayment.InflationCostModifier, Is.EqualTo(1));
             Assert.That(run.CardDetail.PendingPayment.FinalCashCost, Is.EqualTo(selectedCard.Card.CashCost + 1));
+        }
+
+        [Test]
+        public void PurchaseCostDiscountShowsOriginalCostThenDiscountedPhilosophyCosts()
+        {
+            var card = new AssetCardData(
+                "discount-display-test-card",
+                "할인 표시 테스트 카드",
+                "마스터리 할인 표시 확인용 카드",
+                AssetRarity.Common,
+                50,
+                new[]
+                {
+                    new ProfessionalResourceCost(ResourceType.Reading, 1),
+                    new ProfessionalResourceCost(ResourceType.Meditation, 1)
+                },
+                1,
+                0,
+                new TagData[0]);
+            var resources = new ResourceState(50, 0, 1, 0, 0);
+            var mastery = new InvestmentPhilosophyMasteryState(1, 0, 0);
+
+            var cost = PurchaseCostCalculator.Calculate(card, resources, mastery, 0);
+
+            Assert.That(cost.Format(), Is.EqualTo("50$, R1, M1 -> R0, M1"));
+            Assert.That(cost.DiscountedPhilosophyCosts[0].ResourceType, Is.EqualTo(ResourceType.Reading));
+            Assert.That(cost.DiscountedPhilosophyCosts[0].Amount, Is.EqualTo(0));
+            Assert.That(cost.DiscountedPhilosophyCosts[0].IsInsufficient, Is.False);
+            Assert.That(cost.DiscountedPhilosophyCosts[1].ResourceType, Is.EqualTo(ResourceType.Meditation));
+            Assert.That(cost.DiscountedPhilosophyCosts[1].Amount, Is.EqualTo(1));
+            Assert.That(cost.DiscountedPhilosophyCosts[1].IsInsufficient, Is.False);
+        }
+
+        [Test]
+        public void PurchaseCostWithoutDiscountShowsCashAndOriginalPhilosophyCosts()
+        {
+            var card = new AssetCardData(
+                "no-discount-display-test-card",
+                "무할인 표시 테스트 카드",
+                "마스터리 없는 비용 표시 확인용 카드",
+                AssetRarity.Common,
+                50,
+                new[]
+                {
+                    new ProfessionalResourceCost(ResourceType.Reading, 1),
+                    new ProfessionalResourceCost(ResourceType.Meditation, 1)
+                },
+                1,
+                0,
+                new TagData[0]);
+            var resources = new ResourceState(50, 1, 1, 0, 0);
+
+            var cost = PurchaseCostCalculator.Calculate(card, resources, InvestmentPhilosophyMasteryState.Empty, 0);
+
+            Assert.That(cost.Format(), Is.EqualTo("50$, R1, M1"));
+        }
+
+        [Test]
+        public void PurchaseCostMarksOnlyInsufficientDiscountedTokens()
+        {
+            var card = new AssetCardData(
+                "shortage-token-test-card",
+                "부족 토큰 테스트 카드",
+                "부족 비용 토큰 판정 확인용 카드",
+                AssetRarity.Common,
+                50,
+                new[]
+                {
+                    new ProfessionalResourceCost(ResourceType.Reading, 2),
+                    new ProfessionalResourceCost(ResourceType.Meditation, 1)
+                },
+                1,
+                0,
+                new TagData[0]);
+            var resources = new ResourceState(49, 1, 1, 0, 0);
+            var mastery = new InvestmentPhilosophyMasteryState(1, 0, 0);
+
+            var cost = PurchaseCostCalculator.Calculate(card, resources, mastery, 0);
+
+            Assert.That(cost.CashToken.IsInsufficient, Is.True);
+            Assert.That(cost.DiscountedPhilosophyCosts[0].Amount, Is.EqualTo(1));
+            Assert.That(cost.DiscountedPhilosophyCosts[0].IsInsufficient, Is.False);
+            Assert.That(cost.DiscountedPhilosophyCosts[1].Amount, Is.EqualTo(1));
+            Assert.That(cost.DiscountedPhilosophyCosts[1].IsInsufficient, Is.False);
+        }
+
+        [Test]
+        public void ConfirmPurchaseConsumesDiscountedPhilosophyCostsWithoutMutatingSourceCardCosts()
+        {
+            var card = new AssetCardData(
+                "discount-payment-test-card",
+                "할인 결제 테스트 카드",
+                "마스터리 할인 결제 확인용 카드",
+                AssetRarity.Common,
+                0,
+                new[]
+                {
+                    new ProfessionalResourceCost(ResourceType.Reading, 1),
+                    new ProfessionalResourceCost(ResourceType.Meditation, 1)
+                },
+                1,
+                0,
+                new TagData[0]);
+            var runtimeCard = new AssetCardRuntimeData(card, AssetCardRuntimeState.Available, PurchaseSource.MarketTape);
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = WithCurrentMarketCard(run, runtimeCard, 0);
+            run = WithResources(run, new ResourceState(0, 0, 1, 0, 0));
+            run = ResourceLedger.AddInvestmentPhilosophyMastery(run, ResourceType.Reading, 1).Run;
+            run = MarketAreaFlow.OpenMarketCardDetail(run, runtimeCard);
+
+            Assert.That(run.CardDetail.PendingPayment.Slots, Has.Count.EqualTo(1));
+            Assert.That(run.CardDetail.PendingPayment.Slots[0].RequiredResourceType, Is.EqualTo(ResourceType.Meditation));
+
+            var result = PurchasePayment.ConfirmPurchase(run);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.Run.Resources.Reading, Is.EqualTo(0));
+            Assert.That(result.Run.Resources.Meditation, Is.EqualTo(0));
+            Assert.That(card.ProfessionalCosts[0].Amount, Is.EqualTo(1));
+            Assert.That(card.ProfessionalCosts[1].Amount, Is.EqualTo(1));
         }
 
         [Test]
@@ -130,7 +249,7 @@ namespace AssetManager.Tests
             run = WithCalendar(run, new RunCalendarState(1, 2, run.Calendar.RemainingBusinessDays));
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 1).Run;
-            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+            var selectedCard = FindFirstAvailableMarketSlotCard(run.MarketTape);
             run = WithResources(
                 run,
                 new ResourceState(
@@ -140,12 +259,12 @@ namespace AssetManager.Tests
                     run.Resources.Patience,
                     run.Resources.Deal));
             run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
-            run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
-            run = PurchasePayment.PlaceChip(run, ResourceType.Credit).Run;
 
             var result = PurchasePayment.ConfirmPurchase(run);
 
             Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Message, Is.Empty);
+            Assert.That(result.FailureKind, Is.EqualTo(PurchaseFailureKind.CostShortage));
             Assert.That(result.Run.Resources.Cash, Is.EqualTo(run.Resources.Cash));
             Assert.That(result.Run.Resources.Research, Is.EqualTo(run.Resources.Research));
             Assert.That(result.Run.Resources.Credit, Is.EqualTo(run.Resources.Credit));
@@ -158,7 +277,7 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void IncompletePurchaseConfirmationLeavesResourcesCardMarketAndBusinessDayUnchanged()
+        public void CostShortagePurchaseConfirmationLeavesResourcesCardMarketAndBusinessDayUnchanged()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             var selectedCard = FindFirstAvailableMarketSlotCard(run.MarketTape);
@@ -167,6 +286,8 @@ namespace AssetManager.Tests
             var result = PurchasePayment.ConfirmPurchase(run);
 
             Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Message, Is.Empty);
+            Assert.That(result.FailureKind, Is.EqualTo(PurchaseFailureKind.CostShortage));
             Assert.That(result.Run.Resources.Cash, Is.EqualTo(run.Resources.Cash));
             Assert.That(result.Run.Resources.Research, Is.EqualTo(run.Resources.Research));
             Assert.That(result.Run.Resources.Credit, Is.EqualTo(run.Resources.Credit));
@@ -184,10 +305,10 @@ namespace AssetManager.Tests
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             var selectedCard = FindFirstAvailableMarketSlotCard(run.MarketTape);
             run = AddPaymentResources(run, selectedCard.Card);
+            run = ResourceLedger.AddDeal(run, 1).Run;
             var previousSlotIds = CollectSlotCardIds(run.MarketTape);
             var resourcesBeforePurchase = run.Resources;
             run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
-            run = PlaceRequiredPaymentChips(run, selectedCard.Card);
 
             var result = PurchasePayment.ConfirmPurchase(run);
 
@@ -195,6 +316,7 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Resources.Cash, Is.EqualTo(resourcesBeforePurchase.Cash - selectedCard.Card.CashCost + selectedCard.Card.Income));
             Assert.That(result.Run.Resources.Research, Is.EqualTo(resourcesBeforePurchase.Research - CountProfessionalCost(selectedCard.Card, ResourceType.Research)));
             Assert.That(result.Run.Resources.Credit, Is.EqualTo(resourcesBeforePurchase.Credit - CountProfessionalCost(selectedCard.Card, ResourceType.Credit)));
+            Assert.That(result.Run.Resources.Deal, Is.EqualTo(resourcesBeforePurchase.Deal));
             Assert.That(result.Run.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
             Assert.That(result.Run.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
             Assert.That(result.Run.OwnedAssets.OwnedCards[0].State, Is.EqualTo(AssetCardRuntimeState.Owned));
@@ -240,7 +362,7 @@ namespace AssetManager.Tests
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Credit, 1).Run;
             run = WithOwnedAssets(run, CreateOwnedCards(8));
-            var selectedCard = run.MarketTape.CurrentMarketCards[0];
+            var selectedCard = FindFirstAvailableMarketSlotCard(run.MarketTape);
             run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
             run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
             run = PurchasePayment.PlaceChip(run, ResourceType.Credit).Run;
@@ -457,10 +579,11 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void ConsumableInvestmentPhilosophyResourceCardPurchaseUsesCashOnlyAndDoesNotSpendDeal()
+        public void ConsumableInvestmentPhilosophyResourceCardPurchaseUsesAutomaticPaymentAndDoesNotSpendDeal()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ResourceLedger.AddDeal(run, 1).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Reading, 1).Run;
             var resourceCard = new AssetCardData(
                 "patience-resource-card",
                 string.Empty,
@@ -479,20 +602,51 @@ namespace AssetManager.Tests
             var cashBeforePurchase = run.Resources.Cash;
             run = MarketAreaFlow.OpenMarketCardDetail(run, runtimeCard);
 
-            Assert.That(run.CardDetail.PendingPayment.Slots, Is.Empty);
+            Assert.That(run.CardDetail.PendingPayment.Slots, Has.Count.EqualTo(1));
 
-            var dealPlacement = PurchasePayment.PlaceChip(run, ResourceType.Deal);
-            Assert.That(dealPlacement.Succeeded, Is.False);
-            Assert.That(dealPlacement.Run.Resources.Deal, Is.EqualTo(1));
-
-            var result = PurchasePayment.ConfirmPurchase(dealPlacement.Run);
+            var result = PurchasePayment.ConfirmPurchase(run);
 
             Assert.That(result.Succeeded, Is.True);
             Assert.That(result.Run.Resources.Cash, Is.EqualTo(cashBeforePurchase - resourceCard.CashCost));
+            Assert.That(result.Run.Resources.Reading, Is.EqualTo(0));
             Assert.That(result.Run.Resources.Patience, Is.EqualTo(2));
             Assert.That(result.Run.Resources.Deal, Is.EqualTo(1));
             Assert.That(result.Run.OwnedAssets.OwnedCards, Is.Empty);
             Assert.That(FindCard(result.Run.AssetCards, resourceCard.Id).State, Is.EqualTo(AssetCardRuntimeState.Removed));
+        }
+
+        [Test]
+        public void ConsumableResourceCardCostShortageLeavesStateUnchangedAndReportsCostShortage()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            var resourceCard = new AssetCardData(
+                "expensive-resource-card",
+                string.Empty,
+                "비용 부족 자원 카드 테스트",
+                AssetRarity.Common,
+                run.Resources.Cash + 1,
+                new[] { new ProfessionalResourceCost(ResourceType.Reading, 1) },
+                0,
+                0,
+                new TagData[0],
+                cardDomain: CardDomain.ConsumableResource,
+                providedResourceType: ResourceType.Patience,
+                providedResourceAmount: 2);
+            var runtimeCard = new AssetCardRuntimeData(resourceCard, AssetCardRuntimeState.Available, PurchaseSource.MarketTape);
+            run = WithCurrentMarketCard(run, runtimeCard, 0);
+            run = MarketAreaFlow.OpenMarketCardDetail(run, runtimeCard);
+
+            var result = PurchasePayment.ConfirmPurchase(run);
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Message, Is.Empty);
+            Assert.That(result.FailureKind, Is.EqualTo(PurchaseFailureKind.CostShortage));
+            Assert.That(result.Run.Resources.Cash, Is.EqualTo(run.Resources.Cash));
+            Assert.That(result.Run.Resources.Reading, Is.EqualTo(run.Resources.Reading));
+            Assert.That(result.Run.Resources.Patience, Is.EqualTo(run.Resources.Patience));
+            Assert.That(FindCard(result.Run.AssetCards, resourceCard.Id).State, Is.EqualTo(AssetCardRuntimeState.Available));
+            Assert.That(MarketTapeContainsRuntimeCard(result.Run.MarketTape, runtimeCard.RuntimeId), Is.True);
+            Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays));
         }
 
         [Test]

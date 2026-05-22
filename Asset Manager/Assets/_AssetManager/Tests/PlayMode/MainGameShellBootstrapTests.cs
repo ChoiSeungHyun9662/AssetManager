@@ -138,9 +138,9 @@ namespace AssetManager.Tests
             Assert.That(cashText.text, Is.EqualTo(initialCash + "$"));
             Assert.That(cashText.text, Does.Not.Contain("지폐다발"));
             Assert.That(cashText.text, Does.Not.Contain("칩"));
-            Assert.That(researchText.text, Is.Empty);
-            Assert.That(creditText.text, Is.Empty);
-            Assert.That(commodityText.text, Is.Empty);
+            Assert.That(researchText.text, Is.EqualTo("0"));
+            Assert.That(creditText.text, Is.EqualTo("0"));
+            Assert.That(commodityText.text, Is.EqualTo("0"));
             Assert.That(dealText.text, Is.Empty);
 
             FindUiObject(ProjectShell.ResourceDevFundingCashButtonName).GetComponent<Button>().onClick.Invoke();
@@ -167,7 +167,7 @@ namespace AssetManager.Tests
             yield return null;
 
             var updatedResearchText = FindUiObject(ProjectShell.ResourceHudResearchTextName).GetComponent<Text>().text;
-            Assert.That(updatedResearchText, Is.Empty);
+            Assert.That(updatedResearchText, Is.EqualTo("2"));
 
             var firstResearchChip = FindUiObject("Resource Hud Research Image").GetComponent<Image>();
             var secondResearchChip = FindUiObject("Resource Hud Research Image Stack 1").GetComponent<Image>();
@@ -179,6 +179,43 @@ namespace AssetManager.Tests
             Assert.That(
                 secondResearchChip.GetComponent<RectTransform>().anchoredPosition.x,
                 Is.GreaterThan(firstResearchChip.GetComponent<RectTransform>().anchoredPosition.x));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapResourceHudShowsHoldingAmountAndMastery()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapResourceHudMasteryTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var run = ResourceLedger.AddInvestmentPhilosophy(bootstrap.CurrentRun, ResourceType.Reading, 3).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Meditation, 2).Run;
+            run = ResourceLedger.AddInvestmentPhilosophyMastery(run, ResourceType.Reading, 2).Run;
+            SetCurrentRun(bootstrap, run);
+            RefreshRunUi(bootstrap);
+
+            yield return null;
+
+            Assert.That(
+                FindUiObject(ProjectShell.ResourceHudResearchTextName).GetComponent<Text>().text,
+                Is.EqualTo("3 <size=14>+2</size>"));
+            Assert.That(
+                FindUiObject(ProjectShell.ResourceHudCreditTextName).GetComponent<Text>().text,
+                Is.EqualTo("2"));
+            Assert.That(
+                FindUiObject(ProjectShell.ResourceHudCommodityTextName).GetComponent<Text>().text,
+                Is.EqualTo("0"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -359,8 +396,8 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(3));
-            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("딜 한도: 추가 딜 버림"));
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(4));
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.Empty);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -494,8 +531,24 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            var selectedSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape);
-            var selectedCard = bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card.Card;
+            var selectedSlotIndex = 0;
+            var selectedRuntimeCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "single-market-state-stock",
+                    "Single Market State Stock",
+                    "Single market state test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedRuntimeCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            var selectedCard = selectedRuntimeCard.Card;
             var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
             var marketPanel = FindUiObject(ProjectShell.MarketAreaMarketPanelName);
             var cardDetailPanel = FindUiObject(ProjectShell.CardDetailPanelName);
@@ -516,6 +569,7 @@ namespace AssetManager.Tests
             Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
             Assert.That(bootstrap.CurrentRun.CardDetail.SelectedCard.Card.Id, Is.EqualTo(selectedCard.Id));
             Assert.That(marketPanel.activeSelf, Is.True);
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.True);
             Assert.That(cardDetailPanel.activeSelf, Is.False);
             Assert.That(nextBusinessDayButton.interactable, Is.True);
 
@@ -570,6 +624,643 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapMarketCardHoverPositionsCardsOneToSixToTheRight()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapMarketHoverRightPositionTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1");
+            var hoverPanel = FindUiObject(ProjectShell.MarketCardHoverPanelName);
+            var buttonRect = cardButtonObject.GetComponent<RectTransform>();
+            var hoverRect = hoverPanel.GetComponent<RectTransform>();
+
+            EnterPointer(cardButtonObject);
+            yield return null;
+
+            Assert.That(hoverPanel.activeSelf, Is.True);
+            Assert.That(hoverRect.position, Is.EqualTo(buttonRect.position + new Vector3(300f, 0f, 0f)));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapMarketCardHoverPositionsCardsSevenAndEightToTheLeft()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapMarketHoverLeftPositionTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "8");
+            var hoverPanel = FindUiObject(ProjectShell.MarketCardHoverPanelName);
+            var buttonRect = cardButtonObject.GetComponent<RectTransform>();
+            var hoverRect = hoverPanel.GetComponent<RectTransform>();
+
+            EnterPointer(cardButtonObject);
+            yield return null;
+
+            Assert.That(hoverPanel.activeSelf, Is.True);
+            Assert.That(hoverRect.position, Is.EqualTo(buttonRect.position + new Vector3(-300f, 0f, 0f)));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapMarketCardDragHidesHoverAndMovesOriginalCard()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapMarketDragTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape);
+            var currentMarketButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1));
+            var hoverPanel = FindUiObject(ProjectShell.MarketCardHoverPanelName);
+            var buttonRect = currentMarketButtonObject.GetComponent<RectTransform>();
+            var originalPosition = buttonRect.anchoredPosition;
+
+            EnterPointer(currentMarketButtonObject);
+            yield return null;
+
+            Assert.That(hoverPanel.activeSelf, Is.True);
+
+            PointerDown(currentMarketButtonObject, new Vector2(500f, 500f));
+            DragPointer(currentMarketButtonObject, new Vector2(500f, 420f), new Vector2(0f, -80f));
+            yield return null;
+
+            Assert.That(hoverPanel.activeSelf, Is.False);
+            Assert.That(buttonRect.anchoredPosition, Is.EqualTo(originalPosition + new Vector2(0f, -80f)));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapMarketCardHoverUsesSlotPositionAfterDragEnds()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapMarketHoverAfterDragTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "hover-after-drag-stock",
+                    "Hover After Drag Stock",
+                    "Hover after drag test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1");
+            var hoverPanel = FindUiObject(ProjectShell.MarketCardHoverPanelName);
+            var buttonRect = cardButtonObject.GetComponent<RectTransform>();
+            var hoverRect = hoverPanel.GetComponent<RectTransform>();
+            var originalButtonPosition = buttonRect.position;
+
+            PointerDown(cardButtonObject, new Vector2(500f, 500f));
+            DragPointer(cardButtonObject, new Vector2(500f, 460f), new Vector2(0f, -40f));
+            PointerUp(cardButtonObject, new Vector2(500f, 460f));
+            yield return null;
+
+            FindUiObject(ProjectShell.PurchaseConfirmationBackButtonName).GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            EnterPointer(cardButtonObject);
+            yield return null;
+
+            Assert.That(hoverPanel.activeSelf, Is.True);
+            Assert.That(buttonRect.position, Is.EqualTo(originalButtonPosition));
+            Assert.That(hoverRect.position, Is.EqualTo(buttonRect.position + new Vector3(300f, 0f, 0f)));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapMarketCardDropOnPortfolioImmediatelyPurchasesWithoutModal()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPortfolioDropPurchaseTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "portfolio-drop-stock",
+                    "Portfolio Drop Stock",
+                    "Portfolio drop purchase test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1));
+            var portfolioDropPosition = GetScreenCenter(FindUiObject(ProjectShell.PortfolioSummaryPanelName));
+            var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
+
+            PointerDown(cardButtonObject, new Vector2(500f, 500f));
+            DragPointer(cardButtonObject, portfolioDropPosition, new Vector2(0f, -260f));
+            PointerUp(cardButtonObject, portfolioDropPosition);
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.False);
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays - 1));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapMarketCardDragReleaseOutsidePortfolioOpensPurchaseConfirmationModal()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapDragReleaseModalTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "drag-release-modal-stock",
+                    "Drag Release Modal Stock",
+                    "Drag release modal test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1));
+            var buttonRect = cardButtonObject.GetComponent<RectTransform>();
+            var originalPosition = buttonRect.anchoredPosition;
+
+            PointerDown(cardButtonObject, new Vector2(500f, 500f));
+            DragPointer(cardButtonObject, new Vector2(500f, 460f), new Vector2(0f, -40f));
+            PointerUp(cardButtonObject, new Vector2(500f, 460f));
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.True);
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Is.Empty);
+            Assert.That(buttonRect.anchoredPosition, Is.EqualTo(originalPosition));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapFailedPortfolioDropRestoresMarketCardAndShowsFailureFeedback()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPortfolioDropFailureTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "portfolio-drop-failure-stock",
+                    "Portfolio Drop Failure Stock",
+                    "Portfolio drop failure test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            var run = WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex);
+            run = WithOwnedAssets(run, new OwnedAssetState(CreateOwnedStockCards(8)));
+            SetCurrentRun(bootstrap, run);
+            RefreshRunUi(bootstrap);
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1));
+            var buttonRect = cardButtonObject.GetComponent<RectTransform>();
+            var originalPosition = buttonRect.anchoredPosition;
+            var portfolioDropPosition = GetScreenCenter(FindUiObject(ProjectShell.PortfolioSummaryPanelName));
+
+            PointerDown(cardButtonObject, new Vector2(500f, 500f));
+            DragPointer(cardButtonObject, portfolioDropPosition, new Vector2(0f, -260f));
+            PointerUp(cardButtonObject, portfolioDropPosition);
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.False);
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(8));
+            Assert.That(bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card.RuntimeId, Is.EqualTo(selectedCard.RuntimeId));
+            Assert.That(cardButtonObject.activeSelf, Is.True);
+            Assert.That(buttonRect.anchoredPosition, Is.EqualTo(originalPosition));
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("주식 매도가 필요합니다"));
+            Assert.That(cardButtonObject.GetComponent<MarketCardFailureFeedback>().ShakeRequestCount, Is.EqualTo(1));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapAffordableMarketCardClickOpensPurchaseConfirmationModal()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPurchaseConfirmationOpenTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "confirmation-open-stock",
+                    "Confirmation Open Stock",
+                    "Confirmation modal opening test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
+            var cardButton = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1));
+            var cardText = cardButton.GetComponentInChildren<Text>().text;
+
+            cardButton.GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.True);
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationCardTextName).GetComponent<Text>().text, Does.Contain(cardText));
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationConfirmButtonName).activeSelf, Is.True);
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationBackButtonName).activeSelf, Is.True);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.False);
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Is.Empty);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapPurchaseConfirmationConfirmBuysSelectedCard()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPurchaseConfirmationConfirmTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "confirmation-confirm-stock",
+                    "Confirmation Confirm Stock",
+                    "Confirmation modal confirm test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+            yield return null;
+
+            FindUiObject(ProjectShell.PurchaseConfirmationConfirmButtonName).GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.False);
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapPurchaseConfirmationShowsDiscountedAndInsufficientCosts()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPurchaseConfirmationCostTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "confirmation-cost-stock",
+                    "Confirmation Cost Stock",
+                    "Confirmation modal cost test card.",
+                    AssetRarity.Common,
+                    0,
+                    new[] { new ProfessionalResourceCost(ResourceType.Reading, 2) },
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            var run = WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex);
+            run = WithResources(run, new ResourceState(run.Resources.Cash, 1, 0, 0, run.Resources.Deal));
+            run = WithMastery(run, new InvestmentPhilosophyMasteryState(1, 0, 0));
+            SetCurrentRun(bootstrap, run);
+            RefreshRunUi(bootstrap);
+
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+            yield return null;
+
+            var modalText = FindUiObject(ProjectShell.PurchaseConfirmationCardTextName).GetComponent<Text>().text;
+            Assert.That(modalText, Does.Contain("비용 $0, R2 -> R1"));
+
+            SetCurrentRun(bootstrap, WithResources(bootstrap.CurrentRun, new ResourceState(bootstrap.CurrentRun.Resources.Cash, 0, 0, 0, bootstrap.CurrentRun.Resources.Deal)));
+            RefreshRunUi(bootstrap);
+            yield return null;
+
+            Assert.That(
+                FindUiObject(ProjectShell.PurchaseConfirmationCardTextName).GetComponent<Text>().text,
+                Does.Contain("<color=red>R1</color>"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapPurchaseConfirmationBackCancelsWithoutChangingRun()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPurchaseConfirmationBackTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "confirmation-cancel-stock",
+                    "Confirmation Cancel Stock",
+                    "Confirmation modal cancel test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
+            var cash = bootstrap.CurrentRun.Resources.Cash;
+            var slotRuntimeIds = CollectSlotRuntimeIds(bootstrap.CurrentRun.MarketTape);
+
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+            yield return null;
+
+            FindUiObject(ProjectShell.PurchaseConfirmationBackButtonName).GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.False);
+            Assert.That(bootstrap.CurrentRun.CardDetail.SelectedCard, Is.Null);
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(cash));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Is.Empty);
+            Assert.That(CollectSlotRuntimeIds(bootstrap.CurrentRun.MarketTape), Is.EqualTo(slotRuntimeIds));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapPurchaseConfirmationRevalidatesAndFailsWithCardFeedback()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPurchaseConfirmationRevalidationTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "confirmation-revalidation-stock",
+                    "Confirmation Revalidation Stock",
+                    "Confirmation modal revalidation test card.",
+                    AssetRarity.Common,
+                    1,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            var run = WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex);
+            run = WithResources(run, new ResourceState(1, run.Resources.Reading, run.Resources.Meditation, run.Resources.Patience, run.Resources.Deal));
+            SetCurrentRun(bootstrap, run);
+            RefreshRunUi(bootstrap);
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1));
+            cardButtonObject.GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            SetCurrentRun(
+                bootstrap,
+                WithResources(bootstrap.CurrentRun, new ResourceState(0, 0, 0, 0, bootstrap.CurrentRun.Resources.Deal)));
+            RefreshRunUi(bootstrap);
+
+            FindUiObject(ProjectShell.PurchaseConfirmationConfirmButtonName).GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.False);
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Is.Empty);
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.Empty);
+            Assert.That(cardButtonObject.GetComponent<MarketCardFailureFeedback>().ShakeRequestCount, Is.EqualTo(1));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapPurchaseConfirmationBlocksBackgroundButtons()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPurchaseConfirmationBlockTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "confirmation-block-stock",
+                    "Confirmation Block Stock",
+                    "Confirmation modal background block test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+            yield return null;
+
+            var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
+            var cash = bootstrap.CurrentRun.Resources.Cash;
+            var otherSlotIndex = selectedSlotIndex + 1;
+
+            FindUiObject(ProjectShell.NextBusinessDayButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.ResourceDevFundingCashButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (otherSlotIndex + 1))
+                .GetComponent<Button>()
+                .onClick
+                .Invoke();
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.True);
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(cash));
+            Assert.That(bootstrap.CurrentRun.CardDetail.SelectedCard.RuntimeId, Is.EqualTo(selectedCard.RuntimeId));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapUpcomingMarketCardOpensPreviewWithoutTransactionActions()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapUpcomingPreviewTests");
@@ -618,7 +1309,7 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MainGameShellBootstrapCardDetailPaymentPlacesRecoversAndConfirmsMarketPurchase()
+        public IEnumerator MainGameShellBootstrapMarketPurchaseAutomaticallyPaysWithoutPaymentPotControls()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapCardDetailPaymentTests");
             SceneManager.SetActiveScene(scene);
@@ -664,36 +1355,17 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            var buyButton = FindUiObject(ProjectShell.CardDetailBuyButtonName).GetComponent<Button>();
-            Assert.That(buyButton.interactable, Is.False);
-            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("독서: 비어 있음"));
-
-            FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).GetComponent<Button>().onClick.Invoke();
-
-            yield return null;
-
-            Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(1));
-            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("독서: 독서"));
-
-            FindUiObject(ProjectShell.CardDetailPaymentSlotButtonPrefix + "1").GetComponent<Button>().onClick.Invoke();
-
-            yield return null;
-
-            Assert.That(bootstrap.CurrentRun.Resources.Research, Is.EqualTo(1));
-            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text, Does.Contain("독서: 비어 있음"));
-
-            FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).GetComponent<Button>().onClick.Invoke();
-            FindUiObject(ProjectShell.CardDetailPlaceCreditButtonName).GetComponent<Button>().onClick.Invoke();
-
-            yield return null;
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentPotBackgroundName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPlaceCreditButtonName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPlaceCommodityButtonName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPlaceDealButtonName).activeSelf, Is.False);
 
             Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(previousCash));
-            Assert.That(
-                FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).GetComponent<Text>().text,
-                Does.Contain("최종 현금 " + selectedCard.Card.CashCost));
-            Assert.That(buyButton.interactable, Is.True);
 
-            buyButton.onClick.Invoke();
+            bootstrap.ConfirmPurchase();
 
             yield return null;
 
@@ -786,7 +1458,7 @@ namespace AssetManager.Tests
             yield return null;
             Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
 
-            FindUiObject(ProjectShell.CardDetailCloseButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.PurchaseConfirmationBackButtonName).GetComponent<Button>().onClick.Invoke();
             yield return null;
 
             EnterPointer(firstOwnedStockCardButton);
@@ -802,6 +1474,142 @@ namespace AssetManager.Tests
             Assert.That(bootstrap.CurrentRun.OwnedAssets.Count, Is.EqualTo(0));
             Assert.That(FindUiObject("Owned Stock Card 1").activeSelf, Is.False);
             Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapPurchaseCostShortageShakesCardWithoutSystemMessage()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPurchaseCostShortageFeedbackTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "cost-shortage-feedback-stock",
+                    "Cost Shortage Feedback Stock",
+                    "Cost shortage feedback test card.",
+                    AssetRarity.Common,
+                    bootstrap.CurrentRun.Resources.Cash + 1,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1));
+            cardButtonObject.GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Is.Empty);
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.Empty);
+            Assert.That(cardButtonObject.GetComponent<MarketCardFailureFeedback>().ShakeRequestCount, Is.EqualTo(1));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapNonCostPurchaseFailureShakesCardAndShowsMessage()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPurchaseNonCostFailureFeedbackTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "portfolio-full-feedback-stock",
+                    "Portfolio Full Feedback Stock",
+                    "Portfolio full feedback test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            var run = WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex);
+            run = WithOwnedAssets(run, new OwnedAssetState(CreateOwnedStockCards(8)));
+            SetCurrentRun(bootstrap, run);
+            RefreshRunUi(bootstrap);
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1));
+            cardButtonObject.GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(8));
+            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("주식 매도가 필요합니다"));
+            Assert.That(cardButtonObject.GetComponent<MarketCardFailureFeedback>().ShakeRequestCount, Is.EqualTo(1));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapSuccessfulPurchaseDoesNotShakeCard()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapPurchaseSuccessFeedbackTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var selectedSlotIndex = 0;
+            var selectedCard = new AssetCardRuntimeData(
+                new AssetCardData(
+                    "success-feedback-stock",
+                    "Success Feedback Stock",
+                    "Success feedback test card.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    2,
+                    0,
+                    new TagData[0]),
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            SetCurrentRun(bootstrap, WithCurrentMarketCard(bootstrap.CurrentRun, selectedCard, selectedSlotIndex));
+            RefreshRunUi(bootstrap);
+
+            var cardButtonObject = FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1));
+            cardButtonObject.GetComponent<Button>().onClick.Invoke();
+            yield return null;
+
+            bootstrap.ConfirmPurchase();
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
+            Assert.That(cardButtonObject.GetComponent<MarketCardFailureFeedback>().ShakeRequestCount, Is.EqualTo(0));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -883,7 +1691,7 @@ namespace AssetManager.Tests
             FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + "1").GetComponent<Button>().onClick.Invoke();
             yield return null;
 
-            FindUiObject(ProjectShell.CardDetailBuyButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.PurchaseConfirmationConfirmButtonName).GetComponent<Button>().onClick.Invoke();
             yield return null;
 
             var firstCard = FindUiObject("Owned Stock Card 1");
@@ -923,7 +1731,7 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MainGameShellBootstrapCardDetailShowsPaymentPotForProfessionalCostSlotsOnly()
+        public IEnumerator MainGameShellBootstrapDoesNotExposePaymentPotOrManualCostSlotsInNewPlayPath()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapPaymentPotTests");
             SceneManager.SetActiveScene(scene);
@@ -939,31 +1747,22 @@ namespace AssetManager.Tests
             yield return null;
 
             var selectedSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape, ResourceType.Reading);
-            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
-                .GetComponent<Button>()
-                .onClick
-                .Invoke();
-
+            var selectedCard = bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card;
+            OpenLegacyCardDetailForTest(bootstrap, selectedCard);
             yield return null;
 
-            var paymentPot = FindUiObject(ProjectShell.CardDetailPaymentPotBackgroundName);
-            var paymentSlotsText = FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).GetComponent<Text>().text;
-            var slotButtonText = FindUiObject(ProjectShell.CardDetailPaymentSlotButtonPrefix + "1")
-                .GetComponentInChildren<Text>()
-                .text;
-
-            Assert.That(paymentPot.activeSelf, Is.True);
-            Assert.That(paymentPot.GetComponent<Image>(), Is.Not.Null);
-            Assert.That(paymentSlotsText, Does.Contain("Payment Pot"));
-            Assert.That(paymentSlotsText, Does.Not.Contain("현금:"));
-            Assert.That(slotButtonText, Does.Contain("독서"));
-            Assert.That(slotButtonText, Does.Contain("비어 있음"));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentPotBackgroundName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotsTextName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPaymentSlotButtonPrefix + "1").activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.CardDetailPlaceDealButtonName).activeSelf, Is.False);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
 
         [UnityTest]
-        public IEnumerator MainGameShellBootstrapCardDetailFinalCashCostShowsInflationAndDealPlacement()
+        public IEnumerator MainGameShellBootstrapDealIsNotExposedAsPurchasePayment()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapInflationCostTests");
             SceneManager.SetActiveScene(scene);
@@ -982,6 +1781,7 @@ namespace AssetManager.Tests
                 bootstrap.CurrentRun,
                 new RunCalendarState(1, 2, bootstrap.CurrentRun.Calendar.RemainingBusinessDays));
             run = ResourceLedger.AddDeal(run, 1).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Reading, 1).Run;
             SetCurrentRun(bootstrap, run);
 
             var selectedSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape, ResourceType.Reading);
@@ -990,18 +1790,19 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            Assert.That(
-                FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).GetComponent<Text>().text,
-                Does.Contain("최종 현금 " + (selectedCard.Card.CashCost + 1)));
-
-            FindUiObject(ProjectShell.CardDetailPlaceDealButtonName).GetComponent<Button>().onClick.Invoke();
+            var dealBeforePurchase = bootstrap.CurrentRun.Resources.Deal;
 
             yield return null;
 
-            Assert.That(bootstrap.CurrentRun.CardDetail.PendingPayment.FinalCashCost, Is.EqualTo(selectedCard.Card.CashCost));
-            Assert.That(
-                FindUiObject(ProjectShell.CardDetailFinalCashCostTextName).GetComponent<Text>().text,
-                Does.Contain("최종 현금 " + selectedCard.Card.CashCost));
+            Assert.That(FindUiObject(ProjectShell.CardDetailPlaceDealButtonName).activeSelf, Is.False);
+            Assert.That(bootstrap.CurrentRun.CardDetail.PendingPayment.FinalCashCost, Is.EqualTo(selectedCard.Card.CashCost + 1));
+
+            bootstrap.ConfirmPurchase();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(dealBeforePurchase));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -1027,11 +1828,7 @@ namespace AssetManager.Tests
             var previousSlotIds = CollectSlotCardIds(bootstrap.CurrentRun.MarketTape);
             var remainingBusinessDays = bootstrap.CurrentRun.Calendar.RemainingBusinessDays;
 
-            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
-                .GetComponent<Button>()
-                .onClick
-                .Invoke();
-
+            OpenLegacyCardDetailForTest(bootstrap, selectedCard);
             yield return null;
 
             var reserveButton = FindUiObject(ProjectShell.CardDetailReserveButtonName).GetComponent<Button>();
@@ -1082,11 +1879,7 @@ namespace AssetManager.Tests
 
             var selectedSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape);
             var selectedCard = bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card;
-            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (selectedSlotIndex + 1))
-                .GetComponent<Button>()
-                .onClick
-                .Invoke();
-
+            OpenLegacyCardDetailForTest(bootstrap, selectedCard);
             yield return null;
 
             FindUiObject(ProjectShell.CardDetailReserveButtonName).GetComponent<Button>().onClick.Invoke();
@@ -1106,15 +1899,11 @@ namespace AssetManager.Tests
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(bootstrap.CurrentRun.CardDetail.SelectedCard.Card.Id, Is.EqualTo(selectedCard.Card.Id));
             Assert.That(bootstrap.CurrentRun.CardDetail.PurchaseSource, Is.EqualTo(PurchaseSource.MarketTape));
+            Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.True);
             Assert.That(FindUiObject(ProjectShell.CardDetailPanelName).activeSelf, Is.False);
             Assert.That(FindUiObject(ProjectShell.CardDetailReserveButtonName).activeSelf, Is.False);
 
-            FindUiObject(ProjectShell.CardDetailPlaceResearchButtonName).GetComponent<Button>().onClick.Invoke();
-            FindUiObject(ProjectShell.CardDetailPlaceCreditButtonName).GetComponent<Button>().onClick.Invoke();
-
-            yield return null;
-
-            FindUiObject(ProjectShell.CardDetailBuyButtonName).GetComponent<Button>().onClick.Invoke();
+            FindUiObject(ProjectShell.PurchaseConfirmationConfirmButtonName).GetComponent<Button>().onClick.Invoke();
 
             yield return null;
 
@@ -1146,9 +1935,31 @@ namespace AssetManager.Tests
 
             yield return null;
 
+            var reservationRun = bootstrap.CurrentRun;
+            for (var i = 0; i < 4; i++)
+            {
+                var stock = new AssetCardData(
+                    "reservation-capacity-ui-stock-" + i,
+                    "Reservation Capacity UI Stock " + i,
+                    "Reservation capacity test stock.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    1,
+                    0,
+                    new TagData[0]);
+                reservationRun = WithCurrentMarketCard(
+                    reservationRun,
+                    new AssetCardRuntimeData(stock, AssetCardRuntimeState.Available, PurchaseSource.MarketTape),
+                    i);
+            }
+
+            SetCurrentRun(bootstrap, reservationRun);
+            RefreshRunUi(bootstrap);
+
             for (var i = 0; i < 3; i++)
             {
-                bootstrap.OpenMarketCardDetail(FindFirstAvailableMarketSlotCard(bootstrap.CurrentRun.MarketTape));
+                OpenLegacyCardDetailForTest(bootstrap, FindFirstAvailableMarketSlotCard(bootstrap.CurrentRun.MarketTape));
                 bootstrap.ConfirmReservation();
             }
 
@@ -1156,13 +1967,12 @@ namespace AssetManager.Tests
             var deal = bootstrap.CurrentRun.Resources.Deal;
             var pressure = bootstrap.CurrentRun.RedemptionPressure.CurrentPressure;
 
-            bootstrap.OpenMarketCardDetail(FindFirstAvailableMarketSlotCard(bootstrap.CurrentRun.MarketTape));
+            OpenLegacyCardDetailForTest(bootstrap, FindFirstAvailableMarketSlotCard(bootstrap.CurrentRun.MarketTape));
 
             yield return null;
 
             var reserveButton = FindUiObject(ProjectShell.CardDetailReserveButtonName).GetComponent<Button>();
             Assert.That(reserveButton.interactable, Is.False);
-            Assert.That(FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text, Is.EqualTo("예약 구역이 가득 찼습니다."));
 
             bootstrap.ConfirmReservation();
 
@@ -1194,7 +2004,8 @@ namespace AssetManager.Tests
             yield return null;
 
             SetCurrentRun(bootstrap, WithRedemptionPressure(bootstrap.CurrentRun, 9));
-            bootstrap.OpenMarketCardDetail(
+            OpenLegacyCardDetailForTest(
+                bootstrap,
                 bootstrap.CurrentRun.MarketTape.Slots[FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape)].Card);
 
             yield return null;
@@ -1556,11 +2367,51 @@ namespace AssetManager.Tests
             ExecutePointerEvent(target, ExecuteEvents.pointerExitHandler);
         }
 
+        private static void PointerDown(GameObject target, Vector2 position)
+        {
+            ExecutePointerEvent(target, ExecuteEvents.pointerDownHandler, position, Vector2.zero);
+        }
+
+        private static void DragPointer(GameObject target, Vector2 position, Vector2 delta)
+        {
+            ExecutePointerEvent(target, ExecuteEvents.dragHandler, position, delta);
+        }
+
+        private static void PointerUp(GameObject target, Vector2 position)
+        {
+            ExecutePointerEvent(target, ExecuteEvents.pointerUpHandler, position, Vector2.zero);
+        }
+
+        private static Vector2 GetScreenCenter(GameObject target)
+        {
+            var rectTransform = target.GetComponent<RectTransform>();
+            Assert.That(rectTransform, Is.Not.Null);
+            return RectTransformUtility.WorldToScreenPoint(null, rectTransform.position);
+        }
+
         private static void ExecutePointerEvent<T>(GameObject target, ExecuteEvents.EventFunction<T> eventFunction)
             where T : IEventSystemHandler
         {
             Assert.That(EventSystem.current, Is.Not.Null);
             ExecuteEvents.Execute(target, new PointerEventData(EventSystem.current), eventFunction);
+        }
+
+        private static void ExecutePointerEvent<T>(
+            GameObject target,
+            ExecuteEvents.EventFunction<T> eventFunction,
+            Vector2 position,
+            Vector2 delta)
+            where T : IEventSystemHandler
+        {
+            Assert.That(EventSystem.current, Is.Not.Null);
+            ExecuteEvents.Execute(
+                target,
+                new PointerEventData(EventSystem.current)
+                {
+                    position = position,
+                    delta = delta
+                },
+                eventFunction);
         }
 
         private static GameObject FindUiObject(string objectName)
@@ -1667,6 +2518,48 @@ namespace AssetManager.Tests
                 run.LiquidityAction);
         }
 
+        private static RunSessionState WithResources(RunSessionState run, ResourceState resources)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
+        }
+
+        private static RunSessionState WithMastery(RunSessionState run, InvestmentPhilosophyMasteryState mastery)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                mastery);
+        }
+
         private static RunSessionState WithOwnedAssets(RunSessionState run, OwnedAssetState ownedAssets)
         {
             return new RunSessionState(
@@ -1757,6 +2650,27 @@ namespace AssetManager.Tests
             return updatedCards;
         }
 
+        private static System.Collections.Generic.IReadOnlyList<AssetCardRuntimeData> CreateOwnedStockCards(int count)
+        {
+            var cards = new System.Collections.Generic.List<AssetCardRuntimeData>();
+            for (var i = 0; i < count; i++)
+            {
+                var card = new AssetCardData(
+                    "owned-feedback-stock-" + i,
+                    "Owned Feedback Stock " + i,
+                    "Owned stock for feedback tests.",
+                    AssetRarity.Common,
+                    0,
+                    new ProfessionalResourceCost[0],
+                    1,
+                    0,
+                    new TagData[0]);
+                cards.Add(new AssetCardRuntimeData(card, AssetCardRuntimeState.Owned, PurchaseSource.MarketTape, i + 1));
+            }
+
+            return cards;
+        }
+
         private static void SetCurrentRun(MainGameShellBootstrap bootstrap, RunSessionState run)
         {
             typeof(MainGameShellBootstrap)
@@ -1769,6 +2683,12 @@ namespace AssetManager.Tests
             typeof(MainGameShellBootstrap)
                 .GetMethod("RefreshRunUi", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(bootstrap, new object[0]);
+        }
+
+        private static void OpenLegacyCardDetailForTest(MainGameShellBootstrap bootstrap, AssetCardRuntimeData card)
+        {
+            SetCurrentRun(bootstrap, MarketAreaFlow.OpenMarketCardDetail(bootstrap.CurrentRun, card));
+            RefreshRunUi(bootstrap);
         }
 
         private static Sprite CreateTestSprite()

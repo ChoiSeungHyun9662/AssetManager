@@ -34,7 +34,7 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void ReservationAtDealCapStillSucceedsAndReportsDiscardedDeal()
+        public void ReservationIgnoresFormerDealCapWhenGrantingDeal()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ResourceLedger.AddDeal(run, 3).Run;
@@ -43,9 +43,9 @@ namespace AssetManager.Tests
             var result = ReservationAction.ConfirmReservation(run);
 
             Assert.That(result.Succeeded, Is.True);
-            Assert.That(result.Run.Resources.Deal, Is.EqualTo(3));
+            Assert.That(result.Run.Resources.Deal, Is.EqualTo(4));
             Assert.That(CountReservedSlots(result.Run.MarketTape), Is.EqualTo(1));
-            Assert.That(result.Message, Is.EqualTo("딜 한도: 추가 딜 버림"));
+            Assert.That(result.Message, Is.EqualTo("월세 밀림 +1"));
         }
 
         [Test]

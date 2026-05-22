@@ -95,7 +95,8 @@ namespace AssetManager
                 run.CardDetail,
                 run.LiquidityAction,
                 run.QuarterEndResult,
-                run.FailureReason);
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
         }
 
         private static RunSessionState WithQuarterEndResult(RunSessionState run, QuarterEndResult result)
@@ -115,7 +116,8 @@ namespace AssetManager
                 run.CardDetail,
                 run.LiquidityAction,
                 result,
-                run.FailureReason);
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery);
         }
     }
 

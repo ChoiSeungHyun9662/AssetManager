@@ -1,6 +1,6 @@
 # 15. 자동 자산 매수와 실패 피드백
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -14,16 +14,24 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 새 플레이 경로의 주식 카드 매수는 할인 후 현금과 투자 철학 비용을 자동 차감한다.
-- [ ] 새 플레이 경로의 소모형 자원 카드 매수도 같은 자동 결제 검증과 실패 피드백 규칙을 따른다.
-- [ ] 딜은 자산 매수 결제에서 직접 소모되지 않는다.
-- [ ] 비용 부족 실패는 자원, 포트폴리오, 시장, 영업일 상태를 바꾸지 않는다.
-- [ ] 비용 부족 실패는 시스템 메시지를 띄우지 않고 매수 시도 카드의 떨림 피드백만 발생시킨다.
-- [ ] 비용 외 실패는 자원, 포트폴리오, 시장, 영업일 상태를 바꾸지 않고 카드 떨림과 기존 실패 메시지를 함께 보여준다.
-- [ ] 매수 성공은 카드 떨림을 발생시키지 않고 기존 성공 결과 흐름으로 이어진다.
-- [ ] 새 플레이 경로에서 Payment Pot과 수동 비용 슬롯 조작은 노출되지 않는다.
-- [ ] 관련 EditMode 테스트가 주식/소모형 자원 자동 결제, 비용 부족 실패, 비용 외 실패, 딜 미소모를 검증한다.
-- [ ] 관련 PlayMode 테스트가 실패 유형별 카드 떨림과 메시지 표시/비표시를 검증한다.
+- [x] 새 플레이 경로의 주식 카드 매수는 할인 후 현금과 투자 철학 비용을 자동 차감한다.
+- [x] 새 플레이 경로의 소모형 자원 카드 매수도 같은 자동 결제 검증과 실패 피드백 규칙을 따른다.
+- [x] 딜은 자산 매수 결제에서 직접 소모되지 않는다.
+- [x] 비용 부족 실패는 자원, 포트폴리오, 시장, 영업일 상태를 바꾸지 않는다.
+- [x] 비용 부족 실패는 시스템 메시지를 띄우지 않고 매수 시도 카드의 떨림 피드백만 발생시킨다.
+- [x] 비용 외 실패는 자원, 포트폴리오, 시장, 영업일 상태를 바꾸지 않고 카드 떨림과 기존 실패 메시지를 함께 보여준다.
+- [x] 매수 성공은 카드 떨림을 발생시키지 않고 기존 성공 결과 흐름으로 이어진다.
+- [x] 새 플레이 경로에서 Payment Pot과 수동 비용 슬롯 조작은 노출되지 않는다.
+- [x] 관련 EditMode 테스트가 주식/소모형 자원 자동 결제, 비용 부족 실패, 비용 외 실패, 딜 미소모를 검증한다.
+- [x] 관련 PlayMode 테스트가 실패 유형별 카드 떨림과 메시지 표시/비표시를 검증한다.
+
+## Completion notes
+
+- RED/GREEN: added behavior coverage for automatic discounted stock payment, automatic consumable-resource payment, cost-shortage no-op failures, non-cost no-op failures, Deal non-consumption, Payment Pot/manual slot non-exposure, and failure-card shake requests.
+- Implementation: `PurchasePayment` now validates and spends final cash plus discounted investment philosophy costs directly from current resources. Deal chip placement is rejected for purchase payment and Deal is preserved on purchase success.
+- UI feedback: purchase failures carry a failure kind and failed card runtime id. Cost shortage returns no system message; non-cost failure preserves the existing message. `MarketTapeView` records a card-local shake request for failed purchases only.
+- Verification: Unity EditMode `AssetManager.Tests.EditMode` passed 113/113. Unity PlayMode `AssetManager.Tests.PlayMode` passed 40/40.
+- Unity manual check: not run. Automated PlayMode covered the shell UI exposure and failure feedback wiring.
 
 ## Blocked by
 

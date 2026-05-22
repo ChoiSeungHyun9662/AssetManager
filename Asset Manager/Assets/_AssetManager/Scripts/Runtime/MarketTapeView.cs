@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -22,6 +21,10 @@ namespace AssetManager
         private readonly List<Button> currentMarketButtons = new List<Button>();
         private readonly List<Button> upcomingMarketButtons = new List<Button>();
         private Action<AssetCardRuntimeData, MarketTapeZone> onMarketCardSelected;
+        private Action<AssetCardRuntimeData, Vector2> onCurrentMarketCardReleased;
+        private RectTransform draggedCard;
+        private Vector2 draggedCardStartPosition;
+        private bool hasDraggedCard;
 
         public GameObject MarketPanel => marketPanel;
         public GameObject HoverCardPanel => hoverCardPanel;
@@ -51,19 +54,25 @@ namespace AssetManager
             onMarketCardSelected = handler;
         }
 
-        public void Show(RunSessionState run)
+        public void SetCurrentMarketCardReleasedHandler(Action<AssetCardRuntimeData, Vector2> handler)
+        {
+            onCurrentMarketCardReleased = handler;
+        }
+
+        public void Show(RunSessionState run, string purchaseFailureCardRuntimeId)
         {
             SetActive(marketPanel, run.BusinessDay.MarketArea == MarketAreaState.Market);
             HideHoverCard();
 
             ShowCards(sellImminentButtons, Array.Empty<AssetCardRuntimeData>(), MarketTapeZone.SellImminent);
-            ShowSlots(currentMarketButtons, run.MarketTape.Slots);
+            ShowSlots(currentMarketButtons, run.MarketTape.Slots, purchaseFailureCardRuntimeId);
             ShowCards(upcomingMarketButtons, Array.Empty<AssetCardRuntimeData>(), MarketTapeZone.UpcomingMarket);
         }
 
         private void ShowSlots(
             IReadOnlyList<Button> buttons,
-            IReadOnlyList<MarketTapeSlotState> slots)
+            IReadOnlyList<MarketTapeSlotState> slots,
+            string purchaseFailureCardRuntimeId)
         {
             for (var i = 0; i < buttons.Count; i++)
             {
@@ -85,9 +94,10 @@ namespace AssetManager
 
                 var slot = slots[i];
                 var card = slot.Card;
-                SetButtonText(button, FormatCard(card, slot.IsReserved));
+                SetButtonText(button, MarketCardFormatter.Format(card, slot.IsReserved));
                 StyleCardButton(button, card, MarketTapeZone.CurrentMarket, slot.IsReserved);
-                ConfigureHoverTrigger(button.gameObject, card, slot.IsReserved);
+                ApplyFailureFeedback(button.gameObject, card.RuntimeId == purchaseFailureCardRuntimeId);
+                ConfigureCurrentMarketTrigger(button.gameObject, i, card, slot.IsReserved);
                 button.onClick.AddListener(() => onMarketCardSelected?.Invoke(card, MarketTapeZone.CurrentMarket));
             }
         }
@@ -116,14 +126,33 @@ namespace AssetManager
                 }
 
                 var card = cards[i];
-                SetButtonText(button, FormatCard(card, false));
+                SetButtonText(button, MarketCardFormatter.Format(card, false));
                 StyleCardButton(button, card, zone, false);
                 ConfigureHoverTrigger(button.gameObject, card, false);
                 button.onClick.AddListener(() => onMarketCardSelected?.Invoke(card, zone));
             }
         }
 
+        private void ConfigureCurrentMarketTrigger(GameObject target, int slotIndex, AssetCardRuntimeData card, bool isReserved)
+        {
+            var trigger = EnsureEventTrigger(target);
+            trigger.triggers.Clear();
+            AddHoverTrigger(trigger, EventTriggerType.PointerEnter, () => ShowHoverCard(target, slotIndex, card, isReserved));
+            AddHoverTrigger(trigger, EventTriggerType.PointerExit, HideHoverCard);
+            AddPointerTrigger(trigger, EventTriggerType.PointerDown, eventData => BeginDrag(target, eventData));
+            AddPointerTrigger(trigger, EventTriggerType.Drag, eventData => DragCard(eventData));
+            AddPointerTrigger(trigger, EventTriggerType.PointerUp, eventData => EndDrag(card, eventData));
+        }
+
         private void ConfigureHoverTrigger(GameObject target, AssetCardRuntimeData card, bool isReserved)
+        {
+            var trigger = EnsureEventTrigger(target);
+            trigger.triggers.Clear();
+            AddHoverTrigger(trigger, EventTriggerType.PointerEnter, () => ShowHoverCard(card, isReserved));
+            AddHoverTrigger(trigger, EventTriggerType.PointerExit, HideHoverCard);
+        }
+
+        private static EventTrigger EnsureEventTrigger(GameObject target)
         {
             var trigger = target.GetComponent<EventTrigger>();
             if (trigger == null)
@@ -131,9 +160,7 @@ namespace AssetManager
                 trigger = target.AddComponent<EventTrigger>();
             }
 
-            trigger.triggers.Clear();
-            AddHoverTrigger(trigger, EventTriggerType.PointerEnter, () => ShowHoverCard(card, isReserved));
-            AddHoverTrigger(trigger, EventTriggerType.PointerExit, HideHoverCard);
+            return trigger;
         }
 
         private static void AddHoverTrigger(EventTrigger trigger, EventTriggerType eventType, Action action)
@@ -143,134 +170,96 @@ namespace AssetManager
             trigger.triggers.Add(entry);
         }
 
+        private static void AddPointerTrigger(
+            EventTrigger trigger,
+            EventTriggerType eventType,
+            Action<PointerEventData> action)
+        {
+            var entry = new EventTrigger.Entry { eventID = eventType };
+            entry.callback.AddListener(eventData =>
+            {
+                if (eventData is PointerEventData pointerEventData)
+                {
+                    action(pointerEventData);
+                }
+            });
+            trigger.triggers.Add(entry);
+        }
+
+        private void BeginDrag(GameObject target, PointerEventData eventData)
+        {
+            draggedCard = target.GetComponent<RectTransform>();
+            if (draggedCard == null)
+            {
+                return;
+            }
+
+            draggedCardStartPosition = draggedCard.anchoredPosition;
+            hasDraggedCard = false;
+            target.transform.SetAsLastSibling();
+        }
+
+        private void DragCard(PointerEventData eventData)
+        {
+            if (draggedCard == null)
+            {
+                return;
+            }
+
+            HideHoverCard();
+            hasDraggedCard = true;
+            draggedCard.anchoredPosition += eventData.delta;
+        }
+
+        private void EndDrag(AssetCardRuntimeData card, PointerEventData eventData)
+        {
+            var shouldRelease = draggedCard != null && hasDraggedCard;
+            if (draggedCard != null)
+            {
+                draggedCard.anchoredPosition = draggedCardStartPosition;
+            }
+
+            draggedCard = null;
+            hasDraggedCard = false;
+
+            if (shouldRelease)
+            {
+                onCurrentMarketCardReleased?.Invoke(card, eventData.position);
+            }
+        }
+
         private void ShowHoverCard(AssetCardRuntimeData card, bool isReserved)
         {
             if (hoverCardText != null)
             {
-                hoverCardText.text = FormatCard(card, isReserved);
+                hoverCardText.text = MarketCardFormatter.Format(card, isReserved);
             }
 
             SetActive(hoverCardPanel, true);
         }
 
+        private void ShowHoverCard(GameObject source, int slotIndex, AssetCardRuntimeData card, bool isReserved)
+        {
+            ShowHoverCard(card, isReserved);
+
+            var sourceRect = source.GetComponent<RectTransform>();
+            var hoverRect = hoverCardPanel != null ? hoverCardPanel.GetComponent<RectTransform>() : null;
+            if (sourceRect == null || hoverRect == null)
+            {
+                return;
+            }
+
+            hoverRect.position = sourceRect.position + new Vector3(GetCurrentMarketHoverOffsetX(slotIndex), 0f, 0f);
+        }
+
+        private static float GetCurrentMarketHoverOffsetX(int slotIndex)
+        {
+            return slotIndex < 6 ? 300f : -300f;
+        }
+
         private void HideHoverCard()
         {
             SetActive(hoverCardPanel, false);
-        }
-
-        private static string FormatCard(AssetCardRuntimeData card, bool isReserved)
-        {
-            if (card.Card.CardDomain == CardDomain.ConsumableResource)
-            {
-                return FormatConsumableResourceCard(card.Card);
-            }
-
-            var builder = new StringBuilder();
-            builder.Append("₩");
-            builder.Append(card.Card.CashCost);
-            builder.Append("  ");
-            builder.Append(FormatProfessionalCosts(card.Card.ProfessionalCosts));
-            builder.Append("        ↗");
-            builder.Append(card.Card.Income);
-            if (card.Card.GrantsExtraBuyAction)
-            {
-                builder.Append("  +↺");
-            }
-
-            builder.AppendLine();
-            builder.Append("■ ");
-            builder.AppendLine(card.Card.DisplayName);
-            var tags = FormatTags(card.Card.Tags);
-            if (tags != string.Empty)
-            {
-                builder.AppendLine(tags);
-            }
-
-            builder.Append("◆");
-            builder.Append(card.Card.Value);
-            if (isReserved)
-            {
-                builder.Append("  예약");
-            }
-
-            return builder.ToString();
-        }
-
-        private static string FormatConsumableResourceCard(AssetCardData card)
-        {
-            var builder = new StringBuilder();
-            builder.Append("₩");
-            builder.Append(card.CashCost);
-            builder.AppendLine();
-            builder.Append("■ ");
-            builder.AppendLine(card.Rarity.ToString());
-            builder.Append(ResourceLedger.GetResourceDisplayName(card.ProvidedResourceType));
-            builder.Append(" +");
-            builder.Append(card.ProvidedResourceAmount);
-
-            return builder.ToString();
-        }
-
-        private static string FormatProfessionalCosts(IReadOnlyList<ProfessionalResourceCost> costs)
-        {
-            if (costs.Count == 0)
-            {
-                return "—";
-            }
-
-            var builder = new StringBuilder();
-            for (var i = 0; i < costs.Count; i++)
-            {
-                if (i > 0)
-                {
-                    builder.Append(", ");
-                }
-
-                builder.Append(GetResourceToken(costs[i].ResourceType));
-                builder.Append(costs[i].Amount);
-            }
-
-            return builder.ToString();
-        }
-
-        private static string GetResourceToken(ResourceType resourceType)
-        {
-            switch (resourceType)
-            {
-                case ResourceType.Research:
-                    return "R";
-                case ResourceType.Credit:
-                    return "C";
-                case ResourceType.Commodity:
-                    return "M";
-                case ResourceType.Deal:
-                    return "D";
-                case ResourceType.Cash:
-                    return "₩";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(resourceType), resourceType, null);
-            }
-        }
-
-        private static string FormatTags(IReadOnlyList<TagData> tags)
-        {
-            if (tags.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            var builder = new StringBuilder();
-            for (var i = 0; i < tags.Count; i++)
-            {
-                if (i > 0)
-                {
-                    builder.Append(" / ");
-                }
-
-                builder.Append(tags[i].DisplayName);
-            }
-
-            return builder.ToString();
         }
 
         private static void StyleCardButton(Button button, AssetCardRuntimeData card, MarketTapeZone zone, bool isReserved)
@@ -343,5 +332,29 @@ namespace AssetManager
             }
         }
 
+        private static void ApplyFailureFeedback(GameObject target, bool shouldShake)
+        {
+            var feedback = target.GetComponent<MarketCardFailureFeedback>();
+            if (feedback == null)
+            {
+                feedback = target.AddComponent<MarketCardFailureFeedback>();
+            }
+
+            if (shouldShake)
+            {
+                feedback.RequestShake();
+            }
+        }
+
+    }
+
+    public sealed class MarketCardFailureFeedback : MonoBehaviour
+    {
+        public int ShakeRequestCount { get; private set; }
+
+        public void RequestShake()
+        {
+            ShakeRequestCount++;
+        }
     }
 }

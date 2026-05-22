@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-22
-Covered implementation slices: issues 00-17, stock overhaul issues 01-11
+Covered implementation slices: issues 00-17, stock overhaul issues 01-16
 
 ## Update Workflow
 
@@ -31,7 +31,7 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **02 - calendar and 영업일 loop**: defines the MVP schedule: 10 playable 분기, 44 playable 영업일, 1/2회계년도 4Q 휴가, and final settlement routing after 3회계년도 4Q.
 - **03 - 시장 테이프**: displays 매도 임박, 현재 시장, and 예비 시장; separates 시장 테이프 갱신 from 시장 테이프 진행; prevents visible/owned/reserved/removed card duplication.
 - **04 - 시장 영역 and 카드 상세보기**: adds single 시장 영역 transitions, CardDetail transient state, clickable market cards, a CardDetail replacement panel, close handling, and 다음 영업일 gating.
-- **05 - 자원 원장 and 보유 자원 UI**: adds ResourceLedger as the public 자원 rule service, separates 조달 현금 from 운용 수익 counters, applies 전문 자원 and 딜 한도, and displays 보유 자원 with short cap messages.
+- **05 - 자원 원장 and 보유 자원 UI**: adds ResourceLedger as the public 자원 rule service, separates 조달 현금 from 운용 수익 counters, applies investment philosophy type caps, and displays 보유 자원 with short cap messages.
 - **06 - 자산 매수 and 비용 슬롯 결제**: adds PurchasePayment as the public 자산 매수 rule service, creates 비용 슬롯 from 전문 자원 costs, supports 전문 자원/딜 tentative placement and recovery, confirms 시장 카드 purchases, advances only the purchased 시장 테이프 column, and consumes a 영업일.
 - **07 - 보유 자산 income and 포트폴리오 summary**: connects OwnedAssetState calculations, AcquiredOrder on owned cards, business-day-start 운용 수익 through ResourceLedger, and a portfolio summary UI for 보유 자산 수, 현재 운용가치, and 분기 운용 수익.
 - **08 - 자원 확보 action**: adds LiquidityAction as the public 자원 확보 rule service, opens GainLiquidity from the 중앙 은행, applies 조달 현금 and 전문 자원 choices, completes on two matching or three different basic resources, blocks 딜 and professional-resource cap overflow, and connects the GainLiquidity UI.
@@ -63,7 +63,7 @@ Current runtime flow:
 ## Issue 15 Inventory Notes
 
 - `RunStatusFormatter` now keeps player resources out of the top status bar; resource counts live in the bottom chip tray.
-- `ResourceHud` now renders the bottom tray as separate resource object lanes: cash as `<value>$`, professional resources and Deal as image-only chip stacks, plus short message text.
+- `ResourceHud` now renders the bottom tray as separate resource object lanes: cash as `<value>$`, investment philosophy holdings as large integers with optional small mastery `+N`, chip stacks, Deal chip stack, plus short message text.
 - `ProjectShell` creates those tray lanes and image placeholders only when they are missing, preserving existing Editor-authored RectTransform layout on later bootstraps; it also removes legacy root-level Market Tape zone duplicates so the zone panels live under `Market Area Market Panel`, removes legacy Market Tape zone title Text objects, and removes legacy Reservation/Central Bank overlays.
 
 ## Issue 16 Inventory Notes
@@ -81,7 +81,7 @@ Current runtime flow:
 
 - Starter 런 static data now seeds stock cards instead of asset-class cards. `AssetCardData` keeps the existing type name for compatibility, but its public data now exposes `CardDomain.Stock`, base value/dividend, authored foil value/dividend, and min/max deck copy counts.
 - Investment philosophy resources are the canonical resource surface: Reading, Meditation, and Patience replace Research, Credit, and Commodity for display and new tests. The old enum/property names remain as compatibility aliases for older purchase and UI wiring code.
-- `ResourceLedger` now caps investment philosophy at 10 total and 5 per type, discarding only the new overflow. Cash and Deal stay outside the investment philosophy cap.
+- `ResourceLedger` now caps investment philosophy at 5 per type without a total cap, discarding only per-type overflow. Cash and Deal stay outside investment philosophy caps, and Deal no longer has a holding cap.
 
 ## Stock Overhaul Issue 02 Notes
 
@@ -110,7 +110,7 @@ Current runtime flow:
 ## Stock Overhaul Issue 05 Notes
 
 - Reservations now live on `MarketTapeSlotState.IsReserved`; `ReservationState` remains only as a compatibility/capacity shell and no longer stores newly reserved cards.
-- `ReservationAction` locks the selected stock in its existing market slot, grants one Deal subject to the normal cap, increases redemption pressure, checks failure immediately, and consumes the business day without advancing the market tape.
+- `ReservationAction` locks the selected stock in its existing market slot, grants one Deal without a holding cap, increases redemption pressure, checks failure immediately, and consumes the business day without advancing the market tape.
 - Reserved stock purchases are opened and confirmed as market-slot purchases. Buying the reserved stock clears that locked slot and uses market tape pull behavior to fill the gap.
 - `CardDetailState` hides Reserve for reserved cards, consumable resource cards, previews, and extra-buy purchases. The separate Reservation Panel UI is removed because the market card slot itself carries reservation state.
 
@@ -155,6 +155,20 @@ Current runtime flow:
 - `ProjectShell` creates the hover card panel under the market area and keeps the legacy card-detail panel hidden in normal play.
 - `CardDetailView` still refreshes hidden child controls for compatibility with the current purchase/reservation tests, but the visible card-detail screen is no longer part of the new play path.
 
+## Stock Overhaul Issue 15 Notes
+
+- `PurchasePayment` now validates and pays market purchases automatically from final cash plus mastery-discounted investment philosophy costs. Deal is no longer a purchase-payment resource, and manual payment-slot filling is compatibility-only.
+- `PurchasePaymentResult` now carries `PurchaseFailureKind` plus the failed market-card runtime id so the shell can suppress system messages for cost shortage while still shaking the attempted card.
+- `MarketCardFailureFeedback` is a small card-local presentation component used by PlayMode tests and the market tape view to record purchase-failure shake requests.
+- `CardDetailView` keeps the legacy card-detail objects available for compatibility, but Payment Pot, manual slot buttons, and final cash controls are hidden in the new single-market play path.
+
+## Stock Overhaul Issue 16 Notes
+
+- `MarketCardFormatter` centralizes the compact market-card detail text shared by market buttons, hover cards, and purchase confirmation.
+- `PurchaseConfirmationView` renders the blocking purchase confirmation modal with shared card detail text, discounted/insufficient cost display, a long bottom `확인` button, and a top-right `돌아가기` button.
+- `MainGameShellBootstrap` now treats a normal market-card click as purchase-confirmation intent: currently valid purchases open the modal, invalid purchases skip the modal and apply existing card-local failure feedback, and modal confirmation reuses `PurchasePayment.ConfirmPurchase` for confirm-time revalidation.
+- While the modal is open, shell-level background commands such as market card selection, schedule/resource/dev controls, reservation, and stock sale return without changing run state.
+
 ## Shell And Editor Setup
 
 | Type | File | Purpose |
@@ -180,7 +194,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RedemptionPressureLevelData` | `Runtime/RunModels.cs` | 월세 밀림 단계 row for later final comments; type name remains for compatibility. |
 | `FinalManagementCommentData` | `Runtime/RunModels.cs` | 운용 코멘트 row keyed by final rating and 환매 압력 단계. |
 | `MarketConfigData` | `Runtime/RunModels.cs` | Market tape slot count for the 1x8 tape, legacy 3-zone slot counts kept for compatibility, and the stock deck draw weight. MVP default is 8 slots with 75% stock draw weight. |
-| `ResourceConfigData` | `Runtime/RunModels.cs` | Starting 현금, investment philosophy total/type caps, and 딜 한도. |
+| `ResourceConfigData` | `Runtime/RunModels.cs` | Starting 현금, active investment philosophy type cap, legacy total-cap field, and reservation capacity compatibility value. |
 | `RedemptionPressureConfigData` | `Runtime/RunModels.cs` | Starting and maximum 월세 밀림; type name remains for compatibility. |
 
 ## Runtime State Shapes
@@ -188,6 +202,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | Type | File | Purpose |
 | --- | --- | --- |
 | `ResourceState` | `Runtime/RunModels.cs` | Current 현금, 독서, 명상, 인내, 딜, plus investment philosophy total lookup. Old Research/Credit/Commodity property names remain as aliases. |
+| `InvestmentPhilosophyMasteryState` | `Runtime/RunModels.cs` | Run-scoped 독서/명상/인내 mastery values used to discount purchase philosophy costs; values are capped per type by `ResourceLedger`. |
 | `RunCalendarState` | `Runtime/RunModels.cs` | Current 회계년도, 분기, and remaining 영업일. |
 | `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 수익 counters, tracked 조달 현금, and completed 분기 수익 records for 4Q 휴가 summaries; Revenue is the canonical public surface and `EarnedCash` remains as compatibility aliases. |
 | `QuarterPerformanceRecord` | `Runtime/RunModels.cs` | Completed 회계년도/분기 수익 row recorded at 분기 마감 for later 회계년도 summary display, with Revenue as the canonical accessor. |
@@ -201,10 +216,12 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `QuarterEndResult` | `Runtime/RunModels.cs` | Snapshot of a completed 분기 마감: 정산 수익, 분기 수익, 분기 목표, 목표 달성률, and 월세 밀림 impact. Legacy property names remain as aliases. |
 | `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기, exposing value as the canonical score field. |
 | `PaymentSlotState` | `Runtime/CardDetailState.cs` | One 비용 슬롯 in 카드 상세보기: required 전문 자원 and optional placed 전문 자원 or 딜. |
-| `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Pending 자산 매수 payment in 카드 상세보기: card id, base cash cost, 비용 슬롯 list, current quarter inflation modifier, and 딜-discounted final cash cost. |
+| `PurchaseCostToken` | `Runtime/CardDetailState.cs` | Display/validation token for one purchase cost amount, including whether the current run lacks that amount. |
+| `PurchaseCostBreakdown` | `Runtime/CardDetailState.cs` | Display-ready purchase cost summary with original philosophy costs, mastery-discounted philosophy costs, cash token, and plain text formatting. |
+| `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Pending 자산 매수 payment in 카드 상세보기: card id, base cash cost, mastery-discounted 비용 슬롯 list, current quarter inflation modifier, and final cash cost. |
 | `CardDetailState` | `Runtime/CardDetailState.cs` | Transient 카드 상세보기 state: selected card, 매수 출처, display data, pending payment, extra-buy flag, preview flag, and Buy/Reserve visibility conditions. |
 | `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 월세 밀림, with rent-arrears aliases over the compatibility pressure property names. |
-| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, rent arrears state, and failure reason. Most transitions create a new instance. |
+| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including resources, investment philosophy mastery, transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, rent arrears state, and failure reason. Most transitions create a new instance. |
 
 ## Enums
 
@@ -220,6 +237,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `MarketTapeZone` | 매도 임박, 현재 시장, or 예비 시장. |
 | `RunState` | Not started, playing, failed, or completed 런 state. |
 | `BusinessDayPhase` | Awaiting action, resolving action, 분기 마감, 4Q 휴가, or 최종 정산. |
+| `PurchaseFailureKind` | Purchase attempt failure category: no failure, cost shortage with suppressed system message, or non-cost failure with the existing message. |
 
 ## Run Rules
 
@@ -231,7 +249,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunCalendar` | `Runtime/RunCalendar.cs` | Factory for the MVP calendar: 1/2회계년도 1Q-3Q have 4 영업일; 3회계년도 1Q-4Q have 5 영업일. |
 | `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, applies 보유 자산 영업일 시작 운용 수익 through ResourceLedger, settles the last 영업일 into 분기 마감, blocks schedule progress after 런 실패, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
 | `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for selecting/clearing a market card purchase working model while keeping the visible market area in the single `Market` state, plus 다음 영업일 gating. |
-| `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 수익 cash through AddRevenue, capped investment philosophy resources, and capped 딜. |
+| `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 수익 cash through AddRevenue, per-type-capped investment philosophy resources, per-type-capped investment philosophy mastery, and uncapped 딜. |
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
 | `StockSaleAction` | `Runtime/StockSaleAction.cs` | Public rule service for selling owned stock slots, leaving an empty portfolio slot, removing the sold runtime stock from the run, and adding sale cash as 수익 without consuming a 영업일. |
 | `StockSaleActionResult` | `Runtime/StockSaleAction.cs` | Return data for stock sale attempts, including the updated run, success flag, and short feedback message. |
@@ -245,12 +263,13 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RentArrearsResult` | `Runtime/RedemptionPressure.cs` | Return data for 월세 밀림 changes, including the updated run, increase amount, and bankruptcy flag. |
 | `RedemptionPressure` | `Runtime/RedemptionPressure.cs` | Compatibility wrapper over RentArrears for older pressure-named callers. |
 | `RedemptionPressureResult` | `Runtime/RedemptionPressure.cs` | Compatibility return data for pressure-named callers. |
-| `LiquidityAction` | `Runtime/LiquidityAction.cs` | Public rule service for 자원 확보 entry, close eligibility, selected resource sequence validation, funding-cash/professional-resource gain, auto-ending, and 영업일 consumption. |
+| `LiquidityAction` | `Runtime/LiquidityAction.cs` | Public rule service for 자원 확보 entry, close eligibility, selected resource sequence validation, funding-cash/investment-philosophy gain, per-type capacity checks, auto-ending, and 영업일 consumption. |
 | `LiquidityActionResult` | `Runtime/LiquidityAction.cs` | Return data for 자원 확보 selections, including the updated run and short feedback message. |
 | `ExtraBuyAction` | `Runtime/ExtraBuyAction.cs` | Public rule service for granting, awaiting, validating, entering, returning from, and clearing extra-buy purchase state; candidates are available market stocks or card-data-opt-in consumable resource cards, never reserved stocks. |
-| `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, portfolio-cap validation, inflation-aware cash-cost validation, stock ownership transition, consumable resource card reward/removal, market-slot pull after market or reserved-slot purchase, and 영업일 consumption. |
-| `PurchasePaymentResult` | `Runtime/PurchasePayment.cs` | Return data for 결제 and 자산 매수 operations, including success and short feedback message. |
-| `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for reservation validation, stock-only market slot locking, reserved-slot capacity, Deal reward, 월세 밀림 increase through RentArrears, immediate bankruptcy check, and business-day consumption without immediate market-tape advance. |
+| `PurchaseCostCalculator` | `Runtime/CardDetailState.cs` | Public helper for calculating immutable-source purchase costs with run mastery discounts, zero-floor philosophy costs, display formatting, and insufficient-token marking inputs. |
+| `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 mastery-discounted compatibility slot creation, automatic final-cash and investment-philosophy payment validation/consumption, Deal exclusion from purchase payment, portfolio-cap validation, stock ownership transition, consumable resource card reward/removal, market-slot pull after market or reserved-slot purchase, and 영업일 consumption. |
+| `PurchasePaymentResult` | `Runtime/PurchasePayment.cs` | Return data for 결제 and 자산 매수 operations, including success, short feedback message, failure category, and failed market-card runtime id for card-local feedback. |
+| `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for reservation validation, stock-only market slot locking, reserved-slot capacity, uncapped Deal reward, 월세 밀림 increase through RentArrears, immediate bankruptcy check, and business-day consumption without immediate market-tape advance. |
 | `ReservationActionResult` | `Runtime/ReservationAction.cs` | Return data for 예약 operations, including success and short feedback message. |
 
 ## Market Rules
@@ -272,15 +291,18 @@ Important distinction:
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus market/reserved card selection to rule services while keeping the visible market state active, refreshes visible UI, and leaves the old GainLiquidity entry disconnected from the new play flow. |
+| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus market/reserved card selection and market-card release intents to rule services while keeping the visible market state active, opens and guards the purchase confirmation modal for normal market-card purchase intent, routes portfolio-area release to immediate purchase, refreshes visible UI, and leaves the old GainLiquidity entry disconnected from the new play flow. |
 | `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD time/progress/rent-arrears text from `RunSessionState` without player resource counts. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
-| `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, professional resource chip stacks, Deal chip stack, manual Sprite slots, current short resource message, and runtime chip stack instances anchored to the configured base images. |
+| `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, investment philosophy holdings as large integers, optional small mastery `+N`, philosophy chip stacks, Deal chip stack, manual Sprite slots, current short resource message, and runtime chip stack instances anchored to the configured base images. |
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary plus an `OwnedAssetState.StockSlots`-derived compressed owned-stock-card row; empty slots are skipped, occupied cards show stock name, rarity, effective value, dividend, and foil state, and hovered cards reveal a child sell button that remains visible while hovering the sell button. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 파산, and 최종 정산 UI; displays current 분기 수익, 현재 가치, 보유 주식, 월세 밀림, final value, and final comment summaries. |
-| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders the clickable 1x8 market tape and hover-only enlarged card presentation: stock cards show cost, 운용가치, 운용 수익, tags, and reservation state, while consumable resource cards show cash cost, 희귀도, and provided resource without a display name. |
+| `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders the pointer-draggable 1x8 market tape, card-number-based hover enlargement placement, and card-local purchase-failure shake requests: stock cards show cost, 운용가치, 운용 수익, tags, and reservation state, while consumable resource cards show cash cost, 희귀도, and provided resource without a display name. |
+| `MarketCardFormatter` | `Runtime/MarketCardFormatter.cs` | Shared formatter for compact market-card detail text used by market buttons, hover card presentation, and purchase confirmation. |
 | `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Legacy GainLiquidity view for 중앙 은행 resource-object choices; no longer created or wired by the new play flow. |
-| `CardDetailView` | `Runtime/CardDetailView.cs` | Legacy card-detail/payment control view. The panel stays hidden in the new single-market play path, while hidden child controls still refresh selected card payment/reservation data for compatibility until card-local action controls replace them. |
+| `CardDetailView` | `Runtime/CardDetailView.cs` | Legacy card-detail/payment control view. The panel, Payment Pot, manual slot buttons, and final cash controls stay hidden in the new single-market play path, while selected-card data remains available for compatibility until card-local action controls replace them. |
+| `MarketCardFailureFeedback` | `Runtime/MarketTapeView.cs` | Card-local presentation marker that records purchase-failure shake requests for the attempted market card. |
+| `PurchaseConfirmationView` | `Runtime/PurchaseConfirmationView.cs` | Blocking modal surface for normal market-card purchase confirmation, showing shared card detail text plus final discounted cost state and exposing `확인`/`돌아가기` buttons to the shell. |
 | `MarketTapeDevControls` | `Runtime/MarketTapeDevControls.cs` | Temporary Market-state-only development buttons for 시장 테이프 진행 and 시장 테이프 갱신. |
 | `ResourceDevControls` | `Runtime/ResourceDevControls.cs` | Temporary Market-state-only development buttons for adding 조달 현금, 운용 수익, 전문 자원, and 딜 through `ResourceLedger`. |
 

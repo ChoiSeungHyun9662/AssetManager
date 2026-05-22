@@ -124,12 +124,13 @@ namespace AssetManager
 
             if (run.CardDetail.DisplayData == null)
             {
+                ShowTransactionControls(null, false);
                 return;
             }
 
             var display = run.CardDetail.DisplayData;
             var payment = run.CardDetail.PendingPayment;
-            var isTransactionDetail = run.CardDetail.ShouldShowBuyButton && payment != null;
+            var isTransactionDetail = isCardDetail && run.CardDetail.ShouldShowBuyButton && payment != null;
             SetText(nameText, display.DisplayName);
             SetText(descriptionText, display.Description);
             SetText(costText, FormatCosts(display));
@@ -137,9 +138,7 @@ namespace AssetManager
             SetText(incomeText, "단기\n배당금 " + display.Income);
             SetText(tagsText, FormatTags(display));
             SetText(rarityText, "희귀도 " + display.Rarity);
-            SetActive(paymentPotBackground, isTransactionDetail);
-            SetActive(paymentSlotsText != null ? paymentSlotsText.gameObject : null, isTransactionDetail);
-            SetActive(finalCashCostText != null ? finalCashCostText.gameObject : null, isTransactionDetail);
+            ShowTransactionControls(payment, isTransactionDetail);
             if (isTransactionDetail)
             {
                 SetText(paymentSlotsText, "Payment Pot\n" + FormatPaymentSlots(payment));
@@ -158,11 +157,18 @@ namespace AssetManager
                 reserveButton.interactable = ReservationAction.CanReserve(run);
             }
 
+        }
+
+        private void ShowTransactionControls(PurchasePaymentState payment, bool isTransactionDetail)
+        {
+            SetActive(paymentPotBackground, isTransactionDetail);
+            SetActive(paymentSlotsText != null ? paymentSlotsText.gameObject : null, isTransactionDetail);
+            SetActive(finalCashCostText != null ? finalCashCostText.gameObject : null, isTransactionDetail);
             SetActive(placeResearchButton != null ? placeResearchButton.gameObject : null, isTransactionDetail);
             SetActive(placeCreditButton != null ? placeCreditButton.gameObject : null, isTransactionDetail);
             SetActive(placeCommodityButton != null ? placeCommodityButton.gameObject : null, isTransactionDetail);
             SetActive(placeDealButton != null ? placeDealButton.gameObject : null, isTransactionDetail);
-            ShowPaymentSlotButtons(payment);
+            ShowPaymentSlotButtons(isTransactionDetail ? payment : null);
         }
 
         private static string FormatCosts(CardDetailDisplayData display)
