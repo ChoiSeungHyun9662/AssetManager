@@ -23,14 +23,14 @@ namespace AssetManager
                     run.Resources.Patience,
                     run.Resources.Deal),
                 new RunPerformanceState(
-                    run.Performance.CurrentQuarterEarnedCash,
-                    run.Performance.CurrentFiscalYearEarnedCash,
-                    run.Performance.TotalEarnedCash,
+                    run.Performance.CurrentQuarterRevenue,
+                    run.Performance.CurrentFiscalYearRevenue,
+                    run.Performance.TotalRevenue,
                     run.Performance.FundingCash + amount,
-                    run.Performance.CompletedQuarterEarnedCash));
+                    run.Performance.CompletedQuarterRevenue));
         }
 
-        public static RunSessionState AddEarnedCash(RunSessionState run, int amount)
+        public static RunSessionState AddRevenue(RunSessionState run, int amount)
         {
             ValidateRun(run);
             ValidateAmount(amount);
@@ -50,11 +50,16 @@ namespace AssetManager
                     run.Resources.Patience,
                     run.Resources.Deal),
                 new RunPerformanceState(
-                    performance.CurrentQuarterEarnedCash + amount,
-                    performance.CurrentFiscalYearEarnedCash + amount,
-                    performance.TotalEarnedCash + amount,
+                    performance.CurrentQuarterRevenue + amount,
+                    performance.CurrentFiscalYearRevenue + amount,
+                    performance.TotalRevenue + amount,
                     performance.FundingCash,
-                    performance.CompletedQuarterEarnedCash));
+                    performance.CompletedQuarterRevenue));
+        }
+
+        public static RunSessionState AddEarnedCash(RunSessionState run, int amount)
+        {
+            return AddRevenue(run, amount);
         }
 
         public static ResourceLedgerResult AddInvestmentPhilosophy(

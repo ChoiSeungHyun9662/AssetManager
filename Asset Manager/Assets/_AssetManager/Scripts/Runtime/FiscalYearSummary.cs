@@ -12,23 +12,23 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
-            var quarterEarnedCash = new List<QuarterPerformanceRecord>();
-            foreach (var record in run.Performance.CompletedQuarterEarnedCash)
+            var quarterRevenue = new List<QuarterPerformanceRecord>();
+            foreach (var record in run.Performance.CompletedQuarterRevenue)
             {
                 if (record.FiscalYear == run.Calendar.FiscalYear)
                 {
-                    quarterEarnedCash.Add(record);
+                    quarterRevenue.Add(record);
                 }
             }
 
             return new FiscalYearSummaryResult(
                 run.Calendar.FiscalYear,
-                run.OwnedAssets.CurrentManagementValue,
-                run.Performance.CurrentFiscalYearEarnedCash,
-                quarterEarnedCash,
+                run.OwnedAssets.CurrentValue,
+                run.Performance.CurrentFiscalYearRevenue,
+                quarterRevenue,
                 run.OwnedAssets.Count,
-                run.RedemptionPressure.CurrentPressure,
-                run.RedemptionPressure.MaxPressure);
+                run.RentArrears.CurrentArrears,
+                run.RentArrears.MaxArrears);
         }
     }
 
@@ -36,7 +36,7 @@ namespace AssetManager
     {
         public FiscalYearSummaryResult(
             int fiscalYear,
-            int currentManagementValue,
+            int currentValue,
             int fiscalYearEarnedCash,
             IEnumerable<QuarterPerformanceRecord> quarterEarnedCash,
             int ownedAssetCount,
@@ -44,7 +44,7 @@ namespace AssetManager
             int maxRedemptionPressure)
         {
             FiscalYear = fiscalYear;
-            CurrentManagementValue = currentManagementValue;
+            CurrentValue = currentValue;
             FiscalYearEarnedCash = fiscalYearEarnedCash;
             QuarterEarnedCash = new List<QuarterPerformanceRecord>(quarterEarnedCash).AsReadOnly();
             OwnedAssetCount = ownedAssetCount;
@@ -53,10 +53,11 @@ namespace AssetManager
         }
 
         public int FiscalYear { get; }
-        public int CurrentManagementValue { get; }
-        public int CurrentValue => CurrentManagementValue;
-        public int FiscalYearEarnedCash { get; }
+        public int CurrentValue { get; }
+        public int CurrentManagementValue => CurrentValue;
         public int FiscalYearRevenue => FiscalYearEarnedCash;
+        public int FiscalYearEarnedCash { get; }
+        public IReadOnlyList<QuarterPerformanceRecord> QuarterRevenue => QuarterEarnedCash;
         public IReadOnlyList<QuarterPerformanceRecord> QuarterEarnedCash { get; }
         public int OwnedAssetCount { get; }
         public int OwnedStockCount => OwnedAssetCount;

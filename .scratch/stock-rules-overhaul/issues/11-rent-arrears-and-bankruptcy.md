@@ -45,7 +45,8 @@ Status: done
 
 ## Implementation notes
 
-- 기존 `RedemptionPressure` 내부 타입명은 대규모 rename하지 않고 유지했다.
+- Follow-up architecture cleanup: `RentArrears` is now the canonical public rule surface for 월세 밀림 증가 and 파산. Existing `RedemptionPressure` remains only as a compatibility wrapper.
+- 기존 serialized/config/state compatibility names such as `RedemptionPressureState` remain for now.
 - 사용자-facing 상태 표시, 분기/휴가/최종/파산 패널 문구, 예약 결과 메시지, 최종 코멘트 기본 데이터는 월세 밀림/파산 용어로 전환했다.
 - 기존 월세 밀림 한도 10과 예약 +1, 분기 목표 미달 +1/+2/+3 계산 구조를 재사용했다.
 

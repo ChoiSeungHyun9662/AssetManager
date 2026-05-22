@@ -11,28 +11,28 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
-            var settlementIncome = run.OwnedAssets.CurrentManagementValue;
-            var settledRun = ResourceLedger.AddEarnedCash(run, settlementIncome);
-            var quarterEarnedCash = settledRun.Performance.CurrentQuarterEarnedCash;
-            var targetEarnedCash = GetTargetEarnedCash(settledRun);
-            var achievementRate = targetEarnedCash <= 0
+            var settlementIncome = run.OwnedAssets.CurrentValue;
+            var settledRun = ResourceLedger.AddRevenue(run, settlementIncome);
+            var quarterRevenue = settledRun.Performance.CurrentQuarterRevenue;
+            var targetRevenue = GetTargetRevenue(settledRun);
+            var achievementRate = targetRevenue <= 0
                 ? 1d
-                : Math.Min(1d, quarterEarnedCash / (double)targetEarnedCash);
-            var pressureIncrease = CalculatePressureIncrease(achievementRate);
-            settledRun = RecordCompletedQuarter(settledRun, quarterEarnedCash);
-            var pressureResult = RedemptionPressure.AddPressure(settledRun, pressureIncrease);
+                : Math.Min(1d, quarterRevenue / (double)targetRevenue);
+            var rentArrearsIncrease = CalculateRentArrearsIncrease(achievementRate);
+            settledRun = RecordCompletedQuarter(settledRun, quarterRevenue);
+            var arrearsResult = RentArrears.AddArrears(settledRun, rentArrearsIncrease);
             var result = new QuarterEndResult(
                 settlementIncome,
-                quarterEarnedCash,
-                targetEarnedCash,
+                quarterRevenue,
+                targetRevenue,
                 achievementRate,
-                pressureIncrease,
-                pressureResult.Run.RedemptionPressure.CurrentPressure);
+                rentArrearsIncrease,
+                arrearsResult.Run.RentArrears.CurrentArrears);
 
-            return new QuarterSettlementResult(WithQuarterEndResult(pressureResult.Run, result), result);
+            return new QuarterSettlementResult(WithQuarterEndResult(arrearsResult.Run, result), result);
         }
 
-        private static int CalculatePressureIncrease(double achievementRate)
+        private static int CalculateRentArrearsIncrease(double achievementRate)
         {
             if (achievementRate >= 1d)
             {
@@ -52,31 +52,31 @@ namespace AssetManager
             return 3;
         }
 
-        private static int GetTargetEarnedCash(RunSessionState run)
+        private static int GetTargetRevenue(RunSessionState run)
         {
             foreach (var quarter in run.StaticData.Quarters)
             {
                 if (quarter.FiscalYear == run.Calendar.FiscalYear && quarter.Quarter == run.Calendar.Quarter)
                 {
-                    return quarter.EarnedCashGoal;
+                    return quarter.RevenueGoal;
                 }
             }
 
-            return run.StaticData.Quarters[0].EarnedCashGoal;
+            return run.StaticData.Quarters[0].RevenueGoal;
         }
 
-        private static RunSessionState RecordCompletedQuarter(RunSessionState run, int quarterEarnedCash)
+        private static RunSessionState RecordCompletedQuarter(RunSessionState run, int quarterRevenue)
         {
             var records = new System.Collections.Generic.List<QuarterPerformanceRecord>(
-                run.Performance.CompletedQuarterEarnedCash)
+                run.Performance.CompletedQuarterRevenue)
             {
-                new QuarterPerformanceRecord(run.Calendar.FiscalYear, run.Calendar.Quarter, quarterEarnedCash)
+                new QuarterPerformanceRecord(run.Calendar.FiscalYear, run.Calendar.Quarter, quarterRevenue)
             };
 
             var performance = new RunPerformanceState(
-                run.Performance.CurrentQuarterEarnedCash,
-                run.Performance.CurrentFiscalYearEarnedCash,
-                run.Performance.TotalEarnedCash,
+                run.Performance.CurrentQuarterRevenue,
+                run.Performance.CurrentFiscalYearRevenue,
+                run.Performance.TotalRevenue,
                 run.Performance.FundingCash,
                 records);
 

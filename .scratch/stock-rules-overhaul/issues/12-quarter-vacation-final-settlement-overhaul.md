@@ -43,6 +43,7 @@ Status: done
 - Added stock-overhaul aliases to quarter, vacation, and final-settlement result objects while preserving old property names for compatibility.
 - Updated `RunProgressControls` summaries to show current quarter revenue, current value, owned stock count, rent arrears, final value, and final comment terminology.
 - Added EditMode regressions for failed quarter settlement not entering 4Q vacation or final settlement.
+- Follow-up architecture cleanup: `RentArrears` is now the canonical public rule surface for 월세 밀림 and 파산, `Revenue` is now the canonical public accounting surface, and `Value`/`CurrentValue`/`FinalValue` are now the canonical public value surface. `RedemptionPressure`, `EarnedCash`, and `ManagementValue` names remain as compatibility aliases/deferred serialized naming.
 - Verified with `scripts/Run-UnityBatchmode.ps1 -Mode EditMode -AssemblyNames AssetManager.Tests.EditMode` and `scripts/Run-UnityBatchmode.ps1 -Mode PlayMode -AssemblyNames AssetManager.Tests.PlayMode`.
 
 ## Blocked by

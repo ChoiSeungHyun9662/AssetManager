@@ -31,6 +31,7 @@ namespace AssetManager.Tests
 
             Assert.That(settlement.FinalValue, Is.EqualTo(7));
             Assert.That(settlement.FinalRating.DisplayName, Is.EqualTo("Core"));
+            Assert.That(settlement.FinalRating.MinimumFinalValue, Is.EqualTo(5));
             Assert.That(settlement.TotalEarnedCash, Is.EqualTo(0));
             Assert.That(settlement.OwnedStockCount, Is.EqualTo(2));
             Assert.That(settlement.CurrentRentArrears, Is.EqualTo(8));

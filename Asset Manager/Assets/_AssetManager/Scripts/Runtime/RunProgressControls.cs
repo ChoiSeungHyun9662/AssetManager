@@ -102,7 +102,7 @@ namespace AssetManager
                 (int)(result.AchievementRate * 100d),
                 result.RentArrearsIncrease,
                 result.CurrentRentArrears,
-                run.RedemptionPressure.MaxPressure);
+                run.RentArrears.MaxArrears);
         }
 
         private static string FormatVacation(RunSessionState run)
@@ -113,24 +113,24 @@ namespace AssetManager
                 summary.FiscalYear,
                 summary.CurrentValue,
                 summary.FiscalYearRevenue,
-                FormatQuarterEarnedCash(summary),
+                FormatQuarterRevenue(summary),
                 summary.OwnedStockCount,
                 summary.CurrentRentArrears,
                 summary.MaxRentArrears);
         }
 
-        private static string FormatQuarterEarnedCash(FiscalYearSummaryResult summary)
+        private static string FormatQuarterRevenue(FiscalYearSummaryResult summary)
         {
-            if (summary.QuarterEarnedCash.Count == 0)
+            if (summary.QuarterRevenue.Count == 0)
             {
                 return "없음";
             }
 
-            var lines = new string[summary.QuarterEarnedCash.Count];
-            for (var i = 0; i < summary.QuarterEarnedCash.Count; i++)
+            var lines = new string[summary.QuarterRevenue.Count];
+            for (var i = 0; i < summary.QuarterRevenue.Count; i++)
             {
-                var record = summary.QuarterEarnedCash[i];
-                lines[i] = record.Quarter + "Q " + record.EarnedCash;
+                var record = summary.QuarterRevenue[i];
+                lines[i] = record.Quarter + "Q " + record.Revenue;
             }
 
             return string.Join(" / ", lines);
@@ -143,7 +143,7 @@ namespace AssetManager
                 "최종 정산\n최종 가치 {0} | 최종 평가 {1}\n총 수익 {2} | 보유 주식 {3}\n월세 밀림 {4}/{5}\n최종 코멘트: {6}",
                 settlement.FinalValue,
                 settlement.FinalRating.DisplayName,
-                settlement.TotalEarnedCash,
+                settlement.TotalRevenue,
                 settlement.OwnedStockCount,
                 settlement.CurrentRentArrears,
                 settlement.MaxRentArrears,
@@ -153,7 +153,7 @@ namespace AssetManager
         private static string FormatRunFailure(RunSessionState run)
         {
             var failureReason = run.FailureReason == string.Empty
-                ? RedemptionPressure.FailureReason
+                ? RentArrears.FailureReason
                 : run.FailureReason;
 
             return string.Format(
@@ -161,11 +161,11 @@ namespace AssetManager
                 failureReason,
                 run.Calendar.FiscalYear,
                 run.Calendar.Quarter,
-                run.OwnedAssets.CurrentManagementValue,
-                run.Performance.TotalEarnedCash,
+                run.OwnedAssets.CurrentValue,
+                run.Performance.TotalRevenue,
                 run.OwnedAssets.Count,
-                run.RedemptionPressure.CurrentPressure,
-                run.RedemptionPressure.MaxPressure);
+                run.RentArrears.CurrentArrears,
+                run.RentArrears.MaxArrears);
         }
 
         private static void SetActive(Button button, bool isActive)

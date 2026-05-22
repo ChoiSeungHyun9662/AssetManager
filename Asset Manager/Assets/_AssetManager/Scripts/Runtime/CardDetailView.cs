@@ -133,7 +133,7 @@ namespace AssetManager
             SetText(nameText, display.DisplayName);
             SetText(descriptionText, display.Description);
             SetText(costText, FormatCosts(display));
-            SetText(managementValueText, "장기\n가치 " + display.ManagementValue);
+            SetText(managementValueText, "장기\n가치 " + display.Value);
             SetText(incomeText, "단기\n배당금 " + display.Income);
             SetText(tagsText, FormatTags(display));
             SetText(rarityText, "희귀도 " + display.Rarity);

@@ -2,11 +2,11 @@ using System;
 
 namespace AssetManager
 {
-    public static class RedemptionPressure
+    public static class RentArrears
     {
-        public const string FailureReason = "파산";
+        public const string FailureReason = "\uD30C\uC0B0";
 
-        public static RedemptionPressureResult AddPressure(RunSessionState run, int amount)
+        public static RentArrearsResult AddArrears(RunSessionState run, int amount)
         {
             if (run == null)
             {
@@ -15,28 +15,28 @@ namespace AssetManager
 
             if (amount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(amount), amount, "Pressure amount cannot be negative.");
+                throw new ArgumentOutOfRangeException(nameof(amount), amount, "Rent arrears amount cannot be negative.");
             }
 
             if (amount == 0 || run.State == RunState.Failed)
             {
-                return new RedemptionPressureResult(run, amount, run.State == RunState.Failed);
+                return new RentArrearsResult(run, amount, run.State == RunState.Failed);
             }
 
-            var pressuredRun = WithPressure(
+            var arrearsRun = WithArrears(
                 run,
                 new RedemptionPressureState(
-                    run.RedemptionPressure.CurrentPressure + amount,
-                    run.RedemptionPressure.MaxPressure));
-            if (pressuredRun.RedemptionPressure.CurrentPressure < pressuredRun.RedemptionPressure.MaxPressure)
+                    run.RentArrears.CurrentArrears + amount,
+                    run.RentArrears.MaxArrears));
+            if (arrearsRun.RentArrears.CurrentArrears < arrearsRun.RentArrears.MaxArrears)
             {
-                return new RedemptionPressureResult(pressuredRun, amount, false);
+                return new RentArrearsResult(arrearsRun, amount, false);
             }
 
-            return new RedemptionPressureResult(FailRun(pressuredRun), amount, true);
+            return new RentArrearsResult(FailRun(arrearsRun), amount, true);
         }
 
-        private static RunSessionState WithPressure(RunSessionState run, RedemptionPressureState pressure)
+        private static RunSessionState WithArrears(RunSessionState run, RedemptionPressureState rentArrears)
         {
             return new RunSessionState(
                 run.State,
@@ -49,7 +49,7 @@ namespace AssetManager
                 run.Reservation,
                 run.OwnedAssets,
                 run.BusinessDay,
-                pressure,
+                rentArrears,
                 run.CardDetail,
                 run.LiquidityAction,
                 run.QuarterEndResult,
@@ -74,6 +74,32 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 FailureReason);
+        }
+    }
+
+    public sealed class RentArrearsResult
+    {
+        public RentArrearsResult(RunSessionState run, int arrearsIncrease, bool didFail)
+        {
+            Run = run ?? throw new ArgumentNullException(nameof(run));
+            ArrearsIncrease = arrearsIncrease;
+            DidFail = didFail;
+        }
+
+        public RunSessionState Run { get; }
+        public int ArrearsIncrease { get; }
+        public int PressureIncrease => ArrearsIncrease;
+        public bool DidFail { get; }
+    }
+
+    public static class RedemptionPressure
+    {
+        public const string FailureReason = RentArrears.FailureReason;
+
+        public static RedemptionPressureResult AddPressure(RunSessionState run, int amount)
+        {
+            var result = RentArrears.AddArrears(run, amount);
+            return new RedemptionPressureResult(result.Run, result.ArrearsIncrease, result.DidFail);
         }
     }
 

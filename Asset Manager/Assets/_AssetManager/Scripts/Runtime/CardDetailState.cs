@@ -13,7 +13,7 @@ namespace AssetManager
             Rarity = card.Rarity;
             CashCost = card.CashCost;
             ProfessionalCosts = new List<ProfessionalResourceCost>(card.ProfessionalCosts).AsReadOnly();
-            ManagementValue = card.ManagementValue;
+            Value = card.Value;
             Income = card.Income;
             Tags = new List<TagData>(card.Tags).AsReadOnly();
         }
@@ -24,7 +24,8 @@ namespace AssetManager
         public AssetRarity Rarity { get; }
         public int CashCost { get; }
         public IReadOnlyList<ProfessionalResourceCost> ProfessionalCosts { get; }
-        public int ManagementValue { get; }
+        public int Value { get; }
+        public int ManagementValue => Value;
         public int Income { get; }
         public IReadOnlyList<TagData> Tags { get; }
     }

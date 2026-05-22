@@ -11,28 +11,28 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
-            var finalManagementValue = run.OwnedAssets.CurrentManagementValue;
-            var finalRating = SelectFinalRating(run.StaticData, finalManagementValue);
-            var pressureLevel = SelectPressureLevel(run.StaticData, run.RedemptionPressure.CurrentPressure);
+            var finalValue = run.OwnedAssets.CurrentValue;
+            var finalRating = SelectFinalRating(run.StaticData, finalValue);
+            var pressureLevel = SelectPressureLevel(run.StaticData, run.RentArrears.CurrentArrears);
             var comment = SelectManagementComment(run.StaticData, finalRating, pressureLevel);
 
             return new FinalSettlementResult(
-                finalManagementValue,
+                finalValue,
                 finalRating,
-                run.Performance.TotalEarnedCash,
+                run.Performance.TotalRevenue,
                 run.OwnedAssets.Count,
-                run.RedemptionPressure.CurrentPressure,
-                run.RedemptionPressure.MaxPressure,
+                run.RentArrears.CurrentArrears,
+                run.RentArrears.MaxArrears,
                 comment);
         }
 
-        private static FinalRatingData SelectFinalRating(RunStaticDataSet staticData, int finalManagementValue)
+        private static FinalRatingData SelectFinalRating(RunStaticDataSet staticData, int finalValue)
         {
             FinalRatingData selected = null;
             foreach (var rating in staticData.FinalRatings)
             {
-                if (rating.MinimumManagementValue <= finalManagementValue
-                    && (selected == null || selected.MinimumManagementValue < rating.MinimumManagementValue))
+                if (rating.MinimumFinalValue <= finalValue
+                    && (selected == null || selected.MinimumFinalValue < rating.MinimumFinalValue))
                 {
                     selected = rating;
                 }
@@ -91,7 +91,7 @@ namespace AssetManager
     public sealed class FinalSettlementResult
     {
         public FinalSettlementResult(
-            int finalManagementValue,
+            int finalValue,
             FinalRatingData finalRating,
             int totalEarnedCash,
             int ownedAssetCount,
@@ -99,7 +99,7 @@ namespace AssetManager
             int maxRedemptionPressure,
             string managementComment)
         {
-            FinalManagementValue = finalManagementValue;
+            FinalValue = finalValue;
             FinalRating = finalRating ?? throw new ArgumentNullException(nameof(finalRating));
             TotalEarnedCash = totalEarnedCash;
             OwnedAssetCount = ownedAssetCount;
@@ -108,9 +108,10 @@ namespace AssetManager
             ManagementComment = managementComment ?? string.Empty;
         }
 
-        public int FinalManagementValue { get; }
-        public int FinalValue => FinalManagementValue;
+        public int FinalValue { get; }
+        public int FinalManagementValue => FinalValue;
         public FinalRatingData FinalRating { get; }
+        public int TotalRevenue => TotalEarnedCash;
         public int TotalEarnedCash { get; }
         public int OwnedAssetCount { get; }
         public int OwnedStockCount => OwnedAssetCount;

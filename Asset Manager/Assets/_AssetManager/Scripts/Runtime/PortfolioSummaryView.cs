@@ -73,7 +73,7 @@ namespace AssetManager
             SetActive(panel, true);
             SetText(
                 summaryText,
-                $"포트폴리오 | 보유 자산 {run.OwnedAssets.Count} | 현재 운용가치 {run.OwnedAssets.CurrentManagementValue} | 분기 수익 {run.Performance.CurrentQuarterEarnedCash}");
+                $"포트폴리오 | 보유 자산 {run.OwnedAssets.Count} | 현재 운용가치 {run.OwnedAssets.CurrentValue} | 분기 수익 {run.Performance.CurrentQuarterRevenue}");
             SetText(ownedCardsText, string.Empty);
             ShowCards(run);
         }
@@ -116,7 +116,7 @@ namespace AssetManager
             var foilLabel = card.IsFoil ? " FOIL" : string.Empty;
             return card.Card.DisplayName + foilLabel
                 + "\n등급 " + card.Card.Rarity
-                + "\n가치 " + card.ManagementValue
+                + "\n가치 " + card.Value
                 + " | 배당금 " + card.Income;
         }
 

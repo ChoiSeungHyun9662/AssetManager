@@ -4,17 +4,17 @@ namespace AssetManager
     {
         public static string Format(RunSessionState run)
         {
-            var redemptionPressure = run.RedemptionPressure;
+            var rentArrears = run.RentArrears;
             var quarterGoal = FindQuarterGoal(run);
             var status = string.Format(
                 "{0}회계년도 {1}Q | 남은 {2}영업일 | 분기 목표 {3}/{4} | 월세 밀림 {5}/{6}",
                 run.Calendar.FiscalYear,
                 run.Calendar.Quarter,
                 run.Calendar.RemainingBusinessDays,
-                run.Performance.CurrentQuarterEarnedCash,
+                run.Performance.CurrentQuarterRevenue,
                 quarterGoal,
-                redemptionPressure.CurrentPressure,
-                redemptionPressure.MaxPressure);
+                rentArrears.CurrentArrears,
+                rentArrears.MaxArrears);
 
             return run.BusinessDay.IsAwaitingExtraBuyChoice
                 ? status + " | 추가 매수 가능"
@@ -27,7 +27,7 @@ namespace AssetManager
             {
                 if (quarter.FiscalYear == run.Calendar.FiscalYear && quarter.Quarter == run.Calendar.Quarter)
                 {
-                    return quarter.EarnedCashGoal;
+                    return quarter.RevenueGoal;
                 }
             }
 

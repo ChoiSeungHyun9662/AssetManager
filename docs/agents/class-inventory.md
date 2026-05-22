@@ -2,8 +2,8 @@
 
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
-Last reviewed: 2026-05-20
-Covered implementation slices: issues 00-17, stock overhaul issues 01-10
+Last reviewed: 2026-05-22
+Covered implementation slices: issues 00-17, stock overhaul issues 01-11
 
 ## Update Workflow
 
@@ -37,7 +37,7 @@ Issues 00-03 establish a vertical slice from Unity launch to visible market card
 - **08 - 자원 확보 action**: adds LiquidityAction as the public 자원 확보 rule service, opens GainLiquidity from the 중앙 은행, applies 조달 현금 and 전문 자원 choices, completes on two matching or three different basic resources, blocks 딜 and professional-resource cap overflow, and connects the GainLiquidity UI.
 - **09 - 예약 action**: adds ReservationAction as the public 예약 rule service, moves 시장 카드 into the 예약 구역, grants 딜, increases 환매 압력, advances only the reserved market-tape column, and connects the 예약 구역 UI.
 - **10 - 예약 카드 유지 and 매수**: keeps 예약 카드 across calendar and 시장 테이프 transitions, opens 예약 카드 상세보기 from the 예약 구역, buys reserved cards through PurchasePayment with `Reserved` source, clears only the purchased reservation slot, and leaves 시장 테이프 unchanged.
-- **11 - 분기 마감 and 월세 밀림 실패**: adds QuarterSettlement and RedemptionPressure rule modules, applies 정산 수익 before 목표 달성률, excludes 조달 현금 from 분기 수익, stores QuarterEndResult, and switches to 파산 when 월세 밀림 reaches 10.
+- **11 - 분기 마감 and 월세 밀림 실패**: adds QuarterSettlement and RentArrears rule modules, applies 정산 수익 before 목표 달성률, excludes 조달 현금 from 분기 수익, stores QuarterEndResult, and switches to 파산 when 월세 밀림 reaches 10.
 - **11A - 인플레이션 비용 수정**: adds table-driven quarter inflation as an integer cash-cost modifier, applies it after deal discounts in PurchasePayment, and shows the same final cash cost in 카드 상세보기.
 - **12 - 4Q 휴가 and 최종 정산**: adds fiscal-year summary and final settlement rule modules, stores completed 분기 수익 records, displays 4Q 휴가 summaries for 1/2회계년도, and displays 최종 가치-based 최종 정산 after 3회계년도 4Q.
 
@@ -174,14 +174,14 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunStaticDataSet` | `Runtime/RunStaticDataSet.cs` | ScriptableObject container for seed stock cards, 분기 data, quarter inflation lookup, final ratings, market/resource/redemption configs, and default run data. |
 | `ProfessionalResourceCost` | `Runtime/RunModels.cs` | One 전문 자원 cost requirement for a 자산 카드. |
 | `TagData` | `Runtime/RunModels.cs` | Serialized 태그 identity, display name, and tag type. |
-| `AssetCardData` | `Runtime/RunModels.cs` | Static market card definition: stock costs, 희귀도, base value/dividend, authored foil value/dividend, min/max deck copy counts, tags, optional extra-buy grant, and extra-buy purchase eligibility, or consumable resource provided-resource data. The type name remains from the MVP asset-card implementation. |
+| `AssetCardData` | `Runtime/RunModels.cs` | Static market card definition: stock costs, 희귀도, value/dividend, authored foil value/dividend, min/max deck copy counts, tags, optional extra-buy grant, and extra-buy purchase eligibility, or consumable resource provided-resource data. The type name and `ManagementValue` accessor remain from the MVP asset-card implementation for compatibility. |
 | `QuarterData` | `Runtime/RunModels.cs` | Static 분기 row used by bootstrap, 분기 마감 target lookup, and table-driven inflation cash-cost modifiers. `RunCalendar` still owns playable schedule routing. |
-| `FinalRatingData` | `Runtime/RunModels.cs` | Final rating threshold row for later 최종 정산. |
-| `RedemptionPressureLevelData` | `Runtime/RunModels.cs` | 환매 압력 단계 row for later final comments. |
+| `FinalRatingData` | `Runtime/RunModels.cs` | Final rating threshold row for later 최종 정산, keyed by minimum final value with the old management-value field/accessor kept for compatibility. |
+| `RedemptionPressureLevelData` | `Runtime/RunModels.cs` | 월세 밀림 단계 row for later final comments; type name remains for compatibility. |
 | `FinalManagementCommentData` | `Runtime/RunModels.cs` | 운용 코멘트 row keyed by final rating and 환매 압력 단계. |
 | `MarketConfigData` | `Runtime/RunModels.cs` | Market tape slot count for the 1x8 tape, legacy 3-zone slot counts kept for compatibility, and the stock deck draw weight. MVP default is 8 slots with 75% stock draw weight. |
 | `ResourceConfigData` | `Runtime/RunModels.cs` | Starting 현금, investment philosophy total/type caps, and 딜 한도. |
-| `RedemptionPressureConfigData` | `Runtime/RunModels.cs` | Starting and maximum 환매 압력. |
+| `RedemptionPressureConfigData` | `Runtime/RunModels.cs` | Starting and maximum 월세 밀림; type name remains for compatibility. |
 
 ## Runtime State Shapes
 
@@ -189,22 +189,22 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | --- | --- | --- |
 | `ResourceState` | `Runtime/RunModels.cs` | Current 현금, 독서, 명상, 인내, 딜, plus investment philosophy total lookup. Old Research/Credit/Commodity property names remain as aliases. |
 | `RunCalendarState` | `Runtime/RunModels.cs` | Current 회계년도, 분기, and remaining 영업일. |
-| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 수익 counters, tracked 조달 현금, and completed 분기 수익 records for 4Q 휴가 summaries. Internal property names still use `EarnedCash` for compatibility. |
-| `QuarterPerformanceRecord` | `Runtime/RunModels.cs` | Completed 회계년도/분기 수익 row recorded at 분기 마감 for later 회계년도 summary display. |
+| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 수익 counters, tracked 조달 현금, and completed 분기 수익 records for 4Q 휴가 summaries; Revenue is the canonical public surface and `EarnedCash` remains as compatibility aliases. |
+| `QuarterPerformanceRecord` | `Runtime/RunModels.cs` | Completed 회계년도/분기 수익 row recorded at 분기 마감 for later 회계년도 summary display, with Revenue as the canonical accessor. |
 | `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one physical market card instance and whether it is available, reserved, owned, or removed; owned cards can carry purchase source, acquired order, foil state, and effective value/income derived from base or foil card data. |
 | `MarketTapeSlotState` | `Runtime/RunModels.cs` | One 1x8 market tape slot: optional visible market card plus whether the slot is reservation-locked. |
 | `MarketTapeState` | `Runtime/RunModels.cs` | Current ordered 1x8 market tape slots, with `CurrentMarketCards` projecting visible slot cards for older callers during the migration. |
 | `ReservationState` | `Runtime/RunModels.cs` | Reservation capacity compatibility shell. Newly reserved stocks are tracked on market tape slots rather than in this separate collection. |
-| `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list plus Owned-only 보유 자산 수, 현재 운용가치, 영업일 시작 운용 수익 totals using foil-aware runtime values, and the 8-stock-slot portfolio capacity helpers. |
+| `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list plus Owned-only 보유 자산 수, 현재 가치, 영업일 시작 운용 수익 totals using foil-aware runtime values, and the 8-stock-slot portfolio capacity helpers. |
 | `BusinessDayState` | `Runtime/RunModels.cs` | Current phase and 시장 영역 state. |
 | `LiquidityActionState` | `Runtime/RunModels.cs` | Current 자원 확보 selected basic resources and whether the first resource has committed the action. |
 | `QuarterEndResult` | `Runtime/RunModels.cs` | Snapshot of a completed 분기 마감: 정산 수익, 분기 수익, 분기 목표, 목표 달성률, and 월세 밀림 impact. Legacy property names remain as aliases. |
-| `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기. |
+| `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기, exposing value as the canonical score field. |
 | `PaymentSlotState` | `Runtime/CardDetailState.cs` | One 비용 슬롯 in 카드 상세보기: required 전문 자원 and optional placed 전문 자원 or 딜. |
 | `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Pending 자산 매수 payment in 카드 상세보기: card id, base cash cost, 비용 슬롯 list, current quarter inflation modifier, and 딜-discounted final cash cost. |
 | `CardDetailState` | `Runtime/CardDetailState.cs` | Transient 카드 상세보기 state: selected card, 매수 출처, display data, pending payment, extra-buy flag, preview flag, and Buy/Reserve visibility conditions. |
-| `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 환매 압력. |
-| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, and failure reason. Most transitions create a new instance. |
+| `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 월세 밀림, with rent-arrears aliases over the compatibility pressure property names. |
+| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, rent arrears state, and failure reason. Most transitions create a new instance. |
 
 ## Enums
 
@@ -231,7 +231,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunCalendar` | `Runtime/RunCalendar.cs` | Factory for the MVP calendar: 1/2회계년도 1Q-3Q have 4 영업일; 3회계년도 1Q-4Q have 5 영업일. |
 | `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, applies 보유 자산 영업일 시작 운용 수익 through ResourceLedger, settles the last 영업일 into 분기 마감, blocks schedule progress after 런 실패, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
 | `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for selecting/clearing a market card purchase working model while keeping the visible market area in the single `Market` state, plus 다음 영업일 gating. |
-| `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 수익 cash, capped investment philosophy resources, and capped 딜. |
+| `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 수익 cash through AddRevenue, capped investment philosophy resources, and capped 딜. |
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
 | `StockSaleAction` | `Runtime/StockSaleAction.cs` | Public rule service for selling owned stock slots, leaving an empty portfolio slot, removing the sold runtime stock from the run, and adding sale cash as 수익 without consuming a 영업일. |
 | `StockSaleActionResult` | `Runtime/StockSaleAction.cs` | Return data for stock sale attempts, including the updated run, success flag, and short feedback message. |
@@ -241,14 +241,16 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `FiscalYearSummaryResult` | `Runtime/FiscalYearSummary.cs` | Return data displayed by the 4Q 휴가 panel, with stock-overhaul value/revenue/rent-arrears aliases over compatibility names. |
 | `FinalSettlement` | `Runtime/FinalSettlement.cs` | Public rule service for 최종 정산: computes 최종 가치 from 보유 주식 only, selects the highest reachable 최종 평가, and picks a 최종 코멘트 by 월세 밀림 단계. |
 | `FinalSettlementResult` | `Runtime/FinalSettlement.cs` | Return data displayed by the 최종 정산 panel, with final value, owned stock count, rent arrears, and final comment aliases over compatibility names. |
-| `RedemptionPressure` | `Runtime/RedemptionPressure.cs` | Public rule service for adding 환매 압력 and immediately converting the run to 런 실패 at the configured max. |
-| `RedemptionPressureResult` | `Runtime/RedemptionPressure.cs` | Return data for 환매 압력 changes, including the updated run, increase amount, and failure flag. |
+| `RentArrears` | `Runtime/RedemptionPressure.cs` | Public rule service for adding 월세 밀림 and immediately converting the run to 파산 at the configured max. |
+| `RentArrearsResult` | `Runtime/RedemptionPressure.cs` | Return data for 월세 밀림 changes, including the updated run, increase amount, and bankruptcy flag. |
+| `RedemptionPressure` | `Runtime/RedemptionPressure.cs` | Compatibility wrapper over RentArrears for older pressure-named callers. |
+| `RedemptionPressureResult` | `Runtime/RedemptionPressure.cs` | Compatibility return data for pressure-named callers. |
 | `LiquidityAction` | `Runtime/LiquidityAction.cs` | Public rule service for 자원 확보 entry, close eligibility, selected resource sequence validation, funding-cash/professional-resource gain, auto-ending, and 영업일 consumption. |
 | `LiquidityActionResult` | `Runtime/LiquidityAction.cs` | Return data for 자원 확보 selections, including the updated run and short feedback message. |
 | `ExtraBuyAction` | `Runtime/ExtraBuyAction.cs` | Public rule service for granting, awaiting, validating, entering, returning from, and clearing extra-buy purchase state; candidates are available market stocks or card-data-opt-in consumable resource cards, never reserved stocks. |
 | `PurchasePayment` | `Runtime/PurchasePayment.cs` | Public rule service for 카드 상세보기 비용 슬롯 creation, tentative chip placement/recovery, portfolio-cap validation, inflation-aware cash-cost validation, stock ownership transition, consumable resource card reward/removal, market-slot pull after market or reserved-slot purchase, and 영업일 consumption. |
 | `PurchasePaymentResult` | `Runtime/PurchasePayment.cs` | Return data for 결제 and 자산 매수 operations, including success and short feedback message. |
-| `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for reservation validation, stock-only market slot locking, reserved-slot capacity, Deal reward, redemption pressure increase through RedemptionPressure, immediate failure check, and business-day consumption without immediate market-tape advance. |
+| `ReservationAction` | `Runtime/ReservationAction.cs` | Public rule service for reservation validation, stock-only market slot locking, reserved-slot capacity, Deal reward, 월세 밀림 increase through RentArrears, immediate bankruptcy check, and business-day consumption without immediate market-tape advance. |
 | `ReservationActionResult` | `Runtime/ReservationAction.cs` | Return data for 예약 operations, including success and short feedback message. |
 
 ## Market Rules
@@ -271,7 +273,7 @@ Important distinction:
 | Type | File | Purpose |
 | --- | --- | --- |
 | `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus market/reserved card selection to rule services while keeping the visible market state active, refreshes visible UI, and leaves the old GainLiquidity entry disconnected from the new play flow. |
-| `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD time/progress/pressure text from `RunSessionState` without player resource counts. |
+| `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD time/progress/rent-arrears text from `RunSessionState` without player resource counts. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, professional resource chip stacks, Deal chip stack, manual Sprite slots, current short resource message, and runtime chip stack instances anchored to the configured base images. |
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary plus an `OwnedAssetState.StockSlots`-derived compressed owned-stock-card row; empty slots are skipped, occupied cards show stock name, rarity, effective value, dividend, and foil state, and hovered cards reveal a child sell button that remains visible while hovering the sell button. |

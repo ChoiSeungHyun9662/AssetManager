@@ -187,7 +187,7 @@ namespace AssetManager
             }
 
             builder.Append("◆");
-            builder.Append(card.Card.ManagementValue);
+            builder.Append(card.Card.Value);
             if (isReserved)
             {
                 builder.Append("  예약");

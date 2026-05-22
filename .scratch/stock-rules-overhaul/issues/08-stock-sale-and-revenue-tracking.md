@@ -49,7 +49,7 @@ Status: done
 - Owned stock cards now use a hover sale affordance: hovering a card's Card Button reveals that card's child Sell Button, moving between the Card Button and Sell Button keeps it visible, leaving both hides it, and clicking the Sell Button confirms the sale.
 - The visible portfolio row is compressed from `OwnedAssetState.StockSlots` by skipping empty slots; each displayed card keeps its original stock slot index so sale removes the correct internal slot.
 - Any explicit non-sale UI interaction clears the pending sale button. Empty slots are not rendered, so they have no click target.
-- Visible revenue labels now use 수익/배당금 language while keeping existing internal `EarnedCash` compatibility names.
+- Follow-up architecture cleanup: `ResourceLedger.AddRevenue` and `RunPerformanceState` revenue aliases are now the canonical public accounting surface. Existing `EarnedCash` names remain as compatibility aliases.
 
 ## Verification
 

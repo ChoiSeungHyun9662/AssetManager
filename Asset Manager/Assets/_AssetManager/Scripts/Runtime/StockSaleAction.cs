@@ -48,7 +48,7 @@ namespace AssetManager
                 run.FailureReason);
 
             return new StockSaleActionResult(
-                ResourceLedger.AddEarnedCash(soldRun, saleCash),
+                ResourceLedger.AddRevenue(soldRun, saleCash),
                 true,
                 $"주식 매도: 현금 +{saleCash}");
         }

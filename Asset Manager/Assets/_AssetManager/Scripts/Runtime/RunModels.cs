@@ -242,6 +242,7 @@ namespace AssetManager
         public IReadOnlyList<ProfessionalResourceCost> ProfessionalCosts => professionalCosts;
         public int BaseValue => managementValue;
         public int BaseDividend => income;
+        public int Value => managementValue;
         public int ManagementValue => managementValue;
         public int Income => income;
         public int FoilValue => foilValue;
@@ -299,6 +300,7 @@ namespace AssetManager
         public int FiscalYear => fiscalYear;
         public int Quarter => quarter;
         public int BusinessDays => businessDays;
+        public int RevenueGoal => EarnedCashGoal;
         public int EarnedCashGoal => earnedCashGoal;
         public int InflationCostModifier => inflationCostModifier;
     }
@@ -328,6 +330,7 @@ namespace AssetManager
 
         public string RatingId => ratingId;
         public string DisplayName => displayName;
+        public int MinimumFinalValue => MinimumManagementValue;
         public int MinimumManagementValue => minimumManagementValue;
     }
 
@@ -608,10 +611,15 @@ namespace AssetManager
         }
 
         public int CurrentQuarterEarnedCash { get; }
+        public int CurrentQuarterRevenue => CurrentQuarterEarnedCash;
         public int CurrentFiscalYearEarnedCash { get; }
+        public int CurrentFiscalYearRevenue => CurrentFiscalYearEarnedCash;
         public int TotalEarnedCash { get; }
+        public int TotalRevenue => TotalEarnedCash;
+        public int Revenue => TotalRevenue;
         public int EarnedCash => TotalEarnedCash;
         public int FundingCash { get; }
+        public IReadOnlyList<QuarterPerformanceRecord> CompletedQuarterRevenue => CompletedQuarterEarnedCash;
         public IReadOnlyList<QuarterPerformanceRecord> CompletedQuarterEarnedCash { get; }
     }
 
@@ -626,6 +634,7 @@ namespace AssetManager
 
         public int FiscalYear { get; }
         public int Quarter { get; }
+        public int Revenue => EarnedCash;
         public int EarnedCash { get; }
     }
 
@@ -667,7 +676,8 @@ namespace AssetManager
         public PurchaseSource? PurchaseSource { get; }
         public int? AcquiredOrder { get; }
         public bool IsFoil { get; }
-        public int ManagementValue => IsFoil ? Card.FoilValue : Card.ManagementValue;
+        public int Value => IsFoil ? Card.FoilValue : Card.Value;
+        public int ManagementValue => Value;
         public int Income => IsFoil ? Card.FoilDividend : Card.Income;
     }
 
@@ -837,7 +847,7 @@ namespace AssetManager
             }
         }
 
-        public int CurrentManagementValue
+        public int CurrentValue
         {
             get
             {
@@ -846,13 +856,15 @@ namespace AssetManager
                 {
                     if (card != null && card.State == AssetCardRuntimeState.Owned)
                     {
-                        total += card.ManagementValue;
+                        total += card.Value;
                     }
                 }
 
                 return total;
             }
         }
+
+        public int CurrentManagementValue => CurrentValue;
 
         public int BusinessDayStartIncome
         {
@@ -921,7 +933,9 @@ namespace AssetManager
             MaxPressure = maxPressure;
         }
 
+        public int CurrentArrears => CurrentPressure;
         public int CurrentPressure { get; }
+        public int MaxArrears => MaxPressure;
         public int MaxPressure { get; }
     }
 
@@ -1002,6 +1016,7 @@ namespace AssetManager
         public ReservationState Reservation { get; }
         public OwnedAssetState OwnedAssets { get; }
         public BusinessDayState BusinessDay { get; }
+        public RedemptionPressureState RentArrears => RedemptionPressure;
         public RedemptionPressureState RedemptionPressure { get; }
         public CardDetailState CardDetail { get; }
         public LiquidityActionState LiquidityAction { get; }

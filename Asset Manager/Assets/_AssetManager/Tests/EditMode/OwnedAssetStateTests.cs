@@ -19,6 +19,20 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void OwnedAssetsCurrentValueUsesOwnedStockValuesOnly()
+        {
+            var ownedCard = CreateRuntimeCard("owned-card", 7, 2, AssetCardRuntimeState.Owned);
+            var marketCard = CreateRuntimeCard("market-card", 11, 3, AssetCardRuntimeState.Available);
+            var reservedCard = CreateRuntimeCard("reserved-card", 13, 4, AssetCardRuntimeState.Reserved);
+
+            var ownedAssets = new OwnedAssetState(new[] { ownedCard, marketCard, reservedCard });
+
+            Assert.That(ownedCard.Card.Value, Is.EqualTo(7));
+            Assert.That(ownedCard.Value, Is.EqualTo(7));
+            Assert.That(ownedAssets.CurrentValue, Is.EqualTo(7));
+        }
+
+        [Test]
         public void PortfolioReportsEightStockSlotsAndFullStateFromOwnedCards()
         {
             var ownedCards = new System.Collections.Generic.List<AssetCardRuntimeData>();

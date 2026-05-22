@@ -34,13 +34,13 @@ namespace AssetManager
 
             var reservedRun = WithReservedCard(run, assetCards, marketTape, run.Reservation);
             var dealResult = ResourceLedger.AddDeal(reservedRun, 1);
-            var pressureResult = RedemptionPressure.AddPressure(dealResult.Run, 1);
-            var pressuredRun = pressureResult.Run;
+            var arrearsResult = RentArrears.AddArrears(dealResult.Run, 1);
+            var arrearsRun = arrearsResult.Run;
             var message = dealResult.Message;
 
-            if (pressureResult.DidFail)
+            if (arrearsResult.DidFail)
             {
-                return new ReservationActionResult(pressuredRun, true, "파산: 월세 밀림 한도 도달");
+                return new ReservationActionResult(arrearsRun, true, "파산: 월세 밀림 한도 도달");
             }
 
             if (message == string.Empty)
@@ -48,7 +48,7 @@ namespace AssetManager
                 message = "월세 밀림 +1";
             }
 
-            return new ReservationActionResult(ConsumeBusinessDayWithoutMarketAdvance(pressuredRun), true, message);
+            return new ReservationActionResult(ConsumeBusinessDayWithoutMarketAdvance(arrearsRun), true, message);
         }
 
         private static RunSessionState ConsumeBusinessDayWithoutMarketAdvance(RunSessionState run)

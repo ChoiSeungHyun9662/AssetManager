@@ -231,7 +231,7 @@ namespace AssetManager
             RefreshRunUi();
         }
 
-        public void AddEarnedCashForDevelopment()
+        public void AddRevenueForDevelopment()
         {
             if (CurrentRun == null)
             {
@@ -239,9 +239,14 @@ namespace AssetManager
             }
 
             ClearPortfolioSaleSelection();
-            CurrentRun = ResourceLedger.AddEarnedCash(CurrentRun, 1);
+            CurrentRun = ResourceLedger.AddRevenue(CurrentRun, 1);
             resourceFeedbackMessage = string.Empty;
             RefreshRunUi();
+        }
+
+        public void AddEarnedCashForDevelopment()
+        {
+            AddRevenueForDevelopment();
         }
 
         public void AddResearchForDevelopment()
@@ -367,7 +372,8 @@ namespace AssetManager
             resourceDevControls.FundingCashButton.onClick.AddListener(AddFundingCashForDevelopment);
 
             resourceDevControls.EarnedCashButton.onClick.RemoveListener(AddEarnedCashForDevelopment);
-            resourceDevControls.EarnedCashButton.onClick.AddListener(AddEarnedCashForDevelopment);
+            resourceDevControls.EarnedCashButton.onClick.RemoveListener(AddRevenueForDevelopment);
+            resourceDevControls.EarnedCashButton.onClick.AddListener(AddRevenueForDevelopment);
 
             resourceDevControls.ResearchButton.onClick.RemoveListener(AddResearchForDevelopment);
             resourceDevControls.ResearchButton.onClick.AddListener(AddResearchForDevelopment);

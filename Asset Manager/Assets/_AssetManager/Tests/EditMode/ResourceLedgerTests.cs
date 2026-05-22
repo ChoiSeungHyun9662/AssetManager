@@ -26,6 +26,28 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void FundingCashOnlyIncreasesCashAndRevenueIncreasesPerformanceCounters()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+
+            var fundedRun = ResourceLedger.AddFundingCash(run, 2);
+
+            Assert.That(fundedRun.Resources.Cash, Is.EqualTo(run.Resources.Cash + 2));
+            Assert.That(fundedRun.Performance.CurrentQuarterRevenue, Is.EqualTo(0));
+            Assert.That(fundedRun.Performance.CurrentFiscalYearRevenue, Is.EqualTo(0));
+            Assert.That(fundedRun.Performance.TotalRevenue, Is.EqualTo(0));
+            Assert.That(fundedRun.Performance.FundingCash, Is.EqualTo(2));
+
+            var revenueRun = ResourceLedger.AddRevenue(fundedRun, 3);
+
+            Assert.That(revenueRun.Resources.Cash, Is.EqualTo(run.Resources.Cash + 5));
+            Assert.That(revenueRun.Performance.CurrentQuarterRevenue, Is.EqualTo(3));
+            Assert.That(revenueRun.Performance.CurrentFiscalYearRevenue, Is.EqualTo(3));
+            Assert.That(revenueRun.Performance.TotalRevenue, Is.EqualTo(3));
+            Assert.That(revenueRun.Performance.Revenue, Is.EqualTo(3));
+        }
+
+        [Test]
         public void InvestmentPhilosophyGainCapsCombinedTotalAndPerTypeAndReportsDiscardedOverflow()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());

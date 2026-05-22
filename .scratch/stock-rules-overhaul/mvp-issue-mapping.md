@@ -189,7 +189,7 @@ Status: done
 | `10-hover-card-and-single-market-state.md` | AFK | 카드 상세보기/GainLiquidity 제거와 호버 확대 도입 |
 | `11-rent-arrears-and-bankruptcy.md` | AFK | 환매 압력/런 실패를 월세 밀림/파산으로 전환 |
 | `12-quarter-vacation-final-settlement-overhaul.md` | AFK | 분기/휴가/최종 정산을 새 수익/가치 기준으로 갱신 |
-| `13-stock-overhaul-integration-qa.md` | HITL | 새 주식 개편 흐름 전체 QA |
+| `99-stock-overhaul-final-qa.md` | HITL | 새 주식 개편 흐름과 20260520 피드백 반영분 전체 최종 QA |
 
 기존 MVP open issue 중 `17`, `18`, `19`, `20`, `21`은 `superseded`로 표시하고 관련 delta issue를 참조하도록 정리했다.
 기존 `implemented-needs-editor-check` 상태였던 `05`는 사용자 확인에 따라 완료로 간주하고 수정하지 않았다.

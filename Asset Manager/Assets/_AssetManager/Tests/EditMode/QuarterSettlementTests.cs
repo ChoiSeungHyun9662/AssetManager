@@ -26,6 +26,8 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Performance.CurrentQuarterEarnedCash, Is.EqualTo(ownedCard.Card.ManagementValue));
             Assert.That(result.Run.Performance.FundingCash, Is.EqualTo(run.Performance.FundingCash));
             Assert.That(result.Run.QuarterEndResult, Is.Not.Null);
+            Assert.That(result.Run.Performance.CompletedQuarterRevenue, Has.Count.EqualTo(1));
+            Assert.That(result.Run.Performance.CompletedQuarterRevenue[0].Revenue, Is.EqualTo(result.QuarterRevenue));
         }
 
         [TestCase(4, 0)]

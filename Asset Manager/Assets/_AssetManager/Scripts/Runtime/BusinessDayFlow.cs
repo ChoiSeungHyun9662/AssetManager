@@ -61,7 +61,7 @@ namespace AssetManager
             if (nextPhase == BusinessDayPhase.AwaitingAction)
             {
                 nextRun = MarketTape.Advance(nextRun);
-                return ResourceLedger.AddEarnedCash(nextRun, nextRun.OwnedAssets.BusinessDayStartIncome);
+                return ResourceLedger.AddRevenue(nextRun, nextRun.OwnedAssets.BusinessDayStartIncome);
             }
 
             return QuarterSettlement.Settle(nextRun).Run;
@@ -82,14 +82,14 @@ namespace AssetManager
             var calendar = RunCalendar.CreateMvpCalendar();
             var nextQuarterPerformance = new RunPerformanceState(
                 0,
-                run.Performance.CurrentFiscalYearEarnedCash,
-                run.Performance.TotalEarnedCash,
+                run.Performance.CurrentFiscalYearRevenue,
+                run.Performance.TotalRevenue,
                 run.Performance.FundingCash,
-                run.Performance.CompletedQuarterEarnedCash);
+                run.Performance.CompletedQuarterRevenue);
 
             if (run.Calendar.FiscalYear == 3 && run.Calendar.Quarter == 4)
             {
-                if (run.RedemptionPressure.CurrentPressure >= run.RedemptionPressure.MaxPressure)
+                if (run.RentArrears.CurrentArrears >= run.RentArrears.MaxArrears)
                 {
                     return run;
                 }
@@ -150,9 +150,9 @@ namespace AssetManager
             var nextFiscalYearPerformance = new RunPerformanceState(
                 0,
                 0,
-                run.Performance.TotalEarnedCash,
+                run.Performance.TotalRevenue,
                 run.Performance.FundingCash,
-                run.Performance.CompletedQuarterEarnedCash);
+                run.Performance.CompletedQuarterRevenue);
 
             var nextRun = new RunSessionState(
                 run.State,
