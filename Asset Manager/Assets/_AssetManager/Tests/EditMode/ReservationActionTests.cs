@@ -5,13 +5,16 @@ namespace AssetManager.Tests
     public sealed class ReservationActionTests
     {
         [Test]
-        public void MarketCardReservationLocksCardInMarketSlotGrantsDealAddsRentArrearsAndConsumesBusinessDay()
+        public void MarketCardReservationLocksExactlyOneStockWithoutConsumingOrRewarding()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
             run = ResourceLedger.AddProfessionalResource(run, ResourceType.Research, 1).Run;
             var selectedCard = FindFirstReservableMarketCard(run.MarketTape);
             var selectedSlotIndex = FindSlotIndex(run.MarketTape, selectedCard.Card.Id);
             var previousSlotIds = CollectSlotCardIds(run.MarketTape);
+            var remainingBusinessDays = run.Calendar.RemainingBusinessDays;
+            var deal = run.Resources.Deal;
+            var pressure = run.RedemptionPressure.CurrentPressure;
             run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
             run = PurchasePayment.PlaceChip(run, ResourceType.Research).Run;
 
@@ -21,31 +24,42 @@ namespace AssetManager.Tests
             Assert.That(result.Run.Reservation.ReservedCards, Is.Empty);
             Assert.That(FindCard(result.Run.AssetCards, selectedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Reserved));
             Assert.That(result.Run.Resources.Research, Is.EqualTo(1));
-            Assert.That(result.Run.Resources.Deal, Is.EqualTo(1));
-            Assert.That(result.Run.RedemptionPressure.CurrentPressure, Is.EqualTo(1));
+            Assert.That(result.Run.Resources.Deal, Is.EqualTo(deal));
+            Assert.That(result.Run.RedemptionPressure.CurrentPressure, Is.EqualTo(pressure));
             Assert.That(result.Run.MarketTape.Slots[selectedSlotIndex].Card.Card.Id, Is.EqualTo(selectedCard.Card.Id));
             Assert.That(result.Run.MarketTape.Slots[selectedSlotIndex].IsReserved, Is.True);
             Assert.That(CountReservedSlots(result.Run.MarketTape), Is.EqualTo(1));
             Assert.That(CollectSlotCardIds(result.Run.MarketTape), Is.EqualTo(previousSlotIds));
-            Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(run.Calendar.RemainingBusinessDays - 1));
+            Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
             Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
             Assert.That(result.Run.CardDetail.SelectedCard, Is.Null);
-            Assert.That(result.Message, Is.EqualTo("월세 밀림 +1"));
+            Assert.That(result.Message, Is.Empty);
         }
 
         [Test]
-        public void ReservationIgnoresFormerDealCapWhenGrantingDeal()
+        public void ReservingAnotherStockAutomaticallyReleasesPreviousReservation()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            run = ResourceLedger.AddDeal(run, 3).Run;
-            run = MarketAreaFlow.OpenMarketCardDetail(run, FindFirstReservableMarketCard(run.MarketTape));
+            var firstCard = FindFirstReservableMarketCard(run.MarketTape);
+            run = MarketAreaFlow.OpenMarketCardDetail(run, firstCard);
+            run = ReservationAction.ConfirmReservation(run).Run;
+            var secondCard = FindFirstReservableMarketCard(run.MarketTape);
+            var firstSlotIndex = FindSlotIndex(run.MarketTape, firstCard.Card.Id);
+            var secondSlotIndex = FindSlotIndex(run.MarketTape, secondCard.Card.Id);
+
+            run = MarketAreaFlow.OpenMarketCardDetail(run, secondCard);
 
             var result = ReservationAction.ConfirmReservation(run);
 
             Assert.That(result.Succeeded, Is.True);
-            Assert.That(result.Run.Resources.Deal, Is.EqualTo(4));
+            Assert.That(result.Run.MarketTape.Slots[firstSlotIndex].IsReserved, Is.False);
+            Assert.That(result.Run.MarketTape.Slots[firstSlotIndex].Card.State, Is.EqualTo(AssetCardRuntimeState.Available));
+            Assert.That(result.Run.MarketTape.Slots[secondSlotIndex].IsReserved, Is.True);
+            Assert.That(result.Run.MarketTape.Slots[secondSlotIndex].Card.State, Is.EqualTo(AssetCardRuntimeState.Reserved));
+            Assert.That(FindCard(result.Run.AssetCards, firstCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Available));
+            Assert.That(FindCard(result.Run.AssetCards, secondCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Reserved));
             Assert.That(CountReservedSlots(result.Run.MarketTape), Is.EqualTo(1));
-            Assert.That(result.Message, Is.EqualTo("월세 밀림 +1"));
+            Assert.That(result.Message, Is.Empty);
         }
 
         [Test]
@@ -65,44 +79,50 @@ namespace AssetManager.Tests
         }
 
         [Test]
-        public void FullReservationAreaDoesNotReserveOrConsumeBusinessDay()
+        public void ReservedMarketCardCanBeImmediatelyUnreserved()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            run = ReserveFirstCurrentMarketCard(run);
-            run = ReserveFirstCurrentMarketCard(run);
-            run = ReserveFirstCurrentMarketCard(run);
+            var selectedCard = FindFirstReservableMarketCard(run.MarketTape);
+            var selectedSlotIndex = FindSlotIndex(run.MarketTape, selectedCard.Card.Id);
+            run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
+            run = ReservationAction.ConfirmReservation(run).Run;
             var remainingBusinessDays = run.Calendar.RemainingBusinessDays;
             var deal = run.Resources.Deal;
             var pressure = run.RedemptionPressure.CurrentPressure;
-            run = MarketAreaFlow.OpenMarketCardDetail(run, FindFirstReservableMarketCard(run.MarketTape));
 
-            var result = ReservationAction.ConfirmReservation(run);
+            var result = ReservationAction.UnreserveMarketCard(run, run.MarketTape.Slots[selectedSlotIndex].Card);
 
-            Assert.That(result.Succeeded, Is.False);
-            Assert.That(CountReservedSlots(result.Run.MarketTape), Is.EqualTo(3));
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.Run.MarketTape.Slots[selectedSlotIndex].IsReserved, Is.False);
+            Assert.That(result.Run.MarketTape.Slots[selectedSlotIndex].Card.State, Is.EqualTo(AssetCardRuntimeState.Available));
+            Assert.That(FindCard(result.Run.AssetCards, selectedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Available));
+            Assert.That(CountReservedSlots(result.Run.MarketTape), Is.EqualTo(0));
             Assert.That(result.Run.Calendar.RemainingBusinessDays, Is.EqualTo(remainingBusinessDays));
             Assert.That(result.Run.Resources.Deal, Is.EqualTo(deal));
             Assert.That(result.Run.RedemptionPressure.CurrentPressure, Is.EqualTo(pressure));
             Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(result.Message, Is.EqualTo("예약 구역이 가득 찼습니다."));
+            Assert.That(result.Message, Is.Empty);
         }
 
         [Test]
-        public void ReservationAtNineRentArrearsBankruptsRunImmediately()
+        public void BuyingReservedMarketCardClearsReservationAndPullsMarketTape()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
-            run = WithRedemptionPressure(run, 9);
-            run = MarketAreaFlow.OpenMarketCardDetail(run, FindFirstReservableMarketCard(run.MarketTape));
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Reading, 5).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Meditation, 5).Run;
+            run = ResourceLedger.AddInvestmentPhilosophy(run, ResourceType.Patience, 5).Run;
+            var selectedCard = FindFirstReservableMarketCard(run.MarketTape);
+            var selectedSlotIndex = FindSlotIndex(run.MarketTape, selectedCard.Card.Id);
+            run = MarketAreaFlow.OpenMarketCardDetail(run, selectedCard);
+            run = ReservationAction.ConfirmReservation(run).Run;
+            run = MarketAreaFlow.OpenMarketCardDetail(run, run.MarketTape.Slots[selectedSlotIndex].Card);
 
-            var result = ReservationAction.ConfirmReservation(run);
+            var result = PurchasePayment.ConfirmPurchase(run);
 
             Assert.That(result.Succeeded, Is.True);
-            Assert.That(result.Run.State, Is.EqualTo(RunState.Failed));
-            Assert.That(result.Run.RedemptionPressure.CurrentPressure, Is.EqualTo(10));
-            Assert.That(result.Run.FailureReason, Is.EqualTo("파산"));
-            Assert.That(result.Message, Is.EqualTo("파산: 월세 밀림 한도 도달"));
-            Assert.That(result.Run.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(result.Run.CardDetail.SelectedCard, Is.Null);
+            Assert.That(FindCard(result.Run.AssetCards, selectedCard.Card.Id).State, Is.EqualTo(AssetCardRuntimeState.Owned));
+            Assert.That(CountReservedSlots(result.Run.MarketTape), Is.EqualTo(0));
+            Assert.That(CollectSlotCardIds(result.Run.MarketTape), Does.Not.Contain(selectedCard.Card.Id));
         }
 
         private static RunSessionState ReserveFirstCurrentMarketCard(RunSessionState run)

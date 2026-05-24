@@ -3,7 +3,7 @@
 Source feedback: `.scratch/stock-rules-overhaul/feedback/20260520_feedback.md`
 
 Status: in progress
-Last updated: 2026-05-23
+Last updated: 2026-05-25
 
 This document records decisions confirmed during the grill-me pass. It is the implementation-facing interpretation of the feedback, not a replacement for the original feedback file.
 
@@ -56,16 +56,15 @@ This document records decisions confirmed during the grill-me pass. It is the im
 - Existing Payment Pot and manual payment-slot UI are removed from the new play path.
 - Purchase payment automatically consumes the discounted final cash and philosophy costs.
 - Market card input starts with pointer down and can be dragged freely up or down.
-- On release, if the pointer is inside the portfolio area, immediate purchase is attempted first.
-- Portfolio-area release has priority over reservation threshold logic.
-- If release is not inside the portfolio area and the reservation threshold is crossed, the action is reservation or reservation release.
-- If release is not inside the portfolio area and the reservation threshold is not crossed, the action is a purchase attempt.
-- A normal purchase attempt opens a confirmation modal only if the purchase is currently possible.
+- Short-clicking a stock card opens a purchase confirmation modal only if the purchase is currently possible.
+- Short-clicking a consumable resource card attempts immediate purchase without a confirmation modal.
+- A market card drag release inside the portfolio area attempts immediate purchase.
+- A market card drag release outside the portfolio area does nothing and returns the card to its previous visual position.
 - If the purchase fails because of insufficient cost, no system message is shown and the market card shakes.
 - If the purchase fails for a non-cost reason, the market card shakes and the existing system message is shown.
 - Purchase success does not shake the card.
 - Portfolio-area immediate purchase skips the confirmation modal but uses the same validation and failure feedback rules.
-- Consumable resource cards use the same failure feedback rules as stock cards.
+- Consumable resource card click and drag-drop purchase attempts skip the confirmation modal but use the same validation and failure feedback rules as stock cards.
 - The confirmation modal is an intent-confirmation surface, not a restored card-detail action screen.
 - The confirmation modal includes the same card detail display used by the market hover panel.
 - The confirmation modal reflects mastery discount display and insufficient-cost red text using the same cost display rules as market cards.
@@ -76,10 +75,11 @@ This document records decisions confirmed during the grill-me pass. It is the im
 - If validation fails at confirm time, the modal closes and the same market-card failure feedback is applied.
 - During market card drag, the original card moves with the pointer.
 - On purchase success, the market card leaves the market and normal market slot refill rules run.
-- On purchase failure or modal cancel, the market card returns to its previous visual position.
+- On purchase failure, modal cancel, or drag release outside the portfolio area, the market card returns to its previous visual position.
 - Cancelling the purchase confirmation modal with `돌아가기` does not change market, reservation, resource, or portfolio state.
 - After modal cancel, a normal card returns to the normal market row and a reserved card returns to its lowered reserved position.
 - Market card hover enlargement is hidden during market card drag.
+- The market hover card's bottom action area shows a short click-result hint: stock cards indicate purchase confirmation, consumable resource cards indicate immediate gain.
 
 ## Reservation
 
@@ -89,15 +89,19 @@ This document records decisions confirmed during the grill-me pass. It is the im
 - Reservation does not grant Deal.
 - The player can reserve and unreserve freely.
 - Reservation and unreservation apply immediately without a confirmation modal.
-- A market card is reserved by dragging it downward past a vertical threshold and releasing outside the portfolio area.
-- Reserved cards are visually fixed slightly below their normal market slot position.
-- A reserved card is unreserved by dragging it upward past the vertical threshold back toward the normal market row.
-- There is no separate reservation drop zone.
+- Only stock cards show reservation controls; consumable resource cards cannot be reserved.
+- A normal stock card shows a lock/reserve button below the original market card while the card or button is hovered.
+- Clicking the lock/reserve button reserves the stock card and does not propagate to market-card purchase input.
+- A reserved stock card shows an unlock/unreserve button above the lowered reserved card while the card or button is hovered.
+- Clicking the unlock/unreserve button immediately unreserves the stock card and does not propagate to market-card purchase input.
+- Reserving a stock card lowers the card until the card's bottom edge reaches the reserve button's bottom edge.
+- Unreserving a stock card returns it to the normal market row; the unlock button position is not used as the return-position calculation.
 - If a different card is reserved while one card is already reserved, the old reservation is automatically released and the new card becomes the only reserved card.
 - Reserved cards remain in the market across next-business-day movement and market refresh.
 - Reserved cards can still be bought through the same purchase rules as normal market cards.
 - A short click/release on a reserved card opens the same purchase confirmation modal as a normal market card.
 - Releasing a reserved card inside the portfolio area attempts immediate purchase, just like a normal market card.
+- Drag-releasing a reserved card outside the portfolio area does nothing and returns the card to its lowered reserved position.
 - Buying a reserved card clears its reservation and runs the normal purchase refill behavior.
 - The reserved card's lowered visual position is its interaction position for click, drag, and hover.
 

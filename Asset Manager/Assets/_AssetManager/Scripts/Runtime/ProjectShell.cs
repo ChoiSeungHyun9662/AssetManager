@@ -52,6 +52,8 @@ namespace AssetManager
         public const string MarketAreaMarketPanelName = "Market Area Market Panel";
         public const string MarketTapeSellImminentCardButtonPrefix = "Market Tape Sell Imminent Card Button ";
         public const string MarketTapeCurrentMarketCardButtonPrefix = "Market Tape Current Market Card Button ";
+        public const string MarketTapeCurrentMarketReserveButtonPrefix = "Market Tape Current Market Reserve Button ";
+        public const string MarketTapeCurrentMarketUnreserveButtonPrefix = "Market Tape Current Market Unreserve Button ";
         public const string MarketTapeUpcomingMarketCardButtonPrefix = "Market Tape Upcoming Market Card Button ";
         public const string MarketCardHoverPanelName = "Market Card Hover Panel";
         public const string MarketCardHoverTextName = "Market Card Hover Text";

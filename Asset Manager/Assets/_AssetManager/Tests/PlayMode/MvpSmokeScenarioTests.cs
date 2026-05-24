@@ -96,7 +96,7 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MvpSmoke_ReservationLocksMarketSlotAddsDealAndPressure()
+        public IEnumerator MvpSmoke_ReservationLocksMarketSlotWithoutDealPressureOrBusinessDayUse()
         {
             var bootstrap = CreateStartedShell("MvpSmokeReservation");
             yield return null;
@@ -115,20 +115,20 @@ namespace AssetManager.Tests
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(4));
             Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Is.Empty);
             Assert.That(bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card.Card.Id, Is.EqualTo(selectedCard.Card.Id));
             Assert.That(bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].IsReserved, Is.True);
             Assert.That(CountReservedSlots(bootstrap.CurrentRun.MarketTape), Is.EqualTo(1));
-            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(1));
-            Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(0));
+            Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(0));
             Assert.That(CollectSlotCardIds(bootstrap.CurrentRun.MarketTape), Is.EqualTo(previousSlotIds));
 
             yield return SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene());
         }
 
         [UnityTest]
-        public IEnumerator MvpSmoke_ReservationAtNineRedemptionPressureShowsFailureScreen()
+        public IEnumerator MvpSmoke_ReservationAtNineRedemptionPressureDoesNotFailRun()
         {
             var bootstrap = CreateStartedShell("MvpSmokeRedemptionFailure");
             yield return null;
@@ -145,14 +145,11 @@ namespace AssetManager.Tests
             FindUiObject(ProjectShell.CardDetailReserveButtonName).GetComponent<Button>().onClick.Invoke();
             yield return null;
 
-            Assert.That(bootstrap.CurrentRun.State, Is.EqualTo(RunState.Failed));
-            Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(10));
-            Assert.That(FindUiObject(ProjectShell.RunFailurePlaceholderPanelName).activeSelf, Is.True);
+            Assert.That(bootstrap.CurrentRun.State, Is.EqualTo(RunState.Playing));
+            Assert.That(bootstrap.CurrentRun.RedemptionPressure.CurrentPressure, Is.EqualTo(9));
+            Assert.That(CountReservedSlots(bootstrap.CurrentRun.MarketTape), Is.EqualTo(1));
+            Assert.That(FindUiObject(ProjectShell.RunFailurePlaceholderPanelName).activeSelf, Is.False);
             Assert.That(FindUiObject(ProjectShell.ContinueScheduleButtonName).activeSelf, Is.False);
-
-            var failureText = FindUiObject(ProjectShell.RunFailurePlaceholderTextName).GetComponent<Text>().text;
-            Assert.That(failureText, Does.Contain("파산"));
-            Assert.That(failureText, Does.Contain("월세 밀림 10/10"));
 
             yield return SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene());
         }

@@ -27,7 +27,7 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 
 이번 피드백 반영은 새 게임 모드를 만드는 것이 아니라, 현재 주식 대개편 버전의 조작과 자원 규칙을 교체한다.
 
-시장 카드는 포인터로 잡아 위아래로 움직일 수 있다. 카드 릴리즈 위치가 포트폴리오 영역이면 확인 팝업 없이 즉시 자산 매수를 시도한다. 포트폴리오 영역이 아니고 예약 임계값을 넘으면 예약 또는 예약 해제를 즉시 반영한다. 그 외에는 자산 매수 확인 모달을 연다. 모달은 시장 카드 호버 확대와 같은 카드 상세 표시를 포함하고, 하단의 긴 확인 버튼과 우측 상단 돌아가기 버튼만 제공한다.
+시장 카드는 클릭하거나 포인터로 잡아 위아래로 움직일 수 있다. 짧은 클릭은 포인터 이동량 임계값을 넘지 않은 `down -> release`로 판정한다. 주식 카드를 짧게 클릭하면 자산 매수 확인 모달을 열고, 소모형 자원 카드를 짧게 클릭하면 확인 모달 없이 즉시 자산 매수를 시도한다. 카드 릴리즈 위치가 포트폴리오 영역이면 카드 타입과 무관하게 확인 팝업 없이 즉시 자산 매수를 시도한다. 드래그 후 포트폴리오 영역이 아닌 곳에 놓으면 아무 액션도 일어나지 않고 카드가 이전 위치로 복귀한다. 모달은 시장 카드 호버 확대와 같은 카드 상세 표시를 포함하고, 하단의 긴 확인 버튼과 우측 상단 돌아가기 버튼만 제공한다.
 
 자산 매수는 비용 슬롯과 Payment Pot을 사용하지 않는다. 매수 시 현재 현금, 투자 철학 보유량, 투자 철학 마스터리를 기준으로 할인 후 비용을 계산하고 자동 지불한다. 비용 부족이면 시스템 메시지를 띄우지 않고 카드 떨림만 발생한다. 비용 외 실패는 카드 떨림과 기존 메시지를 함께 보여준다.
 
@@ -35,7 +35,7 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 
 투자 철학 보유량과 투자 철학 마스터리는 각각 독서, 명상, 인내별 0-5 범위만 가진다. 기존 투자 철학 총합 10 제한과 딜 보유 한도는 제거한다. 철학 HUD는 보유량을 큰 정수로 표시하고, 마스터리가 1 이상일 때만 작은 `+N`을 붙인다.
 
-예약은 유지하되 성격을 바꾼다. 예약 가능 카드는 1장뿐이고, 예약은 영업일을 소비하지 않으며 딜을 지급하지 않는다. 새 카드를 예약하면 기존 예약은 자동 해제된다. 예약된 카드는 시장 진행과 갱신에서 남아 있고, 내려간 시각 위치가 클릭, 드래그, 호버 기준이 된다.
+예약은 유지하되 성격과 입력 방식을 바꾼다. 예약 가능 카드는 주식 카드 1장뿐이고, 예약은 영업일을 소비하지 않으며 딜을 지급하지 않는다. 주식 카드를 호버하면 원래 시장 카드 아래에 자물쇠 예약 버튼을 표시하고, 이 버튼을 클릭하면 예약한다. 예약된 카드는 카드의 아래 면이 예약 버튼 아래 면 위치까지 내려간 상태로 고정된다. 예약된 카드를 호버하면 내려간 카드 위에 예약 해제 버튼을 표시하고, 이 버튼을 클릭하면 즉시 원래 시장 줄로 복귀한다. 카드 또는 예약/해제 버튼 위에 포인터가 있으면 버튼은 계속 표시된다. 버튼 클릭은 카드 클릭 매수로 전파되지 않는다. 새 카드를 예약하면 기존 예약은 자동 해제된다. 예약된 카드는 시장 진행과 갱신에서 남아 있고, 내려간 시각 위치가 클릭, 드래그, 호버 기준이 된다.
 
 보유 주식 매도는 드래그 앤 드롭으로 바꾼다. 매도 실행 영역은 항상 보이는 붉은 배경의 `$` 영역이다. 보유 주식을 드래그하면 원래 포트폴리오 카드는 숨겨지고, 시장 호버 패널과 같은 카드 상세 패널이 포인터를 따라다닌다. 포인터를 매도 실행 영역 안에서 놓으면 매도되고, 밖에서 놓으면 취소된다.
 
@@ -45,7 +45,7 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 
 1. As a player, I want to drag a market card freely before releasing it, so that buying and reserving feel like direct card manipulation.
 2. As a player, I want dropping a market card on the portfolio area to immediately attempt purchase, so that a clear "put this into my portfolio" gesture skips extra confirmation.
-3. As a player, I want releasing a market card outside the portfolio area without crossing the reservation threshold to open a purchase confirmation modal, so that accidental clicks do not immediately spend resources.
+3. As a player, I want short-clicking a stock card to open a purchase confirmation modal, so that stock purchases still have explicit confirmation.
 4. As a player, I want the purchase confirmation modal to show the same card detail information as the market hover panel, so that I can confirm exactly what I am buying.
 5. As a player, I want the confirmation modal to have a long bottom confirmation button, so that the primary action is obvious.
 6. As a player, I want the confirmation modal to close through a top-right 돌아가기 button, so that cancelling is visually clear.
@@ -53,7 +53,7 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 8. As a player, I want the purchase to be revalidated when I press 확인, so that stale confirmation state cannot buy an invalid card.
 9. As a player, I want cancelling the purchase modal to return the market card to its previous position, so that no state changes happen when I back out.
 10. As a player, I want purchase payment to happen automatically, so that I no longer need to place chips into Payment Pot slots.
-11. As a player, I want stock and consumable resource cards to use the same purchase input rules, so that market cards behave consistently.
+11. As a player, I want consumable resource cards to short-click purchase immediately without a confirmation modal, so that immediate resource cards remain fast to use.
 12. As a player, I want purchase cost shortage to shake the market card without showing a system message, so that failure is fast and non-intrusive.
 13. As a player, I want non-cost purchase failures to shake the card and show the existing message, so that constraints like portfolio capacity are still explained.
 14. As a player, I want costs I cannot afford to be shown in red on the market card, so that I can understand shortage before clicking.
@@ -63,7 +63,7 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 18. As a player, I want market card hover enlargement to hide during drag, so that it does not interfere with placement.
 19. As a player, I want market cards 1-6 to enlarge to the right and cards 7-8 to enlarge to the left, so that hover panels stay predictable.
 20. As a player, I want hover offset to use the card's current visual position, so that reserved cards enlarge from their lowered position.
-21. As a player, I want to reserve a market card by dragging it downward past a threshold, so that reservation is a simple physical gesture.
+21. As a player, I want stock cards to show a lock button below the card while hovered, so that reservation has a clear dedicated control.
 22. As a player, I want reservation and unreservation to apply immediately without a modal, so that reservation remains lightweight.
 23. As a player, I want exactly one card reservable at a time, so that the reservation rule is easy to reason about.
 24. As a player, I want reserving a new card to automatically release the previous reserved card, so that changing my mind is quick.
@@ -71,35 +71,36 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 26. As a player, I want reservation to no longer grant Deal, so that Deal rewards come from portfolio achievements.
 27. As a player, I want reserved cards to remain in the market across market movement and refresh, so that reservation reliably protects one opportunity.
 28. As a player, I want reserved cards to be buyable with the same purchase rules as normal market cards, so that reservation does not create a separate purchase flow.
-29. As a player, I want to unreserve a reserved card by dragging it upward back toward the normal row, so that the opposite gesture reverses the reservation.
-30. As a player, I want portfolio-area release to take priority over reservation threshold, so that dropping onto the portfolio always means immediate purchase.
-31. As a player, I want Deal removed from direct purchase payment, so that it has one clear purpose.
-32. As a player, I want to drag a Deal from the resource HUD onto Reading, Meditation, or Patience, so that I can convert Deal into mastery.
-33. As a player, I want Deal hover or drag to show the guide panel, and Deal drag to show a pointer-following Deal image with the guide panel's bottom-right corner at the pointer, so that I understand the drop target action.
-34. As a player, I want dropping Deal outside philosophy lanes to cancel without spending it, so that failed drag attempts are harmless.
-35. As a player, I want dropping Deal on a mastery-5 philosophy to fail without spending it, so that capped mastery cannot waste a Deal.
-36. As a player, I want Deal to have no holding cap, so that achievement rewards are not discarded.
-37. As a player, I want investment philosophy holdings to be capped per type only, so that I can hold up to 5 Reading, 5 Meditation, and 5 Patience.
-38. As a player, I want the old total investment philosophy cap removed, so that one philosophy does not block another.
-39. As a player, I want investment philosophy mastery capped per type at 5, so that discounts have a clear maximum.
-40. As a player, I want no cash mastery, so that mastery only applies to investment philosophy costs.
-41. As a player, I want mastery to discount display and payment without mutating card source costs, so that market cards stay consistent as my mastery changes.
-42. As a player, I want a philosophy cost discounted to zero to consume zero of that philosophy, so that mastery has full effect.
-43. As a player, I want the philosophy HUD to show holdings as large integers, so that the available resource count is immediately readable.
-44. As a player, I want mastery shown as a smaller `+N` only when above zero, so that mastery is visible without clutter.
-45. As a player, I want to earn Deal when my occupied portfolio stock-slot count first reaches 3, 5, and 8, so that portfolio growth creates rewards.
-46. As a player, I want duplicate stocks in different slots to count as multiple cards for these rewards, so that the reward follows portfolio occupancy.
-47. As a player, I want these threshold Deal rewards to happen only once per run, so that selling and rebuying cannot farm them.
-48. As a player, I want the first foil stock in a run to grant Deal once, so that the collection milestone feels rewarded.
-49. As a player, I want threshold and first-foil rewards to both pay out if they occur from the same purchase, so that simultaneous achievements are not lost.
-50. As a player, I want owned stock hover to stop revealing a sell button, so that selling has one clear interaction model.
-51. As a player, I want the sale execution area always visible as a red `$` area, so that I know where to sell stocks.
-52. As a player, I want dragging an owned stock to hide the original portfolio card, so that I do not see duplicate cards.
-53. As a player, I want an owned-stock detail panel to follow my pointer while dragging, so that I can inspect what I am selling.
-54. As a player, I want the sale area to show `+N` while dragging a stock, so that the sale payout is clear before drop.
-55. As a player, I want dropping an owned stock on the sale area to sell it, so that sale is a direct drag-and-drop action.
-56. As a player, I want dropping an owned stock outside the sale area to cancel and restore it, so that accidental drags are reversible.
-57. As a developer, I want these changes captured in a focused amendment PRD, so that follow-up issues can reference one current source of truth.
+29. As a player, I want reserved stock cards to show an unlock button above the lowered card while hovered, so that reservation release is clear.
+30. As a player, I want drag release outside the portfolio area to do nothing, so that dragging a market card only buys when I deliberately drop it on the portfolio.
+31. As a player, I want the hover card action area to show whether clicking will confirm purchase or immediately gain the card, so that stock and consumable resource card click behavior is predictable.
+32. As a player, I want Deal removed from direct purchase payment, so that it has one clear purpose.
+33. As a player, I want to drag a Deal from the resource HUD onto Reading, Meditation, or Patience, so that I can convert Deal into mastery.
+34. As a player, I want Deal hover or drag to show the guide panel, and Deal drag to show a pointer-following Deal image with the guide panel's bottom-right corner at the pointer, so that I understand the drop target action.
+35. As a player, I want dropping Deal outside philosophy lanes to cancel without spending it, so that failed drag attempts are harmless.
+36. As a player, I want dropping Deal on a mastery-5 philosophy to fail without spending it, so that capped mastery cannot waste a Deal.
+37. As a player, I want Deal to have no holding cap, so that achievement rewards are not discarded.
+38. As a player, I want investment philosophy holdings to be capped per type only, so that I can hold up to 5 Reading, 5 Meditation, and 5 Patience.
+39. As a player, I want the old total investment philosophy cap removed, so that one philosophy does not block another.
+40. As a player, I want investment philosophy mastery capped per type at 5, so that discounts have a clear maximum.
+41. As a player, I want no cash mastery, so that mastery only applies to investment philosophy costs.
+42. As a player, I want mastery to discount display and payment without mutating card source costs, so that market cards stay consistent as my mastery changes.
+43. As a player, I want a philosophy cost discounted to zero to consume zero of that philosophy, so that mastery has full effect.
+44. As a player, I want the philosophy HUD to show holdings as large integers, so that the available resource count is immediately readable.
+45. As a player, I want mastery shown as a smaller `+N` only when above zero, so that mastery is visible without clutter.
+46. As a player, I want to earn Deal when my occupied portfolio stock-slot count first reaches 3, 5, and 8, so that portfolio growth creates rewards.
+47. As a player, I want duplicate stocks in different slots to count as multiple cards for these rewards, so that the reward follows portfolio occupancy.
+48. As a player, I want these threshold Deal rewards to happen only once per run, so that selling and rebuying cannot farm them.
+49. As a player, I want the first foil stock in a run to grant Deal once, so that the collection milestone feels rewarded.
+50. As a player, I want threshold and first-foil rewards to both pay out if they occur from the same purchase, so that simultaneous achievements are not lost.
+51. As a player, I want owned stock hover to stop revealing a sell button, so that selling has one clear interaction model.
+52. As a player, I want the sale execution area always visible as a red `$` area, so that I know where to sell stocks.
+53. As a player, I want dragging an owned stock to hide the original portfolio card, so that I do not see duplicate cards.
+54. As a player, I want an owned-stock detail panel to follow my pointer while dragging, so that I can inspect what I am selling.
+55. As a player, I want the sale area to show `+N` while dragging a stock, so that the sale payout is clear before drop.
+56. As a player, I want dropping an owned stock on the sale area to sell it, so that sale is a direct drag-and-drop action.
+57. As a player, I want dropping an owned stock outside the sale area to cancel and restore it, so that accidental drags are reversible.
+58. As a developer, I want these changes captured in a focused amendment PRD, so that follow-up issues can reference one current source of truth.
 
 ## Implementation Decisions
 
@@ -117,15 +118,22 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 - Keep discounted philosophy costs floored at zero.
 - Remove Payment Pot and manual chip placement from the new play path.
 - Keep compatibility types only where they reduce migration risk; do not expose them in the normal play UI.
-- Make market card release handling decide among portfolio immediate purchase, reservation toggle, and modal purchase in that priority order.
-- Treat portfolio-area release as the strongest purchase intent.
-- Make normal purchase attempts open a confirmation modal only after current validation says the purchase is possible.
+- Make market card input distinguish short-click from drag by pointer movement threshold.
+- Make short-clicked stock cards open a confirmation modal only after current validation says the purchase is possible.
+- Make short-clicked consumable resource cards attempt immediate purchase without a confirmation modal.
+- Make market card drag release inside the portfolio area attempt immediate purchase.
+- Make market card drag release outside the portfolio area perform no action and restore the previous card position.
 - Revalidate purchase on modal confirmation.
 - Make card shake a purchase-failure presentation event, not a success event.
 - Split validation failure categories into cost shortage and non-cost failure so messages can be suppressed only for cost shortage.
-- Make reservation state allow exactly one reserved market card.
+- Make reservation state allow exactly one reserved stock card.
 - Keep reservation as market-slot state, with lowered visual position as the interaction position.
 - Make reservation and unreservation non-consuming actions with no Deal payout.
+- Replace drag-threshold reservation with stock-card hover lock/unlock buttons.
+- Show the reserve lock button below a normal stock card while the card or button is hovered.
+- Show the unreserve button above a lowered reserved stock card while the card or button is hovered.
+- Prevent lock/unlock button clicks from propagating to market-card purchase input.
+- Lower a reserved card until its bottom edge reaches the reserve button's bottom edge; unreserve returns it to the normal market row.
 - Automatically release the previous reservation when reserving a new card.
 - Keep reserved cards fixed across market movement and refresh.
 - Make reserved cards use the same purchase flow as normal market cards.
@@ -149,10 +157,11 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 - Rule tests should focus on public behavior and state transitions, not helper method shape.
 - Resource tests should cover per-type philosophy cap, removal of total philosophy cap, Deal cap removal, and mastery cap.
 - Cost tests should cover discount application, zero floor, unchanged source costs, insufficient token marking inputs, and actual resource consumption.
-- Purchase tests should cover automatic payment for stock and consumable resource cards, cost shortage failure without state changes, non-cost failure without state changes, portfolio immediate purchase, and modal confirm revalidation.
+- Purchase tests should cover automatic payment for stock and consumable resource cards, cost shortage failure without state changes, non-cost failure without state changes, stock click modal purchase, consumable click immediate purchase, portfolio immediate purchase, and modal confirm revalidation.
 - Purchase flow tests should cover modal cancel restoring normal and reserved card positions without market, reservation, resource, or portfolio changes.
-- Reservation rule tests should cover one-card capacity, automatic previous reservation release, no business-day consumption, no Deal grant, persistence across market movement/refresh, and purchase clearing reservation.
-- Market input PlayMode tests should cover portfolio drop priority over reservation threshold, downward reservation, upward unreservation, short release opening modal, and drag hiding hover enlargement.
+- Reservation rule tests should cover one-stock-card capacity, automatic previous reservation release, no business-day consumption, no Deal grant, persistence across market movement/refresh, and purchase clearing reservation.
+- Market input PlayMode tests should cover movement-threshold click/drag split, stock short-click modal, consumable short-click immediate purchase, portfolio drop immediate purchase, drag release outside portfolio doing nothing, and drag hiding hover enlargement.
+- Reservation PlayMode tests should cover stock-only hover lock button, reserved-card hover unlock button, hover persistence while moving from card to button, button click propagation blocking, lowered reserved card position, and unreserve return to normal row.
 - Hover presentation tests should cover slots 1-6 using `+300px`, slots 7-8 using `-300px`, and reserved lowered positions as the offset base.
 - Deal reward tests should cover first occupied-slot thresholds 3/5/8, duplicate stock cards counting as multiple occupied slots, no repeat after sale or foil reduction, first-foil reward, and simultaneous reward payout.
 - Deal drag UI tests should cover 0 Deal disabled state, guide panel follow, successful philosophy drop, outside drop cancel, and mastery-5 failure without Deal consumption.
@@ -165,7 +174,7 @@ Source decisions: `.scratch/stock-rules-overhaul/feedback/20260520_design-decisi
 - Rewriting the whole stock-overhaul PRD.
 - Reworking quarter settlement, rent arrears, final settlement, or market deck rules beyond the direct impact of these feedback decisions.
 - Adding tutorial copy, onboarding flows, or animation polish beyond required card shake and drag-follow presentations.
-- Adding separate reservation zones, reservation panels, or hover-panel reservation buttons.
+- Adding separate reservation zones, reservation panels, hover-panel reservation buttons, or drag-threshold reservation.
 - Keeping manual Payment Pot interaction in the normal play path.
 - Treating Deal as both mastery currency and purchase payment currency.
 - Making mastery permanent across runs.

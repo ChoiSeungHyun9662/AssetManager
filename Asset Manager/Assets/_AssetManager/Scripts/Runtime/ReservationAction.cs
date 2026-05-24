@@ -22,73 +22,36 @@ namespace AssetManager
             }
 
             var selectedCard = run.CardDetail.SelectedCard;
-            var reservedCard = new AssetCardRuntimeData(
-                selectedCard.Card,
-                AssetCardRuntimeState.Reserved,
-                null,
-                selectedCard.AcquiredOrder,
-                selectedCard.IsFoil,
-                selectedCard.RuntimeId);
-            var assetCards = MarkCardReserved(run.AssetCards, reservedCard);
-            var marketTape = MarketTape.ReserveSlot(run.MarketTape, selectedCard.RuntimeId, reservedCard);
+            var assetCards = MarkSingleCardReserved(run.AssetCards, selectedCard.RuntimeId);
+            var marketTape = ReserveOnlySlot(run.MarketTape, selectedCard.RuntimeId);
 
-            var reservedRun = WithReservedCard(run, assetCards, marketTape, run.Reservation);
-            var dealResult = ResourceLedger.AddDeal(reservedRun, 1);
-            var arrearsResult = RentArrears.AddArrears(dealResult.Run, 1);
-            var arrearsRun = arrearsResult.Run;
-            var message = dealResult.Message;
-
-            if (arrearsResult.DidFail)
-            {
-                return new ReservationActionResult(arrearsRun, true, "파산: 월세 밀림 한도 도달");
-            }
-
-            if (message == string.Empty)
-            {
-                message = "월세 밀림 +1";
-            }
-
-            return new ReservationActionResult(ConsumeBusinessDayWithoutMarketAdvance(arrearsRun), true, message);
+            return new ReservationActionResult(
+                WithReservedCard(run, assetCards, marketTape, run.Reservation),
+                true,
+                string.Empty);
         }
 
-        private static RunSessionState ConsumeBusinessDayWithoutMarketAdvance(RunSessionState run)
+        public static ReservationActionResult UnreserveMarketCard(RunSessionState run, AssetCardRuntimeData selectedCard)
         {
-            if (run.State != RunState.Playing
+            ValidateRun(run);
+
+            if (selectedCard == null
+                || run.State != RunState.Playing
                 || run.BusinessDay.Phase != BusinessDayPhase.AwaitingAction
-                || run.Calendar.RemainingBusinessDays <= 0)
+                || run.BusinessDay.MarketArea != MarketAreaState.Market
+                || selectedCard.Card.CardDomain != CardDomain.Stock
+                || !ContainsReservedMarketTapeCard(run.MarketTape, selectedCard.RuntimeId))
             {
-                return run;
+                return new ReservationActionResult(run, false, "예약 해제할 수 없습니다.");
             }
 
-            var remainingBusinessDays = run.Calendar.RemainingBusinessDays - 1;
-            var nextPhase = remainingBusinessDays == 0
-                ? BusinessDayPhase.QuarterSettlement
-                : BusinessDayPhase.AwaitingAction;
+            var assetCards = MarkCardAvailable(run.AssetCards, selectedCard.RuntimeId);
+            var marketTape = UnreserveSlot(run.MarketTape, selectedCard.RuntimeId);
 
-            var nextRun = new RunSessionState(
-                run.State,
-                run.StaticData,
-                new RunCalendarState(
-                    run.Calendar.FiscalYear,
-                    run.Calendar.Quarter,
-                    remainingBusinessDays),
-                run.Resources,
-                run.Performance,
-                run.AssetCards,
-                run.MarketTape,
-                run.Reservation,
-                run.OwnedAssets,
-                new BusinessDayState(nextPhase, MarketAreaState.Market),
-                run.RedemptionPressure,
-                run.CardDetail,
-                run.LiquidityAction,
-                run.QuarterEndResult,
-                run.FailureReason,
-                run.InvestmentPhilosophyMastery);
-
-            return nextPhase == BusinessDayPhase.QuarterSettlement
-                ? QuarterSettlement.Settle(nextRun).Run
-                : nextRun;
+            return new ReservationActionResult(
+                WithReservedCard(run, assetCards, marketTape, run.Reservation),
+                true,
+                string.Empty);
         }
 
         private static string GetReservationValidationMessage(RunSessionState run)
@@ -101,11 +64,6 @@ namespace AssetManager
                 || run.CardDetail.IsOpenedDuringExtraBuy)
             {
                 return "예약할 수 없습니다.";
-            }
-
-            if (CountReservedSlots(run.MarketTape) >= run.Reservation.Capacity)
-            {
-                return "예약 구역이 가득 찼습니다.";
             }
 
             if (run.CardDetail.SelectedCard.Card.CardDomain != CardDomain.Stock)
@@ -147,17 +105,131 @@ namespace AssetManager
                 run.InvestmentPhilosophyMastery);
         }
 
-        private static IReadOnlyList<AssetCardRuntimeData> MarkCardReserved(
+        private static IReadOnlyList<AssetCardRuntimeData> MarkSingleCardReserved(
             IEnumerable<AssetCardRuntimeData> assetCards,
-            AssetCardRuntimeData reservedCard)
+            string reservedRuntimeId)
         {
             var updatedCards = new List<AssetCardRuntimeData>();
             foreach (var card in assetCards)
             {
-                updatedCards.Add(card.RuntimeId == reservedCard.RuntimeId ? reservedCard : card);
+                if (card.RuntimeId == reservedRuntimeId)
+                {
+                    updatedCards.Add(new AssetCardRuntimeData(
+                        card.Card,
+                        AssetCardRuntimeState.Reserved,
+                        null,
+                        card.AcquiredOrder,
+                        card.IsFoil,
+                        card.RuntimeId));
+                }
+                else if (card.State == AssetCardRuntimeState.Reserved)
+                {
+                    updatedCards.Add(new AssetCardRuntimeData(
+                        card.Card,
+                        AssetCardRuntimeState.Available,
+                        null,
+                        card.AcquiredOrder,
+                        card.IsFoil,
+                        card.RuntimeId));
+                }
+                else
+                {
+                    updatedCards.Add(card);
+                }
             }
 
             return updatedCards;
+        }
+
+        private static IReadOnlyList<AssetCardRuntimeData> MarkCardAvailable(
+            IEnumerable<AssetCardRuntimeData> assetCards,
+            string runtimeId)
+        {
+            var updatedCards = new List<AssetCardRuntimeData>();
+            foreach (var card in assetCards)
+            {
+                updatedCards.Add(card.RuntimeId == runtimeId
+                    ? new AssetCardRuntimeData(
+                        card.Card,
+                        AssetCardRuntimeState.Available,
+                        null,
+                        card.AcquiredOrder,
+                        card.IsFoil,
+                        card.RuntimeId)
+                    : card);
+            }
+
+            return updatedCards;
+        }
+
+        private static MarketTapeState ReserveOnlySlot(MarketTapeState tape, string runtimeId)
+        {
+            var slots = new List<MarketTapeSlotState>();
+            foreach (var slot in tape.Slots)
+            {
+                if (slot.IsEmpty)
+                {
+                    slots.Add(slot);
+                    continue;
+                }
+
+                if (slot.Card.RuntimeId == runtimeId)
+                {
+                    slots.Add(new MarketTapeSlotState(
+                        new AssetCardRuntimeData(
+                            slot.Card.Card,
+                            AssetCardRuntimeState.Reserved,
+                            null,
+                            slot.Card.AcquiredOrder,
+                            slot.Card.IsFoil,
+                            slot.Card.RuntimeId),
+                        true));
+                }
+                else if (slot.IsReserved)
+                {
+                    slots.Add(new MarketTapeSlotState(
+                        new AssetCardRuntimeData(
+                            slot.Card.Card,
+                            AssetCardRuntimeState.Available,
+                            null,
+                            slot.Card.AcquiredOrder,
+                            slot.Card.IsFoil,
+                            slot.Card.RuntimeId),
+                        false));
+                }
+                else
+                {
+                    slots.Add(slot);
+                }
+            }
+
+            return new MarketTapeState(slots);
+        }
+
+        private static MarketTapeState UnreserveSlot(MarketTapeState tape, string runtimeId)
+        {
+            var slots = new List<MarketTapeSlotState>();
+            foreach (var slot in tape.Slots)
+            {
+                if (!slot.IsEmpty && slot.Card.RuntimeId == runtimeId)
+                {
+                    slots.Add(new MarketTapeSlotState(
+                        new AssetCardRuntimeData(
+                            slot.Card.Card,
+                            AssetCardRuntimeState.Available,
+                            null,
+                            slot.Card.AcquiredOrder,
+                            slot.Card.IsFoil,
+                            slot.Card.RuntimeId),
+                        false));
+                }
+                else
+                {
+                    slots.Add(slot);
+                }
+            }
+
+            return new MarketTapeState(slots);
         }
 
         private static bool ContainsMarketTapeCard(MarketTapeState tape, string runtimeId)
@@ -173,18 +245,17 @@ namespace AssetManager
             return false;
         }
 
-        private static int CountReservedSlots(MarketTapeState tape)
+        private static bool ContainsReservedMarketTapeCard(MarketTapeState tape, string runtimeId)
         {
-            var count = 0;
             foreach (var slot in tape.Slots)
             {
-                if (slot.IsReserved)
+                if (slot.IsReserved && !slot.IsEmpty && slot.Card.RuntimeId == runtimeId)
                 {
-                    count++;
+                    return true;
                 }
             }
 
-            return count;
+            return false;
         }
 
         private static void ValidateRun(RunSessionState run)

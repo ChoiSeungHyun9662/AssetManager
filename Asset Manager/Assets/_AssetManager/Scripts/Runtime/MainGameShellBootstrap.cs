@@ -99,6 +99,12 @@ namespace AssetManager
             {
                 if (PurchasePayment.CanConfirmPurchase(CurrentRun))
                 {
+                    if (CurrentRun.CardDetail.SelectedCard.Card.CardDomain == CardDomain.ConsumableResource)
+                    {
+                        ApplyPaymentResult(PurchasePayment.ConfirmPurchase(CurrentRun));
+                        return;
+                    }
+
                     isPurchaseConfirmationOpen = true;
                     resourceFeedbackMessage = string.Empty;
                     RefreshRunUi();
@@ -430,6 +436,8 @@ namespace AssetManager
 
             marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
             marketTapeView.SetCurrentMarketCardReleasedHandler(ReleaseCurrentMarketCard);
+            marketTapeView.SetCurrentMarketCardReservedHandler(ReserveCurrentMarketCard);
+            marketTapeView.SetCurrentMarketCardUnreservedHandler(UnreserveCurrentMarketCard);
             portfolioSummaryView.SetStockSaleSelectedHandler(SellStockSlot);
 
             purchaseConfirmationView.ConfirmButton.onClick.RemoveListener(ConfirmPurchase);
@@ -651,7 +659,40 @@ namespace AssetManager
                 return;
             }
 
-            OpenMarketCardDetail(selectedCard, MarketTapeZone.CurrentMarket);
+            RefreshRunUi();
+        }
+
+        private void ReserveCurrentMarketCard(AssetCardRuntimeData selectedCard)
+        {
+            if (CurrentRun == null || selectedCard == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
+            ClearPortfolioSaleSelection();
+            CurrentRun = MarketAreaFlow.OpenMarketCardDetail(CurrentRun, selectedCard);
+            ApplyReservationResult(ReservationAction.ConfirmReservation(CurrentRun));
+        }
+
+        private void UnreserveCurrentMarketCard(AssetCardRuntimeData selectedCard)
+        {
+            if (CurrentRun == null || selectedCard == null)
+            {
+                return;
+            }
+
+            if (isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
+            ClearPortfolioSaleSelection();
+            ApplyReservationResult(ReservationAction.UnreserveMarketCard(CurrentRun, selectedCard));
         }
 
         private bool IsInsidePortfolio(Vector2 screenPosition)

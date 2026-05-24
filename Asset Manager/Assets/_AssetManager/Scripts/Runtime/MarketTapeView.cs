@@ -8,6 +8,9 @@ namespace AssetManager
 {
     public sealed class MarketTapeView : MonoBehaviour
     {
+        private const float ClickDragThresholdPixels = 8f;
+        private const float ReservedCardOffsetY = -37f;
+
         [SerializeField]
         private GameObject marketPanel;
 
@@ -20,11 +23,17 @@ namespace AssetManager
         private readonly List<Button> sellImminentButtons = new List<Button>();
         private readonly List<Button> currentMarketButtons = new List<Button>();
         private readonly List<Button> upcomingMarketButtons = new List<Button>();
+        private readonly Dictionary<string, Vector2> normalCurrentMarketButtonPositions = new Dictionary<string, Vector2>();
         private Action<AssetCardRuntimeData, MarketTapeZone> onMarketCardSelected;
         private Action<AssetCardRuntimeData, Vector2> onCurrentMarketCardReleased;
+        private Action<AssetCardRuntimeData> onCurrentMarketCardReserved;
+        private Action<AssetCardRuntimeData> onCurrentMarketCardUnreserved;
         private RectTransform draggedCard;
         private Vector2 draggedCardStartPosition;
+        private Vector2 draggedPointerDelta;
         private bool hasDraggedCard;
+        private string hoveredCardRuntimeId = string.Empty;
+        private string hoveredActionRuntimeId = string.Empty;
 
         public GameObject MarketPanel => marketPanel;
         public GameObject HoverCardPanel => hoverCardPanel;
@@ -57,6 +66,16 @@ namespace AssetManager
         public void SetCurrentMarketCardReleasedHandler(Action<AssetCardRuntimeData, Vector2> handler)
         {
             onCurrentMarketCardReleased = handler;
+        }
+
+        public void SetCurrentMarketCardReservedHandler(Action<AssetCardRuntimeData> handler)
+        {
+            onCurrentMarketCardReserved = handler;
+        }
+
+        public void SetCurrentMarketCardUnreservedHandler(Action<AssetCardRuntimeData> handler)
+        {
+            onCurrentMarketCardUnreserved = handler;
         }
 
         public void Show(RunSessionState run, string purchaseFailureCardRuntimeId)
@@ -94,6 +113,7 @@ namespace AssetManager
 
                 var slot = slots[i];
                 var card = slot.Card;
+                ApplyReservedPosition(button.gameObject, slot.IsReserved);
                 SetButtonText(button, MarketCardFormatter.Format(card, slot.IsReserved));
                 StyleCardButton(button, card, MarketTapeZone.CurrentMarket, slot.IsReserved);
                 ApplyFailureFeedback(button.gameObject, card.RuntimeId == purchaseFailureCardRuntimeId);
@@ -135,13 +155,41 @@ namespace AssetManager
 
         private void ConfigureCurrentMarketTrigger(GameObject target, int slotIndex, AssetCardRuntimeData card, bool isReserved)
         {
+            var reserveButton = EnsureCardActionButton(
+                target.transform,
+                ProjectShell.MarketTapeCurrentMarketReserveButtonPrefix + (slotIndex + 1),
+                "예약");
+            var unreserveButton = EnsureCardActionButton(
+                target.transform,
+                ProjectShell.MarketTapeCurrentMarketUnreserveButtonPrefix + (slotIndex + 1),
+                "해제");
+            PositionActionButton(reserveButton, false);
+            PositionActionButton(unreserveButton, true);
+            ConfigureActionButton(reserveButton, card, false, isReserved, reserveButton, unreserveButton);
+            ConfigureActionButton(unreserveButton, card, true, isReserved, reserveButton, unreserveButton);
+
             var trigger = EnsureEventTrigger(target);
             trigger.triggers.Clear();
-            AddHoverTrigger(trigger, EventTriggerType.PointerEnter, () => ShowHoverCard(target, slotIndex, card, isReserved));
-            AddHoverTrigger(trigger, EventTriggerType.PointerExit, HideHoverCard);
+            AddHoverTrigger(trigger, EventTriggerType.PointerEnter, () =>
+            {
+                hoveredCardRuntimeId = card.RuntimeId;
+                ShowHoverCard(target, slotIndex, card, isReserved);
+                UpdateActionButtons(card, isReserved, reserveButton, unreserveButton);
+            });
+            AddHoverTrigger(trigger, EventTriggerType.PointerExit, () =>
+            {
+                if (hoveredCardRuntimeId == card.RuntimeId)
+                {
+                    hoveredCardRuntimeId = string.Empty;
+                }
+
+                HideHoverCard();
+                UpdateActionButtons(card, isReserved, reserveButton, unreserveButton);
+            });
             AddPointerTrigger(trigger, EventTriggerType.PointerDown, eventData => BeginDrag(target, eventData));
             AddPointerTrigger(trigger, EventTriggerType.Drag, eventData => DragCard(eventData));
             AddPointerTrigger(trigger, EventTriggerType.PointerUp, eventData => EndDrag(card, eventData));
+            UpdateActionButtons(card, isReserved, reserveButton, unreserveButton);
         }
 
         private void ConfigureHoverTrigger(GameObject target, AssetCardRuntimeData card, bool isReserved)
@@ -195,6 +243,7 @@ namespace AssetManager
             }
 
             draggedCardStartPosition = draggedCard.anchoredPosition;
+            draggedPointerDelta = Vector2.zero;
             hasDraggedCard = false;
             target.transform.SetAsLastSibling();
         }
@@ -208,19 +257,28 @@ namespace AssetManager
 
             HideHoverCard();
             hasDraggedCard = true;
+            draggedPointerDelta += eventData.delta;
             draggedCard.anchoredPosition += eventData.delta;
         }
 
         private void EndDrag(AssetCardRuntimeData card, PointerEventData eventData)
         {
             var shouldRelease = draggedCard != null && hasDraggedCard;
+            var isShortClick = shouldRelease && draggedPointerDelta.magnitude <= ClickDragThresholdPixels;
             if (draggedCard != null)
             {
                 draggedCard.anchoredPosition = draggedCardStartPosition;
             }
 
             draggedCard = null;
+            draggedPointerDelta = Vector2.zero;
             hasDraggedCard = false;
+
+            if (isShortClick)
+            {
+                onMarketCardSelected?.Invoke(card, MarketTapeZone.CurrentMarket);
+                return;
+            }
 
             if (shouldRelease)
             {
@@ -260,6 +318,134 @@ namespace AssetManager
         private void HideHoverCard()
         {
             SetActive(hoverCardPanel, false);
+        }
+
+        private void ApplyReservedPosition(GameObject target, bool isReserved)
+        {
+            var rectTransform = target.GetComponent<RectTransform>();
+            if (rectTransform == null)
+            {
+                return;
+            }
+
+            if (!normalCurrentMarketButtonPositions.TryGetValue(target.name, out var normalPosition))
+            {
+                normalPosition = isReserved
+                    ? rectTransform.anchoredPosition - new Vector2(0f, ReservedCardOffsetY)
+                    : rectTransform.anchoredPosition;
+                normalCurrentMarketButtonPositions[target.name] = normalPosition;
+            }
+
+            rectTransform.anchoredPosition = normalPosition + (isReserved ? new Vector2(0f, ReservedCardOffsetY) : Vector2.zero);
+        }
+
+        private void ConfigureActionButton(
+            Button button,
+            AssetCardRuntimeData card,
+            bool isUnreserve,
+            bool isReserved,
+            Button reserveButton,
+            Button unreserveButton)
+        {
+            var trigger = EnsureEventTrigger(button.gameObject);
+            trigger.triggers.Clear();
+            AddHoverTrigger(trigger, EventTriggerType.PointerEnter, () =>
+            {
+                hoveredActionRuntimeId = card.RuntimeId;
+                UpdateActionButtons(card, isReserved, reserveButton, unreserveButton);
+            });
+            AddHoverTrigger(trigger, EventTriggerType.PointerExit, () =>
+            {
+                if (hoveredActionRuntimeId == card.RuntimeId)
+                {
+                    hoveredActionRuntimeId = string.Empty;
+                }
+
+                UpdateActionButtons(card, isReserved, reserveButton, unreserveButton);
+            });
+
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() =>
+            {
+                hoveredCardRuntimeId = string.Empty;
+                hoveredActionRuntimeId = string.Empty;
+                HideHoverCard();
+                if (isUnreserve)
+                {
+                    onCurrentMarketCardUnreserved?.Invoke(card);
+                }
+                else
+                {
+                    onCurrentMarketCardReserved?.Invoke(card);
+                }
+            });
+        }
+
+        private void UpdateActionButtons(
+            AssetCardRuntimeData card,
+            bool isReserved,
+            Button reserveButton,
+            Button unreserveButton)
+        {
+            var shouldShow = card.Card.CardDomain == CardDomain.Stock
+                && (hoveredCardRuntimeId == card.RuntimeId || hoveredActionRuntimeId == card.RuntimeId);
+            reserveButton.gameObject.SetActive(shouldShow && !isReserved);
+            unreserveButton.gameObject.SetActive(shouldShow && isReserved);
+        }
+
+        private static Button EnsureCardActionButton(Transform parent, string name, string label)
+        {
+            var existing = parent.Find(name);
+            var buttonObject = existing != null
+                ? existing.gameObject
+                : new GameObject(name, typeof(RectTransform));
+            buttonObject.transform.SetParent(parent, false);
+
+            var image = buttonObject.GetComponent<Image>();
+            if (image == null)
+            {
+                image = buttonObject.AddComponent<Image>();
+            }
+
+            image.color = new Color(0.03f, 0.05f, 0.06f, 0.96f);
+
+            var button = buttonObject.GetComponent<Button>();
+            if (button == null)
+            {
+                button = buttonObject.AddComponent<Button>();
+            }
+
+            var textTransform = buttonObject.transform.Find(name + " Text");
+            var text = textTransform != null
+                ? textTransform.GetComponent<Text>()
+                : new GameObject(name + " Text", typeof(RectTransform)).AddComponent<Text>();
+            text.transform.SetParent(buttonObject.transform, false);
+            text.text = label;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.fontSize = 14;
+            text.color = Color.white;
+            text.raycastTarget = false;
+
+            var textRect = text.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            buttonObject.SetActive(false);
+            return button;
+        }
+
+        private static void PositionActionButton(Button button, bool isUnreserve)
+        {
+            var rectTransform = button.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            rectTransform.sizeDelta = new Vector2(72f, 34f);
+            rectTransform.anchoredPosition = isUnreserve
+                ? new Vector2(0f, 90f)
+                : new Vector2(0f, -90f);
         }
 
         private static void StyleCardButton(Button button, AssetCardRuntimeData card, MarketTapeZone zone, bool isReserved)
