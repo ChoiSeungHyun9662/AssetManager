@@ -3,7 +3,7 @@
 Living map of implemented production classes for Asset Manager. Keep this as a quick orientation document, not full API documentation.
 
 Last reviewed: 2026-05-25
-Covered implementation slices: issues 00-18, stock overhaul issues 01-18
+Covered implementation slices: issues 00-18, stock overhaul issues 01-20
 
 ## Update Workflow
 
@@ -83,6 +83,20 @@ Current runtime flow:
 - `MarketTapeView` now creates stock-only card-local 예약/해제 buttons for current-market slots, keeps those buttons visible while hovering between the card and button, lowers reserved cards, and uses the lowered card position for hover and drag restoration.
 - `MainGameShellBootstrap` wires those card-local 예약/해제 buttons directly to `ReservationAction`, keeping button clicks separate from card purchase selection.
 
+## Issue 19 Inventory Notes
+
+- `DealRewardState` stores run-level one-time Deal reward flags for first reaching 3/5/8 occupied portfolio stock slots and first foil creation.
+- `DealRewardAction` evaluates Deal rewards after confirmed stock purchases finish ownership, foil merge, and market cleanup; duplicate stock ids count by occupied portfolio slots, and already-granted thresholds are not paid again after sale or merge.
+- `DealMasteryAction` converts one Deal into one Reading/Meditation/Patience mastery, rejects empty Deal stacks, and rejects mastery at 5 without consuming the Deal.
+- `ResourceHud` now owns Deal chip hover/drag presentation: guide text, temporary hidden source chip, pointer-following Deal image, and guide panel with its bottom-right corner at the pointer.
+- `MainGameShellBootstrap` wires Deal drops from the resource HUD into `DealMasteryAction` and keeps purchase confirmation blocking Deal drag.
+
+## Issue 20 Inventory Notes
+
+- `PortfolioSummaryView` now owns drag/drop stock sale presentation: a persistent red `$` sale drop zone, temporary visual hiding of the dragged owned stock card, pointer-following owned-stock detail panel, sale-zone `+N` gain display, pointer-position drop testing, and original `StockSlots` index sale routing.
+- `ProjectShell` creates the portfolio sale drop zone and owned stock drag detail panel while keeping legacy owned-stock Sell Button children hidden for scene compatibility.
+- `StockSaleAction` continues to be the public rule service for sale execution; tests now pin sale by original stock slot index when displayed portfolio cards are compressed around empty slots.
+
 ## Stock Overhaul Issue 01 Notes
 
 - Starter 런 static data now seeds stock cards instead of asset-class cards. `AssetCardData` keeps the existing type name for compatibility, but its public data now exposes `CardDomain.Stock`, base value/dividend, authored foil value/dividend, and min/max deck copy counts.
@@ -144,7 +158,7 @@ Current runtime flow:
 - Stock sale rewards use the current quarter inflation modifier: normal stocks pay base 1 plus inflation, foil stocks pay base 3 plus inflation.
 - Sold runtime stock cards are marked `Removed` and the sold portfolio slot remains empty, so sold stocks do not return to market supply.
 - Stock sale rewards flow through the same revenue counters as dividends and quarter-end settlement income, while consumable resource cash remains funding cash.
-- `PortfolioSummaryView` now separates stock-card hover from sale confirmation: hovering an owned stock card reveals that card's child sell button, moving between the card and sell button keeps it visible, clicking the sell button calls the sale rule through `MainGameShellBootstrap`, and explicit non-sale UI interactions clear the pending sale button.
+- `PortfolioSummaryView` separated stock-card hover from sale confirmation for the issue 08 path; issue 20 superseded that hover Sell Button interaction with drag/drop sale while keeping the legacy child buttons hidden for scene compatibility.
 
 ## Stock Overhaul Issue 09 Notes
 
@@ -175,6 +189,12 @@ Current runtime flow:
 - `MainGameShellBootstrap` now treats a valid stock-card short click as purchase-confirmation intent, while a valid consumable-resource short click immediately confirms purchase without the modal. Invalid purchase attempts skip the modal and apply existing card-local failure feedback, and modal confirmation reuses `PurchasePayment.ConfirmPurchase` for confirm-time revalidation.
 - While the modal is open, shell-level background commands such as market card selection, schedule/resource/dev controls, reservation, and stock sale return without changing run state.
 
+## v3 Issue 01 Notes
+
+- `StockTagCatalog` owns the five allowed v3 stock tags: Technology, Consumer, Energy, Financials, and Industrials.
+- Starter stock data now assigns exactly one allowed v3 tag to every stock. Tags are presentation and later scoring/mission classification only; they do not add stock-specific effect text.
+- `RunCalendar` and the default quarter rows now use 8 business days for playable FY1/FY2 quarters and 10 business days for playable FY3 quarters while keeping FY1/FY2 4Q vacation routing and FY3 4Q final-settlement routing.
+
 ## Shell And Editor Setup
 
 | Type | File | Purpose |
@@ -192,6 +212,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | Type | File | Purpose |
 | --- | --- | --- |
 | `RunStaticDataSet` | `Runtime/RunStaticDataSet.cs` | ScriptableObject container for seed stock cards, 분기 data, quarter inflation lookup, final ratings, market/resource/redemption configs, and default run data. |
+| `StockTagCatalog` | `Runtime/StockTagCatalog.cs` | Public catalog and validation surface for the five allowed v3 stock tags and the exactly-one-tag stock rule. |
 | `ProfessionalResourceCost` | `Runtime/RunModels.cs` | One 전문 자원 cost requirement for a 자산 카드. |
 | `TagData` | `Runtime/RunModels.cs` | Serialized 태그 identity, display name, and tag type. |
 | `AssetCardData` | `Runtime/RunModels.cs` | Static market card definition: stock costs, 희귀도, value/dividend, authored foil value/dividend, min/max deck copy counts, tags, optional extra-buy grant, and extra-buy purchase eligibility, or consumable resource provided-resource data. The type name and `ManagementValue` accessor remain from the MVP asset-card implementation for compatibility. |
@@ -229,6 +250,8 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 월세 밀림, with rent-arrears aliases over the compatibility pressure property names. |
 | `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including resources, investment philosophy mastery, transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, rent arrears state, and failure reason. Most transitions create a new instance. |
 
+| `DealRewardState` | `Runtime/RunModels.cs` | Run-scoped one-time Deal reward flags for portfolio occupied stock-slot thresholds 3/5/8 and first foil completion. |
+
 ## Enums
 
 | Type | Purpose |
@@ -252,11 +275,15 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `RunBootstrapper` | `Runtime/RunBootstrapper.cs` | Creates a new playable `RunSessionState` from static data and immediately performs initial 시장 테이프 갱신. |
 | `RunCalendarQuarter` | `Runtime/RunCalendar.cs` | One playable calendar row with 회계년도, 분기, and 영업일 count. |
 | `RunCalendarDefinition` | `Runtime/RunCalendar.cs` | Query object for playable quarters, 4Q 휴가, and total playable 영업일. |
-| `RunCalendar` | `Runtime/RunCalendar.cs` | Factory for the MVP calendar: 1/2회계년도 1Q-3Q have 4 영업일; 3회계년도 1Q-4Q have 5 영업일. |
+| `RunCalendar` | `Runtime/RunCalendar.cs` | Factory for the playable calendar: 1/2회계년도 1Q-3Q have 8 영업일; 3회계년도 1Q-4Q have 10 영업일. |
 | `BusinessDayFlow` | `Runtime/BusinessDayFlow.cs` | Advances the 영업일 loop, applies 보유 자산 영업일 시작 운용 수익 through ResourceLedger, settles the last 영업일 into 분기 마감, blocks schedule progress after 런 실패, routes 4Q 휴가, starts next 회계년도, and reaches 최종 정산. |
 | `MarketAreaFlow` | `Runtime/MarketAreaFlow.cs` | Public rule service for selecting/clearing a market card purchase working model while keeping the visible market area in the single `Market` state, plus 다음 영업일 gating. |
 | `ResourceLedger` | `Runtime/ResourceLedger.cs` | Public rule service for adding 조달 현금, 수익 cash through AddRevenue, per-type-capped investment philosophy resources, per-type-capped investment philosophy mastery, and uncapped 딜. |
 | `ResourceLedgerResult` | `Runtime/ResourceLedger.cs` | Return data for capped 자원 operations, including gained amount, discarded amount, and short feedback message. |
+| `DealRewardAction` | `Runtime/DealRewardAction.cs` | Public rule service for run-level Deal rewards from occupied portfolio stock-slot thresholds and first foil creation. |
+| `DealRewardActionResult` | `Runtime/DealRewardAction.cs` | Return data for Deal reward evaluation, including the updated run and number of Deals granted. |
+| `DealMasteryAction` | `Runtime/DealMasteryAction.cs` | Public rule service for dropping one Deal on an investment philosophy lane to consume the Deal and add one mastery, with max-mastery failure feedback. |
+| `DealMasteryActionResult` | `Runtime/DealMasteryAction.cs` | Return data for Deal-to-mastery attempts, including success and short feedback message. |
 | `StockSaleAction` | `Runtime/StockSaleAction.cs` | Public rule service for selling owned stock slots, leaving an empty portfolio slot, removing the sold runtime stock from the run, and adding sale cash as 수익 without consuming a 영업일. |
 | `StockSaleActionResult` | `Runtime/StockSaleAction.cs` | Return data for stock sale attempts, including the updated run, success flag, and short feedback message. |
 | `QuarterSettlement` | `Runtime/QuarterSettlement.cs` | Public rule service for 분기 마감 정산, 정산 수익 application, 목표 달성률, 월세 밀림 increase, and QuarterEndResult creation. |
@@ -297,11 +324,11 @@ Important distinction:
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus market/reserved card selection, market-card release intents, and card-local reservation toggles to rule services while keeping the visible market state active, opens and guards the purchase confirmation modal for valid stock-card click purchase intent, routes valid consumable-resource clicks and portfolio-area releases to immediate purchase, treats non-portfolio drag releases as no-ops, refreshes visible UI, and leaves the old GainLiquidity entry disconnected from the new play flow. |
+| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus market/reserved card selection, market-card release intents, card-local reservation toggles, and Deal HUD drops to rule services while keeping the visible market state active, opens and guards the purchase confirmation modal for valid stock-card click purchase intent, routes valid consumable-resource clicks and portfolio-area releases to immediate purchase, treats non-portfolio drag releases as no-ops, refreshes visible UI, and leaves the old GainLiquidity entry disconnected from the new play flow. |
 | `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD time/progress/rent-arrears text from `RunSessionState` without player resource counts. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
-| `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, investment philosophy holdings as large integers, optional small mastery `+N`, philosophy chip stacks, Deal chip stack, manual Sprite slots, current short resource message, and runtime chip stack instances anchored to the configured base images. |
-| `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary plus an `OwnedAssetState.StockSlots`-derived compressed owned-stock-card row; empty slots are skipped, occupied cards show stock name, rarity, effective value, dividend, and foil state, and hovered cards reveal a child sell button that remains visible while hovering the sell button. |
+| `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, investment philosophy holdings as large integers, optional small mastery `+N`, philosophy chip stacks, Deal chip stack, manual Sprite slots, current short resource message, runtime chip stack instances anchored to the configured base images, and Deal hover/drag/drop presentation for mastery conversion. |
+| `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary plus an `OwnedAssetState.StockSlots`-derived compressed owned-stock-card row; empty slots are skipped, occupied cards show stock name, rarity, effective value, dividend, and foil state, and owned stocks sell through a drag/drop flow using a persistent red `$` sale zone and original `StockSlots` index. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 파산, and 최종 정산 UI; displays current 분기 수익, 현재 가치, 보유 주식, 월세 밀림, final value, and final comment summaries. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders the pointer-draggable 1x8 market tape, classifies click vs drag by pointer movement threshold, positions card-number-based hover enlargement, creates stock-only card-local 예약/해제 buttons, lowers reserved cards for interaction, and records card-local purchase-failure shake requests. |
 | `MarketCardFormatter` | `Runtime/MarketCardFormatter.cs` | Shared formatter for compact market-card detail text used by market buttons, hover card presentation, and purchase confirmation. |
@@ -322,6 +349,7 @@ Important distinction:
 | 시장 테이프 rules | `MarketTapeTests`, `BusinessDayFlowTests`, `MainGameShellBootstrapTests` |
 | 시장 영역 and 카드 상세보기 | `MarketAreaFlowTests`, `MainGameShellBootstrapTests` |
 | 자원 원장 and 보유 자원 UI | `ResourceLedgerTests`, `MainGameShellBootstrapTests` |
+| 딜 rewards and mastery drag | `DealRewardActionTests`, `DealMasteryActionTests`, `PurchasePaymentTests`, `ReservationActionTests`, `MainGameShellBootstrapTests` |
 | 자산 매수 and 비용 슬롯 결제 | `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 | 보유 자산 income and 포트폴리오 UI | `OwnedAssetStateTests`, `BusinessDayFlowTests`, `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 | 소모형 자원 카드 and retired GainLiquidity path | `PurchasePaymentTests`, `MainGameShellBootstrapTests`, `MvpSmokeScenarioTests` |

@@ -18,6 +18,7 @@
 - 최종 가치 표시
 - 최종 평가 등급 표시
 - 총 수익 표시
+- 총 미션 수익 표시
 - 보유 주식 수 표시
 - 월세 밀림 표시
 - 운용 코멘트 표시
@@ -65,6 +66,7 @@
 - 최종 가치
 - 최종 평가
 - 총 수익
+- 총 미션 수익
 - 보유 주식 수
 - 월세 밀림
 - 운용 코멘트
@@ -79,6 +81,7 @@
 최종 평가: A · 슈퍼 개미
 
 총 수익: 92
+총 미션 수익: 18
 보유 주식: 7 / 8
 월세 밀림: 7 / 10
 
@@ -102,9 +105,12 @@
 최종 가치에 포함되는 것:
 
 ```text
-- 보유 중인 일반 주식의 가치
-- 보유 중인 호일 주식의 가치
+- 보유 중인 일반 주식의 최종 가치
+- 보유 중인 호일 주식의 최종 가치
 ```
+
+최종 가치는 Mr.Market 영구 가치 델타를 반영한다.
+호일 주식은 재료 3장의 Mr.Market 영구 가치 델타를 합산한 뒤 0 미만으로 내려가지 않게 계산한다.
 
 최종 가치에 포함되지 않는 것:
 
@@ -220,7 +226,6 @@ MinFinalValue가 가장 높은 항목 선택
 ```text
 - 배당금
 - 주식 매도 수익
-- 분기 마감 정산 수익
 - 그 밖에 수익으로 명시된 현금
 ```
 
@@ -243,6 +248,7 @@ MinFinalValue가 가장 높은 항목 선택
 
 총 수익은 최종 등급 판정 기준이 아니다.
 플레이어가 런 동안 얼마나 많은 현금 흐름을 만들었는지 보여주는 보조 지표다.
+미션 수익은 현금이 아니므로 총 수익에 포함하지 않고, 필요하면 별도 총 미션 수익으로 표시한다.
 
 ---
 
@@ -455,11 +461,12 @@ MVP 최종 정산 화면에서는 생략한다.
 1. 최종 가치 계산
 2. 최종 평가 등급 결정
 3. 총 수익 조회
-4. 보유 주식 수 조회
-5. 최종 월세 밀림 조회
-6. 월세 밀림 단계 결정
-7. 운용 코멘트 결정
-8. 최종 정산 UI 표시
+4. 총 미션 수익 조회
+5. 보유 주식 수 조회
+6. 최종 월세 밀림 조회
+7. 월세 밀림 단계 결정
+8. 운용 코멘트 결정
+9. 최종 정산 UI 표시
 ```
 
 ---
@@ -475,6 +482,7 @@ public class FinalRunSummaryData
     public FinalRatingData FinalRating;
 
     public int TotalRevenue;
+    public int TotalMissionRevenue;
     public int OwnedStockSlotCount;
     public int MaxStockSlotCount;
     public int RentArrears;
@@ -560,6 +568,7 @@ FinalRunSummaryData BuildFinalRunSummary()
         FinalRating = finalRating,
 
         TotalRevenue = TotalRevenue,
+        TotalMissionRevenue = TotalMissionRevenue,
         OwnedStockSlotCount = Portfolio.OccupiedSlotCount,
         MaxStockSlotCount = Portfolio.MaxSlotCount,
         RentArrears = CurrentRentArrears,
@@ -614,11 +623,13 @@ void ShowFinalSettlement()
 - 최종 정산은 3회계연도 4Q 완료 뒤에만 진입한다.
 - 월세 밀림이 10 이상이면 최종 정산으로 가지 않는다.
 - 최종 가치는 보유 주식 가치의 합계다.
+- 최종 가치는 Mr.Market 영구 가치 델타를 반영한다.
 - 현금은 최종 가치에 포함하지 않는다.
 - 예약된 주식은 최종 가치에 포함하지 않는다.
 - 최종 평가는 최종 가치 기준이다.
 - 월세 밀림은 최종 등급을 낮추지 않는다.
 - 월세 밀림은 운용 코멘트 결정에 사용한다.
 - 총 수익에는 소모형 자원 카드로 얻은 현금을 포함하지 않는다.
+- 총 수익에는 미션 수익을 포함하지 않는다.
 - 등급 기준값과 코멘트 문구는 데이터 테이블로 조정 가능하게 둔다.
 ```

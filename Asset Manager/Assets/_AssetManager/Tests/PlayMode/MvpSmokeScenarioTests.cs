@@ -23,13 +23,13 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
-        public IEnumerator MvpSmoke_NewRunAdvancesFourBusinessDaysIntoQuarterSettlement()
+        public IEnumerator MvpSmoke_NewRunAdvancesEightBusinessDaysIntoQuarterSettlement()
         {
             var bootstrap = CreateStartedShell("MvpSmokeBasicProgression");
             yield return null;
 
             var nextBusinessDayButton = FindUiObject(ProjectShell.NextBusinessDayButtonName).GetComponent<Button>();
-            for (var i = 0; i < 4; i++)
+            for (var i = 0; i < 8; i++)
             {
                 nextBusinessDayButton.onClick.Invoke();
             }
@@ -72,7 +72,7 @@ namespace AssetManager.Tests
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(7));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
             Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(expectedCashAfterPurchaseAndIncome));
@@ -115,7 +115,7 @@ namespace AssetManager.Tests
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(4));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(8));
             Assert.That(bootstrap.CurrentRun.Reservation.ReservedCards, Is.Empty);
             Assert.That(bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].Card.Card.Id, Is.EqualTo(selectedCard.Card.Id));
             Assert.That(bootstrap.CurrentRun.MarketTape.Slots[selectedSlotIndex].IsReserved, Is.True);

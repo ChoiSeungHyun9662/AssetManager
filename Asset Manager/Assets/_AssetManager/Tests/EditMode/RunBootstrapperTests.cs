@@ -14,7 +14,7 @@ namespace AssetManager.Tests
             Assert.That(run.State, Is.EqualTo(RunState.Playing));
             Assert.That(run.Calendar.FiscalYear, Is.EqualTo(1));
             Assert.That(run.Calendar.Quarter, Is.EqualTo(1));
-            Assert.That(run.Calendar.RemainingBusinessDays, Is.EqualTo(4));
+            Assert.That(run.Calendar.RemainingBusinessDays, Is.EqualTo(8));
         }
 
         [Test]

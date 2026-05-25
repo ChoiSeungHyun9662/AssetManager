@@ -55,6 +55,7 @@
 ```text
 - 이번 회계연도 성과 마무리
 - 회계연도 수익 요약
+- 회계연도 미션 수익 요약
 - 현재 포트폴리오 상태 요약
 - 다음 회계연도 진입 전 완충 제공
 ```
@@ -133,6 +134,7 @@
 - 짧은 휴가 문구
 - 현재 가치
 - 올해 수익 총합
+- 올해 미션 수익 총합
 - 분기별 수익
 - 보유 주식 수
 - 월세 밀림
@@ -152,6 +154,7 @@
   - 1Q +4
   - 2Q +6
   - 3Q +8
+- 올해 미션 수익: +5
 - 보유 주식: 7 / 8
 - 월세 밀림: 3 / 10
 
@@ -218,9 +221,11 @@
 ```text
 - 배당금
 - 주식 매도 수익
-- 분기 마감 정산 수익
 - 그 밖에 수익으로 명시된 현금
 ```
+
+미션 수익은 현금이 아니므로 올해 수익에 더하지 않는다.
+필요하면 별도 `올해 미션 수익` 항목으로 표시한다.
 
 올해 수익에 포함되지 않는 항목:
 
@@ -327,7 +332,7 @@ TotalRevenue
 -> 유지
 ```
 
-분기 수익은 각 분기 시작 시 초기화한다.
+분기 현금 흐름과 미션 수익은 각 분기 시작 시 초기화한다.
 
 ```text
 새 분기 시작
@@ -345,6 +350,7 @@ public class FiscalYearSummaryData
 
     public int CurrentValue;
     public int FiscalYearRevenue;
+    public int FiscalYearMissionRevenue;
 
     public List<QuarterRevenueData> QuarterRevenueList;
 

@@ -91,7 +91,51 @@ public enum StockRuntimeState
 
 ---
 
-### 2.6 RunState
+### 2.6 StockIndustryTag
+
+```csharp
+public enum StockIndustryTag
+{
+    Technology,
+    Consumer,
+    Energy,
+    Financials,
+    Industrials
+}
+```
+
+모든 주식은 산업 태그를 정확히 1개 가진다.
+태그는 카드 자체 효과가 아니라 미션 조건과 정산 공식, 포트폴리오 방향성에 사용한다.
+
+---
+
+### 2.7 MissionState
+
+```csharp
+public enum MissionState
+{
+    Candidate,
+    Confirmed,
+    Discarded
+}
+```
+
+---
+
+### 2.8 MarketOfferRole
+
+```csharp
+public enum MarketOfferRole
+{
+    PaymentReduction,
+    CharacterTransformation,
+    Tempo
+}
+```
+
+---
+
+### 2.9 RunState
 
 ```csharp
 public enum RunState
@@ -105,7 +149,7 @@ public enum RunState
 
 ---
 
-### 2.7 RentArrearsLevel
+### 2.10 RentArrearsLevel
 
 ```csharp
 public enum RentArrearsLevel
@@ -138,6 +182,7 @@ public class StockCardData
     public int BaseDividend;
     public int FoilValue;
     public int FoilDividend;
+    public StockIndustryTag IndustryTag;
 
     public int MinCopiesInDeck;
     public int MaxCopiesInDeck;
@@ -149,6 +194,7 @@ public class StockCardData
 ```text
 - 호일 주식은 별도 덱 카드가 아니다.
 - 호일 가치/배당금은 직접 지정한다.
+- 산업 태그는 정확히 1개 지정한다.
 - 종목별 덱 포함 장수는 min~max 값으로 조정한다.
 ```
 
@@ -210,11 +256,11 @@ public class QuarterData
     public bool IsVacationQuarter;
 
     public int BusinessDayCount;
-    public int TargetRevenue;
+    public int TargetEvaluation;
 }
 ```
 
-`TargetRevenue`는 분기 목표 수익이다.
+`TargetEvaluation`은 현금 흐름과 미션 수익의 합으로 달성 여부를 판단하는 분기 평가 목표다.
 
 ---
 
@@ -289,7 +335,6 @@ public class ResourceConfigData
 {
     public int MaxInvestmentPhilosophyTotal; // 10
     public int MaxInvestmentPhilosophyEach; // 5
-    public int MaxDeal; // 3
 }
 ```
 
@@ -303,6 +348,47 @@ public class RentArrearsConfigData
     public int MaxRentArrears; // 10
 }
 ```
+
+---
+
+### 3.11 MissionDefinitionData
+
+```csharp
+public class MissionDefinitionData
+{
+    public string MissionId;
+    public string DisplayName;
+    public string DifficultyLabel;
+
+    public MissionClearConditionData ClearCondition;
+    public MissionSettlementFormulaData SettlementFormula;
+}
+```
+
+미션 클리어 조건과 정산 공식은 분리한다.
+난이도 표시는 디스플레이 전용이며 조건이나 보상 수치를 바꾸지 않는다.
+
+---
+
+### 3.12 MarketOfferData
+
+```csharp
+public class MarketOfferData
+{
+    public string OfferId;
+    public MarketOfferRole Role;
+    public int CashCostDelta;
+    public InvestmentPhilosophyCost PhilosophyCostDelta;
+    public int PermanentValueDelta;
+    public int PermanentDividendDelta;
+    public int ExtraBuyGrant;
+    public ResourceReward PhilosophyReward;
+}
+```
+
+결제 완화형은 결제 순간에만 적용하고 영구 흔적을 남기지 않는다.
+성격 변환형은 영구 가치/배당 델타를 남길 수 있다.
+템포형은 추가 매수권이나 투자 철학 보너스를 줄 수 있지만 비용과 영구 가치/배당을 바꾸지 않는다.
 
 ---
 
@@ -325,7 +411,40 @@ public class ResourceState
 
 ---
 
-### 4.2 RunCalendarState
+### 4.2 InvestmentPhilosophyMasteryState
+
+```csharp
+public class InvestmentPhilosophyMasteryState
+{
+    public int Reading;
+    public int Meditation;
+    public int Patience;
+}
+```
+
+딜 1개를 소비하면 독서/명상/인내 중 하나의 마스터리가 1 오른다.
+각 마스터리는 최대 5이며, 주식 매수 시 같은 종류 투자 철학 비용을 낮춘다.
+
+---
+
+### 4.3 DealRewardState
+
+```csharp
+public class DealRewardState
+{
+    public bool GrantedThreeStockSlots;
+    public bool GrantedFiveStockSlots;
+    public bool GrantedEightStockSlots;
+    public bool GrantedFirstFoil;
+}
+```
+
+딜 보상은 보유 주식 슬롯 3/5/8 최초 도달과 첫 호일 완성으로 지급한다.
+각 보상은 한 런에서 한 번만 지급한다.
+
+---
+
+### 4.4 RunCalendarState
 
 ```csharp
 public class RunCalendarState
@@ -338,24 +457,25 @@ public class RunCalendarState
 
 ---
 
-### 4.3 RunRevenueState
+### 4.5 RunRevenueState
 
 ```csharp
 public class RunRevenueState
 {
     public int TotalRevenue;
     public int CurrentFiscalYearRevenue;
-    public int CurrentQuarterRevenue;
+    public int CurrentQuarterCashFlow;
 
     public List<QuarterRevenueData> QuarterRevenueHistory;
 }
 ```
 
 소모형 현금 카드로 얻은 조달 현금은 여기에 포함하지 않는다.
+미션 수익은 현금이 아니므로 별도 미션 상태에 기록한다.
 
 ---
 
-### 4.4 StockRuntimeData
+### 4.6 StockRuntimeData
 
 ```csharp
 public class StockRuntimeData
@@ -367,12 +487,15 @@ public class StockRuntimeData
     public int? MarketSlotIndex;
     public int? PortfolioSlotIndex;
     public int? AcquiredOrder;
+
+    public int PermanentValueDelta;
+    public int PermanentDividendDelta;
 }
 ```
 
 ---
 
-### 4.5 MarketCardRuntimeData
+### 4.7 MarketCardRuntimeData
 
 ```csharp
 public class MarketCardRuntimeData
@@ -385,7 +508,7 @@ public class MarketCardRuntimeData
 
 ---
 
-### 4.6 MarketSlot
+### 4.8 MarketSlot
 
 ```csharp
 public class MarketSlot
@@ -393,12 +516,13 @@ public class MarketSlot
     public int SlotIndex;
     public MarketCardRuntimeData Card;
     public bool IsReserved;
+    public string CurrentMarketOfferId;
 }
 ```
 
 ---
 
-### 4.7 MarketTapeState
+### 4.9 MarketTapeState
 
 ```csharp
 public class MarketTapeState
@@ -409,7 +533,7 @@ public class MarketTapeState
 
 ---
 
-### 4.8 MarketDeckState
+### 4.10 MarketDeckState
 
 ```csharp
 public class MarketDeckState
@@ -422,7 +546,51 @@ public class MarketDeckState
 
 ---
 
-### 4.9 PortfolioState
+### 4.10.1 MissionRunState
+
+```csharp
+public class MissionRunState
+{
+    public List<MissionCandidateSlotState> CandidateSlots;
+    public string ConfirmedMissionId;
+    public int TotalMissionRevenue;
+    public int CurrentQuarterMissionRevenue;
+}
+```
+
+```csharp
+public class MissionCandidateSlotState
+{
+    public int SlotIndex;
+    public string MissionId;
+    public bool HasUsedMulligan;
+    public MissionState State;
+}
+```
+
+---
+
+### 4.10.2 MarketOfferQuarterState
+
+```csharp
+public class MarketOfferQuarterState
+{
+    public List<MarketOfferSlotState> OfferSlots;
+}
+```
+
+```csharp
+public class MarketOfferSlotState
+{
+    public int SlotIndex;
+    public string OfferId;
+    public bool IsConsumed;
+}
+```
+
+---
+
+### 4.11 PortfolioState
 
 ```csharp
 public class PortfolioState
@@ -442,7 +610,7 @@ public class PortfolioSlot
 
 ---
 
-### 4.10 PurchasePaymentState
+### 4.12 PurchasePaymentState
 
 ```csharp
 public class PurchasePaymentState
@@ -452,17 +620,17 @@ public class PurchasePaymentState
     public List<PaymentSlotState> PaymentSlots;
 
     public int BaseCashCost;
-    public int UsedDealCount;
     public int CashCostBeforeInflation;
     public int FinalCashCost;
 
     public bool IsValid;
+    public string AppliedMarketOfferId;
 }
 ```
 
 ---
 
-### 4.11 PaymentSlotState
+### 4.13 PaymentSlotState
 
 ```csharp
 public class PaymentSlotState
@@ -470,14 +638,13 @@ public class PaymentSlotState
     public ResourceType RequiredResourceType;
     public bool IsFilled;
     public ResourceType? PlacedResourceType;
-    public bool IsFilledByDeal;
     public int SlotIndex;
 }
 ```
 
 ---
 
-### 4.12 RentArrearsState
+### 4.14 RentArrearsState
 
 ```csharp
 public class RentArrearsState
@@ -499,11 +666,11 @@ public class QuarterEndResult
     public int FiscalYearIndex;
     public int QuarterIndex;
 
-    public int QuarterRevenue;
+    public int QuarterCashFlow;
+    public int MissionRevenue;
     public int QuarterTargetRevenue;
     public float AchievementRate;
 
-    public int QuarterSettlementRevenue;
     public int RentArrearsIncrease;
     public int CurrentRentArrears;
 
@@ -523,6 +690,7 @@ public class FiscalYearSummaryData
 
     public int CurrentFinalValue;
     public int FiscalYearRevenue;
+    public int FiscalYearMissionRevenue;
 
     public List<QuarterRevenueData> QuarterRevenueList;
 
@@ -542,6 +710,7 @@ public class FinalRunSummaryData
     public FinalRatingData FinalRating;
 
     public int TotalRevenue;
+    public int TotalMissionRevenue;
     public int OwnedStockCount;
     public int RentArrears;
 
@@ -560,11 +729,11 @@ StockDrawWeight = 0.75
 ConsumableResourceDrawWeight = 0.25
 
 MaxPortfolioStockCount = 8
-MaxReservedStockCount = 3
+MaxReservedStockCount = 1
 
 MaxInvestmentPhilosophyTotal = 10
 MaxInvestmentPhilosophyEach = 5
-MaxDeal = 3
+MaxInvestmentPhilosophyMasteryEach = 5
 MaxRentArrears = 10
 ```
 
@@ -579,9 +748,12 @@ MaxRentArrears = 10
 - 주식별 기본 배당금
 - 주식별 호일 가치
 - 주식별 호일 배당금
+- 주식별 산업 태그
 - 주식별 덱 포함 장수 min~max
 - 소모형 자원 카드별 비용/효과/등급
-- 분기 목표 수익
+- 미션 정의/클리어 조건/정산 공식/난이도 표시
+- Mr.Market 제안 풀/역할군/회계년도별 가중치
+- 분기 평가 목표
 - 최종 평가 가치 기준값
 - 월세 밀림 단계 기준값
 - 최종 코멘트 문구

@@ -76,6 +76,7 @@ namespace AssetManager.Tests
             var statusText = GameObject.Find(ProjectShell.RunStatusTextName);
             Assert.That(statusText, Is.Not.Null);
             Assert.That(statusText.GetComponent<Text>().text, Is.EqualTo(RunStatusFormatter.Format(bootstrap.CurrentRun)));
+            Assert.That(statusText.GetComponent<Text>().text, Does.Contain("남은 8영업일"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -216,6 +217,147 @@ namespace AssetManager.Tests
             Assert.That(
                 FindUiObject(ProjectShell.ResourceHudCommodityTextName).GetComponent<Text>().text,
                 Is.EqualTo("0"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapDealCannotDragWhenEmpty()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapDealEmptyDragTests");
+            SceneManager.SetActiveScene(scene);
+
+            var bootstrap = CreateStartedShell("Deal Empty Drag Shell");
+            var resourceHud = FindUiObject(ProjectShell.UiRootName).GetComponent<ResourceHud>();
+            SetPrivateSprite(resourceHud, "dealChipSprite", CreateTestSprite());
+            RefreshRunUi(bootstrap);
+
+            yield return null;
+
+            var dealImage = FindUiObject(ProjectShell.ResourceHudDealImageName);
+            PointerDown(dealImage, new Vector2(900f, 260f));
+            DragPointer(dealImage, new Vector2(920f, 280f), new Vector2(20f, 20f));
+
+            yield return null;
+
+            Assert.That(FindUiObject(ProjectShell.ResourceHudDealGuidePanelName).activeSelf, Is.False);
+            Assert.That(FindUiObject(ProjectShell.ResourceHudDealDragImageName).activeSelf, Is.False);
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(0));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapDealHoverAndOutsideDropRestoresDeal()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapDealOutsideDropTests");
+            SceneManager.SetActiveScene(scene);
+
+            var bootstrap = CreateStartedShell("Deal Outside Drop Shell");
+            var resourceHud = FindUiObject(ProjectShell.UiRootName).GetComponent<ResourceHud>();
+            SetPrivateSprite(resourceHud, "dealChipSprite", CreateTestSprite());
+            SetCurrentRun(bootstrap, ResourceLedger.AddDeal(bootstrap.CurrentRun, 1).Run);
+            RefreshRunUi(bootstrap);
+
+            yield return null;
+
+            var dealImage = FindUiObject(ProjectShell.ResourceHudDealImageName);
+            EnterPointer(dealImage);
+
+            yield return null;
+
+            var guidePanel = FindUiObject(ProjectShell.ResourceHudDealGuidePanelName);
+            Assert.That(guidePanel.activeSelf, Is.True);
+            Assert.That(
+                FindUiObject(ProjectShell.ResourceHudDealGuideTextName).GetComponent<Text>().text,
+                Is.EqualTo(ResourceHud.DealGuideText));
+
+            var dragPosition = new Vector2(920f, 280f);
+            PointerDown(dealImage, new Vector2(900f, 260f));
+            DragPointer(dealImage, dragPosition, new Vector2(20f, 20f));
+
+            yield return null;
+
+            Assert.That(dealImage.GetComponent<Image>().enabled, Is.False);
+            Assert.That(FindUiObject(ProjectShell.ResourceHudDealDragImageName).activeSelf, Is.True);
+            Assert.That(guidePanel.GetComponent<RectTransform>().pivot, Is.EqualTo(new Vector2(1f, 0f)));
+            Assert.That(
+                Vector2.Distance(guidePanel.GetComponent<RectTransform>().position, dragPosition),
+                Is.LessThan(0.5f));
+
+            PointerUp(dealImage, new Vector2(100f, 100f));
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.InvestmentPhilosophyMastery.Reading, Is.EqualTo(0));
+            Assert.That(dealImage.GetComponent<Image>().enabled, Is.True);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapDealDropOnReadingConsumesDealAndAddsMastery()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapDealMasteryDropTests");
+            SceneManager.SetActiveScene(scene);
+
+            var bootstrap = CreateStartedShell("Deal Mastery Drop Shell");
+            var resourceHud = FindUiObject(ProjectShell.UiRootName).GetComponent<ResourceHud>();
+            SetPrivateSprite(resourceHud, "dealChipSprite", CreateTestSprite());
+            SetCurrentRun(bootstrap, ResourceLedger.AddDeal(bootstrap.CurrentRun, 1).Run);
+            RefreshRunUi(bootstrap);
+
+            yield return null;
+
+            var dealImage = FindUiObject(ProjectShell.ResourceHudDealImageName);
+            var readingLanePosition = GetScreenCenter(FindUiObject(ProjectShell.ResourceHudResearchTextName));
+            PointerDown(dealImage, new Vector2(900f, 260f));
+            DragPointer(dealImage, readingLanePosition, new Vector2(-40f, 20f));
+            PointerUp(dealImage, readingLanePosition);
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(0));
+            Assert.That(bootstrap.CurrentRun.InvestmentPhilosophyMastery.Reading, Is.EqualTo(1));
+            Assert.That(
+                FindUiObject(ProjectShell.ResourceHudResearchTextName).GetComponent<Text>().text,
+                Is.EqualTo("0 <size=14>+1</size>"));
+            Assert.That(FindUiObject(ProjectShell.ResourceHudDealImageName).GetComponent<Image>().enabled, Is.False);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapDealDropOnMaxMasteryShowsFailureWithoutConsumingDeal()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapDealMaxMasteryDropTests");
+            SceneManager.SetActiveScene(scene);
+
+            var bootstrap = CreateStartedShell("Deal Max Mastery Drop Shell");
+            var resourceHud = FindUiObject(ProjectShell.UiRootName).GetComponent<ResourceHud>();
+            SetPrivateSprite(resourceHud, "dealChipSprite", CreateTestSprite());
+            var run = ResourceLedger.AddDeal(bootstrap.CurrentRun, 1).Run;
+            run = ResourceLedger.AddInvestmentPhilosophyMastery(run, ResourceType.Patience, 5).Run;
+            SetCurrentRun(bootstrap, run);
+            RefreshRunUi(bootstrap);
+
+            yield return null;
+
+            var dealImage = FindUiObject(ProjectShell.ResourceHudDealImageName);
+            var patienceLanePosition = GetScreenCenter(FindUiObject(ProjectShell.ResourceHudCommodityTextName));
+            PointerDown(dealImage, new Vector2(900f, 260f));
+            DragPointer(dealImage, patienceLanePosition, new Vector2(-40f, 20f));
+            PointerUp(dealImage, patienceLanePosition);
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Deal, Is.EqualTo(1));
+            Assert.That(bootstrap.CurrentRun.InvestmentPhilosophyMastery.Patience, Is.EqualTo(5));
+            Assert.That(
+                FindUiObject(ProjectShell.ResourceMessageTextName).GetComponent<Text>().text,
+                Is.EqualTo(DealMasteryAction.MaxMasteryMessage));
+            Assert.That(FindUiObject(ProjectShell.ResourceHudDealImageName).GetComponent<Image>().enabled, Is.True);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -436,6 +578,7 @@ namespace AssetManager.Tests
 
                 Assert.That(bootstrap.CurrentRun.MarketTape.UpcomingMarketCards, Is.Empty);
                 Assert.That(firstCurrentMarketButtonText, Does.Contain(firstCurrentMarketCard.DisplayName));
+                Assert.That(firstCurrentMarketButtonText, Does.Contain(firstCurrentMarketCard.Tags[0].DisplayName));
                 Assert.That(firstCurrentMarketButton.activeSelf, Is.True);
                 Assert.That(eighthCurrentMarketButton.activeSelf, Is.True);
                 Assert.That(marketPanel.Find(ProjectShell.MarketTapeSellImminentCardButtonPrefix + "1"), Is.Null);
@@ -1148,7 +1291,7 @@ namespace AssetManager.Tests
             Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.False);
             Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(cashBeforePurchase - resourceCard.CashCost));
             Assert.That(bootstrap.CurrentRun.Resources.Patience, Is.EqualTo(patienceBeforePurchase + resourceCard.ProvidedResourceAmount));
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(7));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Is.Empty);
             Assert.That(CollectSlotRuntimeIds(bootstrap.CurrentRun.MarketTape), Does.Not.Contain(selectedCard.RuntimeId));
 
@@ -1200,7 +1343,7 @@ namespace AssetManager.Tests
             Assert.That(FindUiObject(ProjectShell.PurchaseConfirmationPanelName).activeSelf, Is.False);
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards[0].Card.Id, Is.EqualTo(selectedCard.Card.Id));
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(7));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -1541,7 +1684,7 @@ namespace AssetManager.Tests
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(7));
             Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(expectedCashAfterPurchase));
             Assert.That(
                 bootstrap.CurrentRun.Resources.Research,
@@ -1568,6 +1711,11 @@ namespace AssetManager.Tests
             var firstOwnedStockCardButton = FindUiObject("Owned Stock Card 1 Card Button");
             var firstOwnedStockCardText = FindUiObject("Owned Stock Card 1 Text").GetComponent<Text>().text;
             var firstSellButton = FindUiObject("Owned Stock Card 1 Sell Button").GetComponent<Button>();
+            var saleDropZone = FindUiObject(ProjectShell.PortfolioStockSaleDropZoneName);
+            var saleDropText = FindUiObject(ProjectShell.PortfolioStockSaleDropZoneTextName).GetComponent<Text>();
+            var saleDropImage = saleDropZone.GetComponent<Image>();
+            var ownedDragPanel = FindUiObject(ProjectShell.OwnedStockDragDetailPanelName);
+            var ownedDragText = FindUiObject(ProjectShell.OwnedStockDragDetailTextName).GetComponent<Text>();
             Assert.That(firstOwnedStockCard.activeSelf, Is.True);
             Assert.That(firstOwnedStockCardText, Does.Contain(selectedCard.Card.DisplayName));
             Assert.That(firstOwnedStockCardText, Does.Contain("등급 " + selectedCard.Card.Rarity));
@@ -1578,6 +1726,11 @@ namespace AssetManager.Tests
             Assert.That(firstOwnedStockCardText, Does.Not.Contain("예약"));
             Assert.That(firstOwnedStockCardText, Does.Not.Contain("매도"));
             Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
+            Assert.That(saleDropZone.activeSelf, Is.True);
+            Assert.That(saleDropText.text, Is.EqualTo("$"));
+            Assert.That(saleDropImage.color.r, Is.GreaterThan(saleDropImage.color.g));
+            Assert.That(saleDropImage.color.r, Is.GreaterThan(saleDropImage.color.b));
+            Assert.That(ownedDragPanel.activeSelf, Is.False);
 
             var cashBeforeSale = bootstrap.CurrentRun.Resources.Cash;
             var quarterRevenueBeforeSale = bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash;
@@ -1592,59 +1745,51 @@ namespace AssetManager.Tests
 
             EnterPointer(firstOwnedStockCardButton);
             yield return null;
-            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
-            Assert.That(firstSellButton.GetComponentInChildren<Text>().text, Is.EqualTo("매도 +1$"));
-
-            ExitPointer(firstOwnedStockCardButton);
-            yield return null;
             Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
 
-            EnterPointer(firstOwnedStockCardButton);
-            yield return null;
-            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
-
-            EnterPointer(firstSellButton.gameObject);
-            ExitPointer(firstOwnedStockCardButton);
-            yield return null;
-            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
-
-            EnterPointer(firstOwnedStockCardButton);
-            ExitPointer(firstSellButton.gameObject);
-            yield return null;
-            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
-
-            ExitPointer(firstOwnedStockCardButton);
-            yield return null;
-            Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
-
-            EnterPointer(firstOwnedStockCardButton);
-            yield return null;
-            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
-
-            var otherMarketSlotIndex = FindFirstAvailableMarketSlotIndex(bootstrap.CurrentRun.MarketTape);
-            FindUiObject(ProjectShell.MarketTapeCurrentMarketCardButtonPrefix + (otherMarketSlotIndex + 1))
-                .GetComponent<Button>()
-                .onClick
-                .Invoke();
-            yield return null;
-            Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
-
-            FindUiObject(ProjectShell.PurchaseConfirmationBackButtonName).GetComponent<Button>().onClick.Invoke();
+            var outsideDropPosition = new Vector2(1800f, 900f);
+            PointerDown(firstOwnedStockCardButton, new Vector2(500f, 500f));
+            DragPointer(firstOwnedStockCardButton, outsideDropPosition, new Vector2(1300f, 400f));
             yield return null;
 
-            EnterPointer(firstOwnedStockCardButton);
-            yield return null;
-            Assert.That(firstSellButton.gameObject.activeSelf, Is.True);
+            Assert.That(firstOwnedStockCard.GetComponent<CanvasGroup>().alpha, Is.EqualTo(0f));
+            Assert.That(ownedDragPanel.activeSelf, Is.True);
+            Assert.That(ownedDragText.text, Does.Contain(selectedCard.Card.DisplayName));
+            Assert.That(ownedDragText.text, Does.Not.Contain("$"));
+            Assert.That(saleDropText.text, Is.EqualTo("+1"));
+            Assert.That(ownedDragPanel.GetComponent<RectTransform>().pivot, Is.EqualTo(new Vector2(0f, 0f)));
+            Assert.That(
+                Vector2.Distance(ownedDragPanel.GetComponent<RectTransform>().position, outsideDropPosition),
+                Is.LessThan(0.5f));
 
-            firstSellButton.onClick.Invoke();
+            PointerUp(firstOwnedStockCardButton, outsideDropPosition);
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(cashBeforeSale));
+            Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(quarterRevenueBeforeSale));
+            Assert.That(bootstrap.CurrentRun.OwnedAssets.Count, Is.EqualTo(1));
+            Assert.That(firstOwnedStockCard.GetComponent<CanvasGroup>().alpha, Is.EqualTo(1f));
+            Assert.That(ownedDragPanel.activeSelf, Is.False);
+            Assert.That(saleDropText.text, Is.EqualTo("$"));
+
+            var saleDropPosition = GetScreenCenter(saleDropZone);
+            PointerDown(firstOwnedStockCardButton, new Vector2(500f, 500f));
+            DragPointer(firstOwnedStockCardButton, saleDropPosition, saleDropPosition - new Vector2(500f, 500f));
+            yield return null;
+            Assert.That(firstOwnedStockCard.GetComponent<CanvasGroup>().alpha, Is.EqualTo(0f));
+            Assert.That(saleDropText.text, Is.EqualTo("+1"));
+
+            PointerUp(firstOwnedStockCardButton, saleDropPosition);
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.Resources.Cash, Is.EqualTo(cashBeforeSale + 1));
             Assert.That(bootstrap.CurrentRun.Performance.CurrentQuarterEarnedCash, Is.EqualTo(quarterRevenueBeforeSale + 1));
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(7));
             Assert.That(bootstrap.CurrentRun.OwnedAssets.Count, Is.EqualTo(0));
             Assert.That(FindUiObject("Owned Stock Card 1").activeSelf, Is.False);
             Assert.That(firstSellButton.gameObject.activeSelf, Is.False);
+            Assert.That(ownedDragPanel.activeSelf, Is.False);
+            Assert.That(saleDropText.text, Is.EqualTo("$"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -1884,13 +2029,17 @@ namespace AssetManager.Tests
                 Is.Not.EqualTo(FindUiObject("Owned Stock Card 2 Card Button").GetComponent<Image>().color));
             Assert.That(FindUiObject(ProjectShell.PortfolioOwnedCardsTextName).GetComponent<Text>().text, Is.Empty);
 
-            EnterPointer(FindUiObject("Owned Stock Card 2 Card Button"));
+            var secondCardButton = FindUiObject("Owned Stock Card 2 Card Button");
+            EnterPointer(secondCardButton);
             yield return null;
 
             var secondSellButton = FindUiObject("Owned Stock Card 2 Sell Button").GetComponent<Button>();
-            Assert.That(secondSellButton.gameObject.activeSelf, Is.True);
+            Assert.That(secondSellButton.gameObject.activeSelf, Is.False);
 
-            secondSellButton.onClick.Invoke();
+            var saleDropPosition = GetScreenCenter(FindUiObject(ProjectShell.PortfolioStockSaleDropZoneName));
+            PointerDown(secondCardButton, new Vector2(500f, 500f));
+            DragPointer(secondCardButton, saleDropPosition, saleDropPosition - new Vector2(500f, 500f));
+            PointerUp(secondCardButton, saleDropPosition);
             yield return null;
 
             Assert.That(bootstrap.CurrentRun.OwnedAssets.OwnedCards, Has.Count.EqualTo(1));
@@ -2319,7 +2468,7 @@ namespace AssetManager.Tests
 
             yield return null;
 
-            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(bootstrap.CurrentRun.Calendar.RemainingBusinessDays, Is.EqualTo(7));
 
             var statusText = GameObject.Find(ProjectShell.RunStatusTextName);
             Assert.That(statusText.GetComponent<Text>().text, Is.EqualTo(RunStatusFormatter.Format(bootstrap.CurrentRun)));
@@ -2382,7 +2531,7 @@ namespace AssetManager.Tests
             yield return null;
 
             var button = GameObject.Find(ProjectShell.NextBusinessDayButtonName).GetComponent<Button>();
-            for (var i = 0; i < 4; i++)
+            for (var i = 0; i < 8; i++)
             {
                 button.onClick.Invoke();
             }
@@ -2462,7 +2611,7 @@ namespace AssetManager.Tests
 
             for (var quarter = 1; quarter <= 3; quarter++)
             {
-                for (var day = 0; day < 4; day++)
+                for (var day = 0; day < 8; day++)
                 {
                     bootstrap.AdvanceToNextBusinessDay();
                 }
@@ -2572,6 +2721,18 @@ namespace AssetManager.Tests
             var rectTransform = target.GetComponent<RectTransform>();
             Assert.That(rectTransform, Is.Not.Null);
             return RectTransformUtility.WorldToScreenPoint(null, rectTransform.position);
+        }
+
+        private static MainGameShellBootstrap CreateStartedShell(string shellName)
+        {
+            var shell = new GameObject(shellName);
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+            return bootstrap;
         }
 
         private static void ExecutePointerEvent<T>(GameObject target, ExecuteEvents.EventFunction<T> eventFunction)

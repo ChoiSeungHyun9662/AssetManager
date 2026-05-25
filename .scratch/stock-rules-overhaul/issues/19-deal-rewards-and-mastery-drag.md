@@ -1,6 +1,6 @@
 # 19. 딜 보상과 딜-마스터리 드래그
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -16,27 +16,36 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 예약은 더 이상 딜을 지급하지 않는다.
-- [ ] 딜은 자산 매수 결제에서 직접 소모되지 않는다.
-- [ ] 포트폴리오 점유 주식 슬롯 수가 런에서 처음 3에 도달하면 딜 1개를 지급한다.
-- [ ] 포트폴리오 점유 주식 슬롯 수가 런에서 처음 5에 도달하면 딜 1개를 지급한다.
-- [ ] 포트폴리오 점유 주식 슬롯 수가 런에서 처음 8에 도달하면 딜 1개를 지급한다.
-- [ ] 같은 주식 ID라도 두 슬롯을 점유하면 보상 판정에서 두 장으로 센다.
-- [ ] 이미 지급한 3/5/8 보상은 매도, 호일 합성, 재구매로 다시 지급되지 않는다.
-- [ ] 런 최초 호일 완성 시 딜 1개를 지급한다.
-- [ ] 최초 호일 보상은 런에서 한 번만 지급된다.
-- [ ] 같은 매수에서 슬롯 수 보상과 최초 호일 보상이 동시에 발생하면 둘 다 지급된다.
-- [ ] 딜 0개 상태에서는 딜 드래그를 시작할 수 없다.
-- [ ] 딜 칩을 호버하거나 드래그하면 `드래그하여 투자 철학에 놓으면, 이 칩을 소모하여 해당 투자 철학 마스터리를 1 획득합니다.` 안내 패널을 표시한다.
-- [ ] 딜 드래그 중 원래 딜 칩 하나는 잠시 숨겨지고, 딜 이미지와 안내 패널이 포인터를 따라다닌다.
-- [ ] 딜 드래그 중 안내 패널의 우측 하단 모서리는 포인터 위치에 맞춰진다.
-- [ ] 딜을 독서, 명상, 인내 HUD lane에 놓으면 딜 1개를 소모하고 해당 마스터리를 1 올린다.
-- [ ] 딜을 철학 lane 밖에 놓으면 취소되고 딜은 소모되지 않으며 숨겼던 딜 칩이 다시 표시된다.
-- [ ] 딜을 마스터리 5인 철학 lane에 놓으면 실패 메시지를 표시하고 딜은 소모되지 않는다.
-- [ ] 관련 EditMode 테스트가 딜 보상 조건, 중복 지급 방지, 동시 지급, 예약 딜 제거, 매수 결제 딜 미소모를 검증한다.
-- [ ] 관련 PlayMode 테스트가 딜 드래그 시작/취소/성공/상한 실패와 HUD 갱신을 검증한다.
+- [x] 예약은 더 이상 딜을 지급하지 않는다.
+- [x] 딜은 자산 매수 결제에서 직접 소모되지 않는다.
+- [x] 포트폴리오 점유 주식 슬롯 수가 런에서 처음 3에 도달하면 딜 1개를 지급한다.
+- [x] 포트폴리오 점유 주식 슬롯 수가 런에서 처음 5에 도달하면 딜 1개를 지급한다.
+- [x] 포트폴리오 점유 주식 슬롯 수가 런에서 처음 8에 도달하면 딜 1개를 지급한다.
+- [x] 같은 주식 ID라도 두 슬롯을 점유하면 보상 판정에서 두 장으로 센다.
+- [x] 이미 지급한 3/5/8 보상은 매도, 호일 합성, 재구매로 다시 지급되지 않는다.
+- [x] 런 최초 호일 완성 시 딜 1개를 지급한다.
+- [x] 최초 호일 보상은 런에서 한 번만 지급된다.
+- [x] 같은 매수에서 슬롯 수 보상과 최초 호일 보상이 동시에 발생하면 둘 다 지급된다.
+- [x] 딜 0개 상태에서는 딜 드래그를 시작할 수 없다.
+- [x] 딜 칩을 호버하거나 드래그하면 `드래그하여 투자 철학에 놓으면, 이 칩을 소모하여 해당 투자 철학 마스터리를 1 획득합니다.` 안내 패널을 표시한다.
+- [x] 딜 드래그 중 원래 딜 칩 하나는 잠시 숨겨지고, 딜 이미지와 안내 패널이 포인터를 따라다닌다.
+- [x] 딜 드래그 중 안내 패널의 우측 하단 모서리는 포인터 위치에 맞춰진다.
+- [x] 딜을 독서, 명상, 인내 HUD lane에 놓으면 딜 1개를 소모하고 해당 마스터리를 1 올린다.
+- [x] 딜을 철학 lane 밖에 놓으면 취소되고 딜은 소모되지 않으며 숨겼던 딜 칩이 다시 표시된다.
+- [x] 딜을 마스터리 5인 철학 lane에 놓으면 실패 메시지를 표시하고 딜은 소모되지 않는다.
+- [x] 관련 EditMode 테스트가 딜 보상 조건, 중복 지급 방지, 동시 지급, 예약 딜 제거, 매수 결제 딜 미소모를 검증한다.
+- [x] 관련 PlayMode 테스트가 딜 드래그 시작/취소/성공/상한 실패와 HUD 갱신을 검증한다.
 
 ## Blocked by
 
 - `.scratch/stock-rules-overhaul/issues/14-investment-philosophy-mastery-and-discounted-costs.md`
 - `.scratch/stock-rules-overhaul/issues/15-automatic-purchase-payment-and-failure-feedback.md`
+
+## Completion notes
+
+- 2026-05-25: Implemented with TDD. Added `DealRewardAction` and `DealRewardState` for run-level Deal rewards at occupied stock-slot thresholds 3/5/8 and first foil creation, with reward records preserved across run transitions.
+- Purchase integration: confirmed stock purchases now evaluate Deal rewards after ownership/foil/market cleanup. Reservation still does not grant Deal, and Deal remains excluded from purchase payment.
+- Mastery drag: `ResourceHud` shows the Deal guide on hover/drag, hides the source Deal chip while dragging, follows the pointer with a Deal image plus guide panel, and drops onto Reading/Meditation/Patience lanes through `DealMasteryAction`.
+- Failure behavior: Deal cannot start dragging at 0, outside-lane drops cancel without consuming Deal, and max mastery 5 shows a failure message without consuming Deal.
+- Verification: RED compile failures were recorded for missing pure-rule and UI surfaces. EditMode passed after pure-rule implementation, PlayMode passed after HUD drag implementation, and the final EditMode rerun passed after adding the purchase-integration assertion. Latest results: `.scratch/test-results/editmode-20260525-093539-results.xml` and `.scratch/test-results/playmode-20260525-034759-results.xml`.
+- Unity manual check: not run. Automated PlayMode covered Deal drag start/cancel/success/max-failure and HUD updates.

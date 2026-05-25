@@ -7,7 +7,8 @@
 분기 마감의 역할은 다음과 같다.
 
 ```text
-- 이번 분기 수익 확정
+- 이번 분기 현금 흐름 확정
+- 확정 미션의 미션 수익 계산
 - 분기 목표 달성률 계산
 - 목표 미달 시 월세 밀림 증가
 - 월세 밀림 한도 도달 여부 확인
@@ -41,20 +42,26 @@
 
 ---
 
-## 3. 분기 수익
+## 3. 분기 목표 판정값
 
-분기 수익은 해당 분기 동안 수익으로 분류된 현금의 합계다.
+v3 기준 분기 목표 판정값은 해당 분기의 현금 흐름과 미션 수익의 합계다.
 
-분기 수익에 포함되는 항목:
+현금 흐름에 포함되는 항목:
 
 ```text
 - 보유 주식의 영업일 시작 배당금
-- 주식 매도 수익
-- 분기 마감 정산 수익
-- 그 밖에 수익으로 명시된 현금
+- 주식 매도 현금
 ```
 
-분기 수익에 포함되지 않는 항목:
+미션 수익:
+
+```text
+- 확정 미션이 분기말 현재 포트폴리오 기준으로 만든 평가 수익
+- 현금에는 더하지 않음
+- 월세 밀림 판정에는 항상 포함
+```
+
+분기 목표 판정값에 포함되지 않는 항목:
 
 ```text
 - 소모형 자원 카드로 획득한 현금
@@ -72,9 +79,9 @@
 
 ```text
 1. 분기 마감 진입
-2. 보유 주식별 정산 연출 표시
-3. 분기 마감 정산 수익 반영
-4. 최종 분기 수익 확정
+2. 보유 주식 및 확정 미션 정산 연출 표시
+3. 확정 미션이 있으면 미션 수익 계산
+4. 최종 현금 흐름과 미션 수익 확정
 5. 분기 목표 달성률 계산
 6. 월세 밀림 증가량 계산
 7. 월세 밀림 증가 적용
@@ -84,31 +91,30 @@
 11. 다음 분기 / 휴가 / 최종 정산으로 이동
 ```
 
-분기 마감 정산 수익은 달성률 계산 전에 먼저 반영한다.
+미션 수익은 달성률 계산 전에 먼저 확정한다.
 
 ```text
-분기 마감 정산 수익 반영
--> 분기 수익 확정
+미션 수익 계산
+-> 현금 흐름 + 미션 수익 확정
 -> 분기 목표 달성률 계산
 ```
 
 ---
 
-## 5. 정산 수익
+## 5. 미션 수익
 
-분기 마감에서는 보유 주식의 정산 수익을 시각적으로 보여줄 수 있다.
+분기 마감에서는 확정 미션의 미션 수익을 별도 행으로 보여준다.
 
-정산 수익은 수익으로 분류된다.
+미션 수익은 현금이 아니다.
+현재 현금, 현재 분기 현금 흐름, 회계연도 수익, 총 수익에 더하지 않는다.
 
 ```text
-정산 수익
--> 현재 현금 증가
--> 현재 분기 수익 증가
--> 현재 회계연도 수익 증가
--> 총 수익 증가
+미션 수익 +N
+→ 분기 목표 판정값에 포함
+→ 현금 잔고에는 미반영
 ```
 
-정산 수익의 구체 계산식과 주식별 기여 규칙은 별도 데이터 테이블에서 조정할 수 있다.
+미션 수익의 구체 계산식은 미션 데이터 테이블에서 조정한다.
 
 ---
 
@@ -121,13 +127,13 @@
 = 해당 분기에서 달성해야 하는 수익 기준
 ```
 
-분기 성공 여부는 현재 보유 현금이 아니라 분기 수익으로 판정한다.
+분기 성공 여부는 현재 보유 현금이 아니라 현금 흐름과 미션 수익의 합으로 판정한다.
 
 ```text
 현재 현금 >= 분기 목표
 -> 성공 판정 아님
 
-분기 수익 >= 분기 목표
+현금 흐름 + 미션 수익 >= 분기 목표
 -> 분기 성공
 ```
 
@@ -138,14 +144,15 @@
 목표 달성률은 다음 방식으로 계산한다.
 
 ```text
-목표 달성률 = 분기 수익 / 분기 목표
+목표 달성률 = (현금 흐름 + 미션 수익) / 분기 목표
 ```
 
 예시:
 
 ```text
 분기 목표: 20
-분기 수익: 14
+현금 흐름: 11
+미션 수익: 3
 
 목표 달성률 = 14 / 20 = 70%
 ```
@@ -157,10 +164,10 @@
 
 ## 8. 성공 판정
 
-분기 수익이 분기 목표 이상이면 성공이다.
+현금 흐름과 미션 수익의 합이 분기 목표 이상이면 성공이다.
 
 ```text
-CurrentQuarterRevenue >= CurrentQuarterTargetRevenue
+CurrentQuarterCashFlow + CurrentQuarterMissionRevenue >= CurrentQuarterTargetRevenue
 -> 분기 성공
 ```
 
@@ -178,10 +185,10 @@ CurrentQuarterRevenue >= CurrentQuarterTargetRevenue
 
 ## 9. 실패 판정과 월세 밀림 증가
 
-분기 수익이 분기 목표보다 낮으면 실패다.
+현금 흐름과 미션 수익의 합이 분기 목표보다 낮으면 실패다.
 
 ```text
-CurrentQuarterRevenue < CurrentQuarterTargetRevenue
+CurrentQuarterCashFlow + CurrentQuarterMissionRevenue < CurrentQuarterTargetRevenue
 -> 분기 실패
 ```
 
@@ -242,7 +249,8 @@ CurrentQuarterRevenue < CurrentQuarterTargetRevenue
 표시 정보:
 
 ```text
-- 분기 수익
+- 현금 흐름
+- 미션 수익
 - 분기 목표
 - 목표 달성률
 - 월세 밀림 증가량
@@ -254,7 +262,8 @@ CurrentQuarterRevenue < CurrentQuarterTargetRevenue
 ```text
 분기 마감
 
-분기 수익: 24
+현금 흐름: 21
+미션 수익: +3
 분기 목표: 20
 달성률: 120%
 
@@ -267,7 +276,8 @@ CurrentQuarterRevenue < CurrentQuarterTargetRevenue
 ```text
 분기 마감
 
-분기 수익: 14
+현금 흐름: 11
+미션 수익: +3
 분기 목표: 20
 달성률: 70%
 
@@ -308,11 +318,11 @@ public class QuarterEndResult
     public int FiscalYearIndex;
     public int QuarterIndex;
 
-    public int QuarterRevenue;
+    public int QuarterCashFlow;
+    public int MissionRevenue;
     public int QuarterTarget;
     public float AchievementRate;
 
-    public int QuarterSettlementRevenue;
     public int RentArrearsIncrease;
     public int CurrentRentArrears;
 
@@ -321,25 +331,27 @@ public class QuarterEndResult
 }
 ```
 
-수익 상태 예시:
+현금 흐름 상태 예시:
 
 ```csharp
 public class RunRevenueState
 {
     public int TotalRevenue;
     public int CurrentFiscalYearRevenue;
-    public int CurrentQuarterRevenue;
+    public int CurrentQuarterCashFlow;
+    public int CurrentQuarterMissionRevenue;
 
     public List<QuarterRevenueData> QuarterRevenueHistory;
 }
 ```
 
-분기 시작 시 현재 분기 수익을 초기화한다.
+분기 시작 시 현재 분기 현금 흐름과 미션 수익을 초기화한다.
 
 ```csharp
 void StartQuarter()
 {
-    CurrentQuarterRevenue = 0;
+    CurrentQuarterCashFlow = 0;
+    CurrentQuarterMissionRevenue = 0;
 }
 ```
 
@@ -361,15 +373,13 @@ void ResolveQuarterEnd()
 ```csharp
 void ResolveQuarterEndAfterAnimations()
 {
-    int settlementRevenue = CalculateQuarterSettlementRevenue();
+    int missionRevenue = CalculateMissionRevenue();
 
-    AddRevenueCash(settlementRevenue);
-
-    QuarterEndResult result = BuildQuarterEndResult(settlementRevenue);
+    QuarterEndResult result = BuildQuarterEndResult(missionRevenue);
 
     int rentArrearsIncrease =
         GetRentArrearsIncreaseFromQuarterResult(
-            result.QuarterRevenue,
+            result.QuarterCashFlow + result.MissionRevenue,
             result.QuarterTarget
         );
 
@@ -400,9 +410,10 @@ void ResolveQuarterEndAfterAnimations()
 ```text
 - 분기 마감은 마지막 영업일 종료 뒤 발생한다.
 - 마지막 영업일 종료 뒤에는 배당금을 지급하지 않는다.
-- 정산 수익은 분기 수익에 포함한다.
-- 소모형 자원 카드로 얻은 현금은 분기 수익에 포함하지 않는다.
-- 목표 달성률 계산 전에 정산 수익을 먼저 반영한다.
+- 미션 수익은 분기 목표 판정에 포함한다.
+- 미션 수익은 현금에 더하지 않는다.
+- 소모형 자원 카드로 얻은 현금은 현금 흐름에 포함하지 않는다.
+- 목표 달성률 계산 전에 미션 수익을 먼저 확정한다.
 - 분기 성공 시 별도 보상은 없다.
 - 분기 실패 시 달성률에 따라 월세 밀림을 증가시킨다.
 - 월세 밀림이 10 이상이면 즉시 파산한다.

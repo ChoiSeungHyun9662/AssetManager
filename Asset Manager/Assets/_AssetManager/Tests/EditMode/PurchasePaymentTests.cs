@@ -333,6 +333,39 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void MarketCardPurchaseGrantsDealWhenPortfolioFirstReachesThreeOccupiedStockSlots()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            var purchasedStock = new AssetCardData(
+                "third-slot-reward-stock",
+                "Third Slot Reward Stock",
+                "Third occupied slot reward test stock.",
+                AssetRarity.Common,
+                0,
+                new ProfessionalResourceCost[0],
+                1,
+                0,
+                new TagData[0]);
+            var runtimeCard = new AssetCardRuntimeData(
+                purchasedStock,
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape,
+                null,
+                false,
+                "third-slot-reward-stock#runtime");
+            run = WithOwnedAssets(run, CreateOwnedCards(2));
+            run = WithCurrentMarketCard(run, runtimeCard, 0);
+            run = MarketAreaFlow.OpenMarketCardDetail(run, runtimeCard);
+
+            var result = PurchasePayment.ConfirmPurchase(run);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.Run.OwnedAssets.Count, Is.EqualTo(3));
+            Assert.That(result.Run.Resources.Deal, Is.EqualTo(1));
+            Assert.That(result.Run.DealRewards.GrantedThreeStockSlots, Is.True);
+        }
+
+        [Test]
         public void MarketCardPurchaseAppliesOwnedAssetIncomeAtNextBusinessDayStart()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());

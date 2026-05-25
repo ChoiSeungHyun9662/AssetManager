@@ -47,6 +47,25 @@ namespace AssetManager.Tests
             Assert.That(secondSale.Run.OwnedAssets.Count, Is.EqualTo(0));
         }
 
+        [Test]
+        public void SellingOwnedStockUsesOriginalPortfolioSlotIndex()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            var firstOwned = WithState(run.AssetCards[0], AssetCardRuntimeState.Owned, false);
+            var secondOwned = WithState(run.AssetCards[1], AssetCardRuntimeState.Owned, false);
+            run = WithOwnedAssets(run, new OwnedAssetState(new[] { firstOwned, null, secondOwned }));
+            run = WithAssetCards(run, ReplaceRuntimeCard(run, firstOwned, secondOwned));
+
+            var result = StockSaleAction.ConfirmSale(run, 2);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.Run.OwnedAssets.StockSlots[0], Is.EqualTo(firstOwned));
+            Assert.That(result.Run.OwnedAssets.StockSlots[1], Is.Null);
+            Assert.That(result.Run.OwnedAssets.StockSlots[2], Is.Null);
+            Assert.That(FindRuntimeCard(result.Run, secondOwned.RuntimeId).State, Is.EqualTo(AssetCardRuntimeState.Removed));
+            Assert.That(FindRuntimeCard(result.Run, firstOwned.RuntimeId).State, Is.EqualTo(AssetCardRuntimeState.Owned));
+        }
+
         private static AssetCardRuntimeData WithState(
             AssetCardRuntimeData card,
             AssetCardRuntimeState state,
