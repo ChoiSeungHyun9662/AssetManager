@@ -35,7 +35,8 @@ namespace AssetManager
                 new ReservationState(resourceConfig.MaxDeal, Array.Empty<AssetCardRuntimeData>()),
                 new OwnedAssetState(Array.Empty<AssetCardRuntimeData>()),
                 new BusinessDayState(BusinessDayPhase.AwaitingAction, MarketAreaState.Market),
-                new RedemptionPressureState(redemptionPressureConfig.StartingPressure, redemptionPressureConfig.MaxPressure));
+                new RedemptionPressureState(redemptionPressureConfig.StartingPressure, redemptionPressureConfig.MaxPressure),
+                missions: MissionCandidateAction.CreateInitialState(staticData.Missions));
 
             return MarketTape.Refresh(run);
         }

@@ -29,12 +29,13 @@ MonoBehaviour:
     minDeckCopies: 2
     maxDeckCopies: 4
     tags:
-    - id: software
-      displayName: Software
+    - id: financials
+      displayName: Financials
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-chip-maker
     displayName: Chip Maker
     description: Stock card for the starter portfolio.
@@ -51,12 +52,13 @@ MonoBehaviour:
     minDeckCopies: 2
     maxDeckCopies: 4
     tags:
-    - id: software
-      displayName: Software
+    - id: technology
+      displayName: Technology
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-coffee-chain
     displayName: Coffee Chain
     description: Stock card for the starter portfolio.
@@ -79,6 +81,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-cloud-platform
     displayName: Cloud Platform
     description: Stock card for the starter portfolio.
@@ -97,12 +100,13 @@ MonoBehaviour:
     minDeckCopies: 1
     maxDeckCopies: 3
     tags:
-    - id: software
-      displayName: Software
+    - id: technology
+      displayName: Technology
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-battery-maker
     displayName: Battery Maker
     description: Stock card for the starter portfolio.
@@ -125,6 +129,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-payment-network
     displayName: Payment Network
     description: Stock card for the starter portfolio.
@@ -141,12 +146,13 @@ MonoBehaviour:
     minDeckCopies: 2
     maxDeckCopies: 4
     tags:
-    - id: consumer
-      displayName: Consumer
+    - id: financials
+      displayName: Financials
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-cybersecurity
     displayName: Cybersecurity
     description: Stock card for the starter portfolio.
@@ -163,12 +169,13 @@ MonoBehaviour:
     minDeckCopies: 2
     maxDeckCopies: 3
     tags:
-    - id: software
-      displayName: Software
+    - id: technology
+      displayName: Technology
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-discount-store
     displayName: Discount Store
     description: Stock card for the starter portfolio.
@@ -191,6 +198,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-solar-grid
     displayName: Solar Grid
     description: Stock card for the starter portfolio.
@@ -213,6 +221,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-semiconductor-etf
     displayName: Semiconductor ETF
     description: Stock card for the starter portfolio.
@@ -231,12 +240,13 @@ MonoBehaviour:
     minDeckCopies: 1
     maxDeckCopies: 3
     tags:
-    - id: software
-      displayName: Software
+    - id: technology
+      displayName: Technology
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-rail-operator
     displayName: Rail Operator
     description: Stock card for the starter portfolio.
@@ -253,12 +263,13 @@ MonoBehaviour:
     minDeckCopies: 2
     maxDeckCopies: 4
     tags:
-    - id: energy
-      displayName: Energy
+    - id: industrials
+      displayName: Industrials
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-healthcare-platform
     displayName: Healthcare Platform
     description: Stock card for the starter portfolio.
@@ -281,6 +292,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-game-studio
     displayName: Game Studio
     description: Stock card for the starter portfolio.
@@ -297,12 +309,13 @@ MonoBehaviour:
     minDeckCopies: 2
     maxDeckCopies: 4
     tags:
-    - id: software
-      displayName: Software
+    - id: technology
+      displayName: Technology
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-cold-chain
     displayName: Cold Chain
     description: Stock card for the starter portfolio.
@@ -319,12 +332,13 @@ MonoBehaviour:
     minDeckCopies: 1
     maxDeckCopies: 3
     tags:
-    - id: consumer
-      displayName: Consumer
+    - id: industrials
+      displayName: Industrials
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-water-utility
     displayName: Water Utility
     description: Stock card for the starter portfolio.
@@ -347,6 +361,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-automation-robotics
     displayName: Automation Robotics
     description: Stock card for the starter portfolio.
@@ -363,12 +378,13 @@ MonoBehaviour:
     minDeckCopies: 2
     maxDeckCopies: 4
     tags:
-    - id: software
-      displayName: Software
+    - id: industrials
+      displayName: Industrials
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-wind-turbine
     displayName: Wind Turbine
     description: Stock card for the starter portfolio.
@@ -393,6 +409,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-grocery-app
     displayName: Grocery App
     description: Stock card for the starter portfolio.
@@ -415,6 +432,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-memory-maker
     displayName: Memory Maker
     description: Stock card for the starter portfolio.
@@ -431,12 +449,13 @@ MonoBehaviour:
     minDeckCopies: 2
     maxDeckCopies: 4
     tags:
-    - id: software
-      displayName: Software
+    - id: technology
+      displayName: Technology
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-luxury-brand
     displayName: Luxury Brand
     description: Stock card for the starter portfolio.
@@ -461,6 +480,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-data-broker
     displayName: Data Broker
     description: Stock card for the starter portfolio.
@@ -477,12 +497,13 @@ MonoBehaviour:
     minDeckCopies: 2
     maxDeckCopies: 4
     tags:
-    - id: software
-      displayName: Software
+    - id: financials
+      displayName: Financials
       tagType: 0
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-grid-storage
     displayName: Grid Storage
     description: Stock card for the starter portfolio.
@@ -505,6 +526,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-streaming-service
     displayName: Streaming Service
     description: Stock card for the starter portfolio.
@@ -527,6 +549,7 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: starter-ai-tools
     displayName: AI Tools
     description: Stock card for the starter portfolio.
@@ -543,14 +566,15 @@ MonoBehaviour:
     minDeckCopies: 1
     maxDeckCopies: 3
     tags:
-    - id: software
-      displayName: Software
+    - id: technology
+      displayName: Technology
       tagType: 0
     grantsExtraBuyAction: 1
     providedResourceType: 0
     providedResourceAmount: 0
+    canBePurchasedWithExtraBuy: 0
   - id: resource-cash-small
-    displayName:
+    displayName: 
     description: Consumable market resource card.
     rarity: 0
     cardDomain: 1
@@ -566,8 +590,9 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 2
+    canBePurchasedWithExtraBuy: 0
   - id: resource-cash-large
-    displayName:
+    displayName: 
     description: Consumable market resource card.
     rarity: 1
     cardDomain: 1
@@ -583,8 +608,9 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 0
     providedResourceAmount: 3
+    canBePurchasedWithExtraBuy: 0
   - id: resource-reading
-    displayName:
+    displayName: 
     description: Consumable market resource card.
     rarity: 0
     cardDomain: 1
@@ -600,8 +626,9 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 1
     providedResourceAmount: 1
+    canBePurchasedWithExtraBuy: 0
   - id: resource-reading-plus
-    displayName:
+    displayName: 
     description: Consumable market resource card.
     rarity: 1
     cardDomain: 1
@@ -617,8 +644,9 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 1
     providedResourceAmount: 2
+    canBePurchasedWithExtraBuy: 0
   - id: resource-meditation
-    displayName:
+    displayName: 
     description: Consumable market resource card.
     rarity: 0
     cardDomain: 1
@@ -634,8 +662,9 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 2
     providedResourceAmount: 1
+    canBePurchasedWithExtraBuy: 0
   - id: resource-meditation-plus
-    displayName:
+    displayName: 
     description: Consumable market resource card.
     rarity: 1
     cardDomain: 1
@@ -651,8 +680,9 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 2
     providedResourceAmount: 2
+    canBePurchasedWithExtraBuy: 0
   - id: resource-patience
-    displayName:
+    displayName: 
     description: Consumable market resource card.
     rarity: 0
     cardDomain: 1
@@ -668,8 +698,9 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 3
     providedResourceAmount: 1
+    canBePurchasedWithExtraBuy: 0
   - id: resource-patience-plus
-    displayName:
+    displayName: 
     description: Consumable market resource card.
     rarity: 1
     cardDomain: 1
@@ -685,8 +716,9 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 3
     providedResourceAmount: 2
+    canBePurchasedWithExtraBuy: 0
   - id: resource-balanced-study
-    displayName:
+    displayName: 
     description: Consumable market resource card.
     rarity: 2
     cardDomain: 1
@@ -702,55 +734,379 @@ MonoBehaviour:
     grantsExtraBuyAction: 0
     providedResourceType: 1
     providedResourceAmount: 1
+    canBePurchasedWithExtraBuy: 0
+  missions:
+  - id: fast-technology
+    displayName: Compounding Software Thesis
+    template: 0
+    targetTags:
+    - id: technology
+      displayName: Technology
+      tagType: 0
+    clearConditionDescription: Hold 3 or more Technology stocks.
+    settlementFormulaDescription: Technology stock count x +1 mission revenue.
+    difficultyDisplay: Easy
+    clearTargetCount: 3
+    settlementRewardPerCard: 1
+  - id: concentration-technology
+    displayName: Semiconductor Conviction
+    template: 1
+    targetTags:
+    - id: technology
+      displayName: Technology
+      tagType: 0
+    clearConditionDescription: Hold 5 or more Technology stocks.
+    settlementFormulaDescription: Technology stock count x +2 mission revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 5
+    settlementRewardPerCard: 2
+  - id: foil-technology
+    displayName: Platform Roll-Up
+    template: 2
+    targetTags:
+    - id: technology
+      displayName: Technology
+      tagType: 0
+    clearConditionDescription: Hold at least one Technology foil stock.
+    settlementFormulaDescription: Technology stock count x +2, plus foil premium.
+    difficultyDisplay: Hard
+    clearTargetCount: 1
+    settlementRewardPerCard: 2
+  - id: high-value-technology
+    displayName: Winner-Takes-Most Growth
+    template: 3
+    targetTags:
+    - id: technology
+      displayName: Technology
+      tagType: 0
+    clearConditionDescription: Hold a Technology stock with final value 7 or higher.
+    settlementFormulaDescription: Technology final value contributes mission revenue.
+    difficultyDisplay: Hard
+    clearTargetCount: 7
+    settlementRewardPerCard: 0
+  - id: stable-technology-consumer
+    displayName: Digital Staples Barbell
+    template: 4
+    targetTags:
+    - id: technology
+      displayName: Technology
+      tagType: 0
+    - id: consumer
+      displayName: Consumer
+      tagType: 0
+    clearConditionDescription: Hold 2 or more Technology and 2 or more Consumer stocks.
+    settlementFormulaDescription: Technology and Consumer stock count x +1 mission
+      revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 2
+    settlementRewardPerCard: 1
+  - id: fast-consumer
+    displayName: Everyday Demand Thesis
+    template: 0
+    targetTags:
+    - id: consumer
+      displayName: Consumer
+      tagType: 0
+    clearConditionDescription: Hold 3 or more Consumer stocks.
+    settlementFormulaDescription: Consumer stock count x +1 mission revenue.
+    difficultyDisplay: Easy
+    clearTargetCount: 3
+    settlementRewardPerCard: 1
+  - id: concentration-consumer
+    displayName: Brand Moat Concentration
+    template: 1
+    targetTags:
+    - id: consumer
+      displayName: Consumer
+      tagType: 0
+    clearConditionDescription: Hold 5 or more Consumer stocks.
+    settlementFormulaDescription: Consumer stock count x +2 mission revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 5
+    settlementRewardPerCard: 2
+  - id: foil-consumer
+    displayName: Category Captain Roll-Up
+    template: 2
+    targetTags:
+    - id: consumer
+      displayName: Consumer
+      tagType: 0
+    clearConditionDescription: Hold at least one Consumer foil stock.
+    settlementFormulaDescription: Consumer stock count x +2, plus foil premium.
+    difficultyDisplay: Hard
+    clearTargetCount: 1
+    settlementRewardPerCard: 2
+  - id: high-value-consumer
+    displayName: Premiumization Curve
+    template: 3
+    targetTags:
+    - id: consumer
+      displayName: Consumer
+      tagType: 0
+    clearConditionDescription: Hold a Consumer stock with final value 7 or higher.
+    settlementFormulaDescription: Consumer final value contributes mission revenue.
+    difficultyDisplay: Hard
+    clearTargetCount: 7
+    settlementRewardPerCard: 0
+  - id: stable-consumer-financials
+    displayName: Cash Register And Rails
+    template: 4
+    targetTags:
+    - id: consumer
+      displayName: Consumer
+      tagType: 0
+    - id: financials
+      displayName: Financials
+      tagType: 0
+    clearConditionDescription: Hold 2 or more Consumer and 2 or more Financials stocks.
+    settlementFormulaDescription: Consumer and Financials stock count x +1 mission
+      revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 2
+    settlementRewardPerCard: 1
+  - id: fast-energy
+    displayName: Infrastructure Yield Thesis
+    template: 0
+    targetTags:
+    - id: energy
+      displayName: Energy
+      tagType: 0
+    clearConditionDescription: Hold 3 or more Energy stocks.
+    settlementFormulaDescription: Energy stock count x +1 mission revenue.
+    difficultyDisplay: Easy
+    clearTargetCount: 3
+    settlementRewardPerCard: 1
+  - id: concentration-energy
+    displayName: Grid Scale Conviction
+    template: 1
+    targetTags:
+    - id: energy
+      displayName: Energy
+      tagType: 0
+    clearConditionDescription: Hold 5 or more Energy stocks.
+    settlementFormulaDescription: Energy stock count x +2 mission revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 5
+    settlementRewardPerCard: 2
+  - id: foil-energy
+    displayName: Energy Platform Roll-Up
+    template: 2
+    targetTags:
+    - id: energy
+      displayName: Energy
+      tagType: 0
+    clearConditionDescription: Hold at least one Energy foil stock.
+    settlementFormulaDescription: Energy stock count x +2, plus foil premium.
+    difficultyDisplay: Hard
+    clearTargetCount: 1
+    settlementRewardPerCard: 2
+  - id: high-value-energy
+    displayName: Scarce Capacity Premium
+    template: 3
+    targetTags:
+    - id: energy
+      displayName: Energy
+      tagType: 0
+    clearConditionDescription: Hold an Energy stock with final value 7 or higher.
+    settlementFormulaDescription: Energy final value contributes mission revenue.
+    difficultyDisplay: Hard
+    clearTargetCount: 7
+    settlementRewardPerCard: 0
+  - id: stable-energy-industrials
+    displayName: Picks And Power
+    template: 4
+    targetTags:
+    - id: energy
+      displayName: Energy
+      tagType: 0
+    - id: industrials
+      displayName: Industrials
+      tagType: 0
+    clearConditionDescription: Hold 2 or more Energy and 2 or more Industrials stocks.
+    settlementFormulaDescription: Energy and Industrials stock count x +1 mission
+      revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 2
+    settlementRewardPerCard: 1
+  - id: fast-financials
+    displayName: Payment Rails Thesis
+    template: 0
+    targetTags:
+    - id: financials
+      displayName: Financials
+      tagType: 0
+    clearConditionDescription: Hold 3 or more Financials stocks.
+    settlementFormulaDescription: Financials stock count x +1 mission revenue.
+    difficultyDisplay: Easy
+    clearTargetCount: 3
+    settlementRewardPerCard: 1
+  - id: concentration-financials
+    displayName: Fee Stream Conviction
+    template: 1
+    targetTags:
+    - id: financials
+      displayName: Financials
+      tagType: 0
+    clearConditionDescription: Hold 5 or more Financials stocks.
+    settlementFormulaDescription: Financials stock count x +2 mission revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 5
+    settlementRewardPerCard: 2
+  - id: foil-financials
+    displayName: Network Effects Roll-Up
+    template: 2
+    targetTags:
+    - id: financials
+      displayName: Financials
+      tagType: 0
+    clearConditionDescription: Hold at least one Financials foil stock.
+    settlementFormulaDescription: Financials stock count x +2, plus foil premium.
+    difficultyDisplay: Hard
+    clearTargetCount: 1
+    settlementRewardPerCard: 2
+  - id: high-value-financials
+    displayName: Toll Road Repricing
+    template: 3
+    targetTags:
+    - id: financials
+      displayName: Financials
+      tagType: 0
+    clearConditionDescription: Hold a Financials stock with final value 7 or higher.
+    settlementFormulaDescription: Financials final value contributes mission revenue.
+    difficultyDisplay: Hard
+    clearTargetCount: 7
+    settlementRewardPerCard: 0
+  - id: stable-financials-industrials
+    displayName: Rails And Factories
+    template: 4
+    targetTags:
+    - id: financials
+      displayName: Financials
+      tagType: 0
+    - id: industrials
+      displayName: Industrials
+      tagType: 0
+    clearConditionDescription: Hold 2 or more Financials and 2 or more Industrials
+      stocks.
+    settlementFormulaDescription: Financials and Industrials stock count x +1 mission
+      revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 2
+    settlementRewardPerCard: 1
+  - id: fast-industrials
+    displayName: Operating Leverage Thesis
+    template: 0
+    targetTags:
+    - id: industrials
+      displayName: Industrials
+      tagType: 0
+    clearConditionDescription: Hold 3 or more Industrials stocks.
+    settlementFormulaDescription: Industrials stock count x +1 mission revenue.
+    difficultyDisplay: Easy
+    clearTargetCount: 3
+    settlementRewardPerCard: 1
+  - id: concentration-industrials
+    displayName: Automation Conviction
+    template: 1
+    targetTags:
+    - id: industrials
+      displayName: Industrials
+      tagType: 0
+    clearConditionDescription: Hold 5 or more Industrials stocks.
+    settlementFormulaDescription: Industrials stock count x +2 mission revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 5
+    settlementRewardPerCard: 2
+  - id: foil-industrials
+    displayName: Supply Chain Roll-Up
+    template: 2
+    targetTags:
+    - id: industrials
+      displayName: Industrials
+      tagType: 0
+    clearConditionDescription: Hold at least one Industrials foil stock.
+    settlementFormulaDescription: Industrials stock count x +2, plus foil premium.
+    difficultyDisplay: Hard
+    clearTargetCount: 1
+    settlementRewardPerCard: 2
+  - id: high-value-industrials
+    displayName: Replacement Cost Premium
+    template: 3
+    targetTags:
+    - id: industrials
+      displayName: Industrials
+      tagType: 0
+    clearConditionDescription: Hold an Industrials stock with final value 7 or higher.
+    settlementFormulaDescription: Industrials final value contributes mission revenue.
+    difficultyDisplay: Hard
+    clearTargetCount: 7
+    settlementRewardPerCard: 0
+  - id: stable-technology-financials
+    displayName: Data And Distribution
+    template: 4
+    targetTags:
+    - id: technology
+      displayName: Technology
+      tagType: 0
+    - id: financials
+      displayName: Financials
+      tagType: 0
+    clearConditionDescription: Hold 2 or more Technology and 2 or more Financials
+      stocks.
+    settlementFormulaDescription: Technology and Financials stock count x +1 mission
+      revenue.
+    difficultyDisplay: Medium
+    clearTargetCount: 2
+    settlementRewardPerCard: 1
   quarters:
   - fiscalYear: 1
     quarter: 1
-    businessDays: 4
+    businessDays: 8
     earnedCashGoal: 3
     inflationCostModifier: 0
   - fiscalYear: 1
     quarter: 2
-    businessDays: 4
+    businessDays: 8
     earnedCashGoal: 4
     inflationCostModifier: 1
   - fiscalYear: 1
     quarter: 3
-    businessDays: 4
+    businessDays: 8
     earnedCashGoal: 4
     inflationCostModifier: 0
   - fiscalYear: 2
     quarter: 1
-    businessDays: 4
+    businessDays: 8
     earnedCashGoal: 4
     inflationCostModifier: 0
   - fiscalYear: 2
     quarter: 2
-    businessDays: 4
+    businessDays: 8
     earnedCashGoal: 4
     inflationCostModifier: 0
   - fiscalYear: 2
     quarter: 3
-    businessDays: 4
+    businessDays: 8
     earnedCashGoal: 4
     inflationCostModifier: 0
   - fiscalYear: 3
     quarter: 1
-    businessDays: 5
+    businessDays: 10
     earnedCashGoal: 5
     inflationCostModifier: 0
   - fiscalYear: 3
     quarter: 2
-    businessDays: 5
+    businessDays: 10
     earnedCashGoal: 5
     inflationCostModifier: 0
   - fiscalYear: 3
     quarter: 3
-    businessDays: 5
+    businessDays: 10
     earnedCashGoal: 5
     inflationCostModifier: 0
   - fiscalYear: 3
     quarter: 4
-    businessDays: 5
+    businessDays: 10
     earnedCashGoal: 5
     inflationCostModifier: 0
   finalRatings:

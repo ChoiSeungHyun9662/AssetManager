@@ -94,10 +94,12 @@ namespace AssetManager
             }
 
             return string.Format(
-                "분기 마감: {0}회계년도 {1}Q\n현재 분기 수익 {2} / 분기 목표 {3}\n목표 달성률 {4}% | 월세 밀림 +{5} | 현재 월세 밀림 {6}/{7}",
+                "분기 마감: {0}회계년도 {1}Q\n현금 흐름 {2}\n미션 수익 +{3}\n판정 합계 {4} / 분기 목표 {5}\n목표 달성률 {6}% | 월세 밀림 +{7} | 현재 월세 밀림 {8}/{9}",
                 run.Calendar.FiscalYear,
                 run.Calendar.Quarter,
                 result.QuarterRevenue,
+                result.MissionRevenue,
+                result.QuarterEvaluationValue,
                 result.QuarterRevenueTarget,
                 (int)(result.AchievementRate * 100d),
                 result.RentArrearsIncrease,
@@ -109,10 +111,11 @@ namespace AssetManager
         {
             var summary = FiscalYearSummary.Create(run);
             return string.Format(
-                "4Q 휴가: {0}회계년도 요약\n현재 가치 {1} | 올해 수익 {2}\n분기별 수익 {3}\n보유 주식 {4} | 월세 밀림 {5}/{6}",
+                "4Q 휴가: {0}회계년도 요약\n현재 가치 {1} | 올해 수익 {2} | 올해 미션 수익 {3}\n분기별 수익 {4}\n보유 주식 {5} | 월세 밀림 {6}/{7}",
                 summary.FiscalYear,
                 summary.CurrentValue,
                 summary.FiscalYearRevenue,
+                summary.FiscalYearMissionRevenue,
                 FormatQuarterRevenue(summary),
                 summary.OwnedStockCount,
                 summary.CurrentRentArrears,
@@ -140,10 +143,11 @@ namespace AssetManager
         {
             var settlement = FinalSettlement.Create(run);
             return string.Format(
-                "최종 정산\n최종 가치 {0} | 최종 평가 {1}\n총 수익 {2} | 보유 주식 {3}\n월세 밀림 {4}/{5}\n최종 코멘트: {6}",
+                "최종 정산\n최종 가치 {0} | 최종 평가 {1}\n총 수익 {2} | 총 미션 수익 {3} | 보유 주식 {4}\n월세 밀림 {5}/{6}\n최종 코멘트: {7}",
                 settlement.FinalValue,
                 settlement.FinalRating.DisplayName,
                 settlement.TotalRevenue,
+                settlement.TotalMissionRevenue,
                 settlement.OwnedStockCount,
                 settlement.CurrentRentArrears,
                 settlement.MaxRentArrears,

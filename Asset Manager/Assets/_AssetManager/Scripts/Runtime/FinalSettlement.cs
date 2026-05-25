@@ -11,7 +11,7 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
-            var finalValue = run.OwnedAssets.CurrentValue;
+            var finalValue = run.OwnedAssets.CurrentValue + run.Performance.TotalMissionRevenue;
             var finalRating = SelectFinalRating(run.StaticData, finalValue);
             var pressureLevel = SelectPressureLevel(run.StaticData, run.RentArrears.CurrentArrears);
             var comment = SelectManagementComment(run.StaticData, finalRating, pressureLevel);
@@ -20,6 +20,7 @@ namespace AssetManager
                 finalValue,
                 finalRating,
                 run.Performance.TotalRevenue,
+                run.Performance.TotalMissionRevenue,
                 run.OwnedAssets.Count,
                 run.RentArrears.CurrentArrears,
                 run.RentArrears.MaxArrears,
@@ -94,6 +95,7 @@ namespace AssetManager
             int finalValue,
             FinalRatingData finalRating,
             int totalEarnedCash,
+            int totalMissionRevenue,
             int ownedAssetCount,
             int currentRedemptionPressure,
             int maxRedemptionPressure,
@@ -102,6 +104,7 @@ namespace AssetManager
             FinalValue = finalValue;
             FinalRating = finalRating ?? throw new ArgumentNullException(nameof(finalRating));
             TotalEarnedCash = totalEarnedCash;
+            TotalMissionRevenue = totalMissionRevenue;
             OwnedAssetCount = ownedAssetCount;
             CurrentRedemptionPressure = currentRedemptionPressure;
             MaxRedemptionPressure = maxRedemptionPressure;
@@ -113,6 +116,7 @@ namespace AssetManager
         public FinalRatingData FinalRating { get; }
         public int TotalRevenue => TotalEarnedCash;
         public int TotalEarnedCash { get; }
+        public int TotalMissionRevenue { get; }
         public int OwnedAssetCount { get; }
         public int OwnedStockCount => OwnedAssetCount;
         public int CurrentRedemptionPressure { get; }

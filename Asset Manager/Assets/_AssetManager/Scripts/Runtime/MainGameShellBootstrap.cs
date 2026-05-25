@@ -20,6 +20,7 @@ namespace AssetManager
         private ResourceHud resourceHud;
         private PortfolioSummaryView portfolioSummaryView;
         private MarketTapeView marketTapeView;
+        private MissionCandidateView missionCandidateView;
         private PurchaseConfirmationView purchaseConfirmationView;
         private CardDetailView cardDetailView;
         private MarketTapeDevControls marketTapeDevControls;
@@ -422,22 +423,47 @@ namespace AssetManager
             RefreshRunUi();
         }
 
+        public void MulliganMissionCandidate(int slotIndex)
+        {
+            if (CurrentRun == null || isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
+            ClearPortfolioSaleSelection();
+            ApplyMissionCandidateResult(MissionCandidateAction.Mulligan(CurrentRun, slotIndex));
+        }
+
+        public void DiscardMissionCandidate(int slotIndex)
+        {
+            if (CurrentRun == null || isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
+            ClearPortfolioSaleSelection();
+            ApplyMissionCandidateResult(MissionCandidateAction.Discard(CurrentRun, slotIndex));
+        }
+
         private void BindRunUi(Transform uiRoot)
         {
             runStatusHud = ProjectShell.EnsureRunStatusHud(uiRoot);
             resourceHud = ProjectShell.EnsureResourceHud(uiRoot);
             portfolioSummaryView = ProjectShell.EnsurePortfolioSummaryView(uiRoot);
             marketTapeView = ProjectShell.EnsureMarketTapeView(uiRoot);
+            missionCandidateView = ProjectShell.EnsureMissionCandidateView(uiRoot);
             purchaseConfirmationView = ProjectShell.EnsurePurchaseConfirmationView(uiRoot);
             cardDetailView = ProjectShell.EnsureCardDetailView(uiRoot);
             marketTapeDevControls = ProjectShell.EnsureMarketTapeDevControls(uiRoot);
             resourceDevControls = ProjectShell.EnsureResourceDevControls(uiRoot);
             runProgressControls = ProjectShell.EnsureRunProgressControls(uiRoot);
 
+            resourceHud.SetDealDragHandlers(CanStartDealDrag, ApplyDealMasteryDrop);
             marketTapeView.SetMarketCardSelectedHandler(OpenMarketCardDetail);
             marketTapeView.SetCurrentMarketCardReleasedHandler(ReleaseCurrentMarketCard);
             marketTapeView.SetCurrentMarketCardReservedHandler(ReserveCurrentMarketCard);
             marketTapeView.SetCurrentMarketCardUnreservedHandler(UnreserveCurrentMarketCard);
+            missionCandidateView.SetActionHandlers(MulliganMissionCandidate, DiscardMissionCandidate);
             portfolioSummaryView.SetStockSaleSelectedHandler(SellStockSlot);
 
             purchaseConfirmationView.ConfirmButton.onClick.RemoveListener(ConfirmPurchase);
@@ -507,6 +533,7 @@ namespace AssetManager
             resourceHud.Show(CurrentRun, resourceFeedbackMessage);
             portfolioSummaryView.Show(CurrentRun);
             marketTapeView.Show(CurrentRun, pendingPurchaseFailureCardRuntimeId);
+            missionCandidateView.Show(CurrentRun);
             purchaseConfirmationView.Show(CurrentRun, isPurchaseConfirmationOpen);
             pendingPurchaseFailureCardRuntimeId = string.Empty;
             cardDetailView.Show(CurrentRun);
@@ -621,6 +648,34 @@ namespace AssetManager
 
         private void ApplyStockSaleResult(StockSaleActionResult result)
         {
+            CurrentRun = result.Run;
+            resourceFeedbackMessage = result.Message;
+            RefreshRunUi();
+        }
+
+        private void ApplyMissionCandidateResult(MissionCandidateActionResult result)
+        {
+            CurrentRun = result.Run;
+            resourceFeedbackMessage = result.Message;
+            RefreshRunUi();
+        }
+
+        private bool CanStartDealDrag()
+        {
+            return CurrentRun != null
+                && !isPurchaseConfirmationOpen
+                && CurrentRun.Resources.Deal > 0;
+        }
+
+        private void ApplyDealMasteryDrop(ResourceType resourceType)
+        {
+            if (CurrentRun == null || isPurchaseConfirmationOpen)
+            {
+                return;
+            }
+
+            ClearPortfolioSaleSelection();
+            var result = DealMasteryAction.Apply(CurrentRun, resourceType);
             CurrentRun = result.Run;
             resourceFeedbackMessage = result.Message;
             RefreshRunUi();

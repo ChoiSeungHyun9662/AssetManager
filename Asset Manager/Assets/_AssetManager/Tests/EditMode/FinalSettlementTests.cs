@@ -38,6 +38,31 @@ namespace AssetManager.Tests
             Assert.That(settlement.FinalComment, Is.EqualTo("성과는 충분하지만 월세 밀림이 높습니다."));
         }
 
+        [Test]
+        public void CreateFinalSettlementIncludesTotalMissionRevenueInFinalValue()
+        {
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            var ownedStock = new AssetCardRuntimeData(
+                run.AssetCards[0].Card,
+                AssetCardRuntimeState.Owned,
+                PurchaseSource.MarketTape);
+            run = WithOwnedAssets(run, new OwnedAssetState(new[] { ownedStock }));
+            run = WithPerformance(run, new RunPerformanceState(
+                0,
+                0,
+                0,
+                0,
+                run.Performance.CompletedQuarterRevenue,
+                currentQuarterMissionRevenue: 0,
+                currentFiscalYearMissionRevenue: 4,
+                totalMissionRevenue: 4));
+
+            var settlement = FinalSettlement.Create(run);
+
+            Assert.That(settlement.FinalValue, Is.EqualTo(ownedStock.Value + 4));
+            Assert.That(settlement.TotalMissionRevenue, Is.EqualTo(4));
+        }
+
         private static RunSessionState WithResources(RunSessionState run, ResourceState resources)
         {
             return new RunSessionState(
@@ -112,6 +137,26 @@ namespace AssetManager.Tests
                 run.OwnedAssets,
                 run.BusinessDay,
                 new RedemptionPressureState(currentPressure, run.RedemptionPressure.MaxPressure),
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason);
+        }
+
+        private static RunSessionState WithPerformance(RunSessionState run, RunPerformanceState performance)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
                 run.CardDetail,
                 run.LiquidityAction,
                 run.QuarterEndResult,

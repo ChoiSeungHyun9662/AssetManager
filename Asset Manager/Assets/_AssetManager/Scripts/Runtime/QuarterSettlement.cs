@@ -11,25 +11,44 @@ namespace AssetManager
                 throw new ArgumentNullException(nameof(run));
             }
 
-            var settlementIncome = run.OwnedAssets.CurrentValue;
-            var settledRun = ResourceLedger.AddRevenue(run, settlementIncome);
+            var missionRevenue = MissionSettlement.Calculate(run.Missions.ConfirmedMission, run.OwnedAssets);
+            var settledRun = AddMissionRevenue(run, missionRevenue);
             var quarterRevenue = settledRun.Performance.CurrentQuarterRevenue;
+            var quarterEvaluationValue = quarterRevenue + missionRevenue;
             var targetRevenue = GetTargetRevenue(settledRun);
             var achievementRate = targetRevenue <= 0
                 ? 1d
-                : Math.Min(1d, quarterRevenue / (double)targetRevenue);
+                : Math.Min(1d, quarterEvaluationValue / (double)targetRevenue);
             var rentArrearsIncrease = CalculateRentArrearsIncrease(achievementRate);
             settledRun = RecordCompletedQuarter(settledRun, quarterRevenue);
             var arrearsResult = RentArrears.AddArrears(settledRun, rentArrearsIncrease);
             var result = new QuarterEndResult(
-                settlementIncome,
+                missionRevenue,
                 quarterRevenue,
                 targetRevenue,
                 achievementRate,
                 rentArrearsIncrease,
-                arrearsResult.Run.RentArrears.CurrentArrears);
+                arrearsResult.Run.RentArrears.CurrentArrears,
+                missionRevenue,
+                quarterEvaluationValue);
 
             return new QuarterSettlementResult(WithQuarterEndResult(arrearsResult.Run, result), result);
+        }
+
+        private static RunSessionState AddMissionRevenue(RunSessionState run, int missionRevenue)
+        {
+            var performance = run.Performance;
+            return WithPerformance(
+                run,
+                new RunPerformanceState(
+                    performance.CurrentQuarterRevenue,
+                    performance.CurrentFiscalYearRevenue,
+                    performance.TotalRevenue,
+                    performance.FundingCash,
+                    performance.CompletedQuarterRevenue,
+                    performance.CurrentQuarterMissionRevenue + missionRevenue,
+                    performance.CurrentFiscalYearMissionRevenue + missionRevenue,
+                    performance.TotalMissionRevenue + missionRevenue));
         }
 
         private static int CalculateRentArrearsIncrease(double achievementRate)
@@ -78,8 +97,16 @@ namespace AssetManager
                 run.Performance.CurrentFiscalYearRevenue,
                 run.Performance.TotalRevenue,
                 run.Performance.FundingCash,
-                records);
+                records,
+                run.Performance.CurrentQuarterMissionRevenue,
+                run.Performance.CurrentFiscalYearMissionRevenue,
+                run.Performance.TotalMissionRevenue);
 
+            return WithPerformance(run, performance);
+        }
+
+        private static RunSessionState WithPerformance(RunSessionState run, RunPerformanceState performance)
+        {
             return new RunSessionState(
                 run.State,
                 run.StaticData,
@@ -96,7 +123,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
         }
 
         private static RunSessionState WithQuarterEndResult(RunSessionState run, QuarterEndResult result)
@@ -117,7 +146,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 result,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
         }
     }
 
@@ -133,8 +164,11 @@ namespace AssetManager
         public QuarterEndResult QuarterEnd { get; }
         public int SettlementIncome => QuarterEnd.SettlementIncome;
         public int SettlementRevenue => SettlementIncome;
+        public int MissionRevenue => QuarterEnd.MissionRevenue;
         public int QuarterEarnedCash => QuarterEnd.QuarterEarnedCash;
         public int QuarterRevenue => QuarterEarnedCash;
+        public int CashFlow => QuarterEnd.CashFlow;
+        public int QuarterEvaluationValue => QuarterEnd.QuarterEvaluationValue;
         public int TargetEarnedCash => QuarterEnd.TargetEarnedCash;
         public int QuarterRevenueTarget => TargetEarnedCash;
         public double AchievementRate => QuarterEnd.AchievementRate;

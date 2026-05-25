@@ -14,7 +14,7 @@ namespace AssetManager.Tests
             Assert.That(nextRun.State, Is.EqualTo(RunState.Playing));
             Assert.That(nextRun.Calendar.FiscalYear, Is.EqualTo(1));
             Assert.That(nextRun.Calendar.Quarter, Is.EqualTo(1));
-            Assert.That(nextRun.Calendar.RemainingBusinessDays, Is.EqualTo(3));
+            Assert.That(nextRun.Calendar.RemainingBusinessDays, Is.EqualTo(7));
             Assert.That(nextRun.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.AwaitingAction));
             Assert.That(nextRun.BusinessDay.MarketArea, Is.EqualTo(MarketAreaState.Market));
         }
@@ -81,9 +81,9 @@ namespace AssetManager.Tests
 
             Assert.That(run.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.QuarterSettlement));
             Assert.That(run.QuarterEndResult, Is.Not.Null);
-            Assert.That(run.QuarterEndResult.SettlementIncome, Is.EqualTo(ownedCard.Card.ManagementValue));
-            Assert.That(run.Performance.CurrentQuarterEarnedCash, Is.EqualTo(ownedCard.Card.ManagementValue));
-            Assert.That(run.Resources.Cash, Is.EqualTo(3 + ownedCard.Card.ManagementValue));
+            Assert.That(run.QuarterEndResult.MissionRevenue, Is.EqualTo(0));
+            Assert.That(run.Performance.CurrentQuarterEarnedCash, Is.EqualTo(0));
+            Assert.That(run.Resources.Cash, Is.EqualTo(3));
         }
 
         [Test]
@@ -120,7 +120,7 @@ namespace AssetManager.Tests
             Assert.That(run.State, Is.EqualTo(RunState.Playing));
             Assert.That(run.Calendar.FiscalYear, Is.EqualTo(1));
             Assert.That(run.Calendar.Quarter, Is.EqualTo(2));
-            Assert.That(run.Calendar.RemainingBusinessDays, Is.EqualTo(4));
+            Assert.That(run.Calendar.RemainingBusinessDays, Is.EqualTo(8));
             Assert.That(run.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.AwaitingAction));
         }
 
@@ -195,7 +195,7 @@ namespace AssetManager.Tests
             Assert.That(run.State, Is.EqualTo(RunState.Playing));
             Assert.That(run.Calendar.FiscalYear, Is.EqualTo(2));
             Assert.That(run.Calendar.Quarter, Is.EqualTo(1));
-            Assert.That(run.Calendar.RemainingBusinessDays, Is.EqualTo(4));
+            Assert.That(run.Calendar.RemainingBusinessDays, Is.EqualTo(8));
             Assert.That(run.BusinessDay.Phase, Is.EqualTo(BusinessDayPhase.AwaitingAction));
         }
 

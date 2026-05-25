@@ -99,6 +99,14 @@ namespace AssetManager
         public const string ResourceHudCreditTextName = "Resource Hud Credit Text";
         public const string ResourceHudCommodityTextName = "Resource Hud Commodity Text";
         public const string ResourceHudDealTextName = "Resource Hud Deal Text";
+        public const string ResourceHudCashImageName = "Resource Hud Cash Image";
+        public const string ResourceHudResearchImageName = "Resource Hud Research Image";
+        public const string ResourceHudCreditImageName = "Resource Hud Credit Image";
+        public const string ResourceHudCommodityImageName = "Resource Hud Commodity Image";
+        public const string ResourceHudDealImageName = "Resource Hud Deal Image";
+        public const string ResourceHudDealGuidePanelName = "Resource Hud Deal Guide Panel";
+        public const string ResourceHudDealGuideTextName = "Resource Hud Deal Guide Text";
+        public const string ResourceHudDealDragImageName = "Resource Hud Deal Drag Image";
         public const string PortfolioSummaryPanelName = "Portfolio Summary Panel";
         public const string PortfolioSummaryTextName = "Portfolio Summary Text";
         public const string PortfolioOwnedCardsTextName = "Portfolio Owned Cards Text";
@@ -106,12 +114,21 @@ namespace AssetManager
         public const string OwnedStockCardButtonSuffix = " Card Button";
         public const string OwnedStockCardTextSuffix = " Text";
         public const string OwnedStockCardSellButtonSuffix = " Sell Button";
+        public const string PortfolioStockSaleDropZoneName = "Portfolio Stock Sale Drop Zone";
+        public const string PortfolioStockSaleDropZoneTextName = "Portfolio Stock Sale Drop Zone Text";
+        public const string OwnedStockDragDetailPanelName = "Owned Stock Drag Detail Panel";
+        public const string OwnedStockDragDetailTextName = "Owned Stock Drag Detail Text";
         public const string ResourceDevFundingCashButtonName = "Resource Dev Funding Cash Button";
         public const string ResourceDevEarnedCashButtonName = "Resource Dev Earned Cash Button";
         public const string ResourceDevResearchButtonName = "Resource Dev Research Button";
         public const string ResourceDevCreditButtonName = "Resource Dev Credit Button";
         public const string ResourceDevCommodityButtonName = "Resource Dev Commodity Button";
         public const string ResourceDevDealButtonName = "Resource Dev Deal Button";
+        public const string MissionCandidatePanelName = "Mission Candidate Panel";
+        public const string MissionCandidateSlotPrefix = "Mission Candidate Slot ";
+        public const string MissionCandidateTextSuffix = " Text";
+        public const string MissionCandidateMulliganButtonSuffix = " Mulligan Button";
+        public const string MissionCandidateDiscardButtonSuffix = " Discard Button";
         private const string LegacyReservationPanelName = "Reservation Panel";
 
         public static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
@@ -152,6 +169,7 @@ namespace AssetManager
             EnsureResourceHud(uiRoot.transform);
             EnsurePortfolioSummaryView(uiRoot.transform);
             EnsureMarketTapeView(uiRoot.transform);
+            EnsureMissionCandidateView(uiRoot.transform);
             EnsurePurchaseConfirmationView(uiRoot.transform);
             RemoveLegacyDisconnectedUiObjects(uiRoot.transform);
             EnsureCardDetailView(uiRoot.transform);
@@ -367,29 +385,43 @@ namespace AssetManager
                 TextAnchor.UpperLeft);
             var cashImage = EnsureResourceObjectImage(
                 panel.transform,
-                "Resource Hud Cash Image",
+                ResourceHudCashImageName,
                 new Vector2(178f, -50f),
                 new Vector2(70f, 58f));
             var researchImage = EnsureResourceObjectImage(
                 panel.transform,
-                "Resource Hud Research Image",
+                ResourceHudResearchImageName,
                 new Vector2(448f, -50f),
                 new Vector2(58f, 58f));
             var creditImage = EnsureResourceObjectImage(
                 panel.transform,
-                "Resource Hud Credit Image",
+                ResourceHudCreditImageName,
                 new Vector2(718f, -50f),
                 new Vector2(58f, 58f));
             var commodityImage = EnsureResourceObjectImage(
                 panel.transform,
-                "Resource Hud Commodity Image",
+                ResourceHudCommodityImageName,
                 new Vector2(988f, -50f),
                 new Vector2(58f, 58f));
             var dealImage = EnsureResourceObjectImage(
                 panel.transform,
-                "Resource Hud Deal Image",
+                ResourceHudDealImageName,
                 new Vector2(1258f, -50f),
                 new Vector2(58f, 58f));
+            var dealGuide = EnsureDealGuidePanel(uiRoot, out var dealGuideText);
+            var dealDragImage = EnsureChildImage(uiRoot, ResourceHudDealDragImageName);
+            var dealDragRect = dealDragImage.GetComponent<RectTransform>();
+            if (WasCreatedThisPass(dealDragImage.gameObject))
+            {
+                dealDragRect.anchorMin = new Vector2(0f, 0f);
+                dealDragRect.anchorMax = new Vector2(0f, 0f);
+                dealDragRect.pivot = new Vector2(0.5f, 0.5f);
+                dealDragRect.sizeDelta = new Vector2(58f, 58f);
+            }
+
+            dealDragImage.raycastTarget = false;
+            dealDragImage.preserveAspect = true;
+            dealDragImage.gameObject.SetActive(false);
 
             var hud = uiRoot.GetComponent<ResourceHud>();
             if (hud == null)
@@ -410,8 +442,51 @@ namespace AssetManager
                 researchImage,
                 creditImage,
                 commodityImage,
-                dealImage);
+                dealImage,
+                dealGuide,
+                dealGuideText,
+                dealDragImage);
             return hud;
+        }
+
+        private static GameObject EnsureDealGuidePanel(Transform uiRoot, out Text guideText)
+        {
+            var existing = uiRoot.Find(ResourceHudDealGuidePanelName);
+            var panel = existing != null
+                ? existing.gameObject
+                : CreateLayoutObject(ResourceHudDealGuidePanelName);
+
+            panel.transform.SetParent(uiRoot, false);
+            var rectTransform = panel.GetComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0f, 0f);
+            rectTransform.anchorMax = new Vector2(0f, 0f);
+            rectTransform.pivot = new Vector2(1f, 0f);
+            rectTransform.sizeDelta = new Vector2(430f, 76f);
+
+            var image = panel.GetComponent<Image>();
+            if (image == null)
+            {
+                image = panel.AddComponent<Image>();
+            }
+
+            image.color = new Color(0.06f, 0.08f, 0.10f, 0.96f);
+            image.raycastTarget = false;
+
+            guideText = EnsureChildText(panel.transform, ResourceHudDealGuideTextName, string.Empty);
+            var textRect = guideText.GetComponent<RectTransform>();
+            textRect.offsetMin = new Vector2(12f, 8f);
+            textRect.offsetMax = new Vector2(-12f, -8f);
+            guideText.alignment = TextAnchor.MiddleLeft;
+            guideText.fontSize = 16;
+            guideText.color = Color.white;
+            guideText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            guideText.verticalOverflow = VerticalWrapMode.Truncate;
+            guideText.resizeTextForBestFit = true;
+            guideText.resizeTextMinSize = 12;
+            guideText.resizeTextMaxSize = 16;
+
+            panel.SetActive(false);
+            return panel;
         }
 
         public static PortfolioSummaryView EnsurePortfolioSummaryView(Transform uiRoot)
@@ -444,6 +519,43 @@ namespace AssetManager
             var ownedStockCardButtons = CollectOwnedStockCardButtons(ownedStockCards);
             var ownedStockCardTexts = CollectOwnedStockCardTexts(ownedStockCards);
             var ownedStockSellButtons = CollectOwnedStockSellButtons(ownedStockCards);
+            var saleDropZone = EnsurePanel(
+                panel.transform,
+                PortfolioStockSaleDropZoneName,
+                new Vector2(1f, 0.5f),
+                new Vector2(1f, 0.5f),
+                new Vector2(1f, 0.5f),
+                new Vector2(-34f, -26f),
+                new Vector2(112f, 220f),
+                new Color(0.42f, 0.06f, 0.05f, 0.96f));
+            var saleDropZoneText = EnsurePanelText(
+                saleDropZone.transform,
+                PortfolioStockSaleDropZoneTextName,
+                new Vector2(0f, 0f),
+                new Vector2(112f, 220f),
+                44,
+                TextAnchor.MiddleCenter);
+            var dragDetailPanel = EnsurePanel(
+                uiRoot,
+                OwnedStockDragDetailPanelName,
+                new Vector2(0f, 0f),
+                new Vector2(0f, 0f),
+                new Vector2(0f, 0f),
+                Vector2.zero,
+                new Vector2(360f, 300f),
+                new Color(0.08f, 0.10f, 0.12f, 0.98f));
+            var dragDetailText = EnsurePanelText(
+                dragDetailPanel.transform,
+                OwnedStockDragDetailTextName,
+                new Vector2(18f, -18f),
+                new Vector2(324f, 264f),
+                24,
+                TextAnchor.UpperLeft);
+            var dragDetailImage = dragDetailPanel.GetComponent<Image>();
+            if (dragDetailImage != null)
+            {
+                dragDetailImage.raycastTarget = false;
+            }
 
             var view = uiRoot.GetComponent<PortfolioSummaryView>();
             if (view == null)
@@ -458,7 +570,12 @@ namespace AssetManager
                 ownedStockCards,
                 ownedStockCardButtons,
                 ownedStockCardTexts,
-                ownedStockSellButtons);
+                ownedStockSellButtons,
+                saleDropZone,
+                saleDropZoneText,
+                dragDetailPanel,
+                dragDetailText);
+            dragDetailPanel.SetActive(false);
             return view;
         }
 
@@ -546,6 +663,80 @@ namespace AssetManager
                 currentMarketButtons,
                 upcomingMarketButtons);
             hoverPanel.SetActive(false);
+            return view;
+        }
+
+        public static MissionCandidateView EnsureMissionCandidateView(Transform uiRoot)
+        {
+            var panel = EnsurePanel(
+                uiRoot,
+                MissionCandidatePanelName,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0f, -118f),
+                new Vector2(1260f, 210f),
+                new Color(0.05f, 0.06f, 0.07f, 0.86f));
+
+            var slotTexts = new List<Text>();
+            var mulliganButtons = new List<Button>();
+            var discardButtons = new List<Button>();
+            for (var i = 0; i < 3; i++)
+            {
+                var slotNumber = i + 1;
+                var slot = EnsurePanel(
+                    panel.transform,
+                    MissionCandidateSlotPrefix + slotNumber,
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(24f + (i * 408f), -18f),
+                    new Vector2(384f, 174f),
+                    new Color(0.10f, 0.11f, 0.12f, 0.96f));
+
+                var text = EnsurePanelText(
+                    slot.transform,
+                    MissionCandidateSlotPrefix + slotNumber + MissionCandidateTextSuffix,
+                    new Vector2(14f, -12f),
+                    new Vector2(356f, 112f),
+                    16,
+                    TextAnchor.UpperLeft);
+                text.resizeTextForBestFit = true;
+                text.resizeTextMinSize = 10;
+                text.resizeTextMaxSize = 16;
+
+                var mulliganButton = EnsureButton(
+                    slot.transform,
+                    MissionCandidateSlotPrefix + slotNumber + MissionCandidateMulliganButtonSuffix,
+                    "멀리건",
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 0f),
+                    new Vector2(14f, 12f),
+                    new Vector2(166f, 40f));
+
+                var discardButton = EnsureButton(
+                    slot.transform,
+                    MissionCandidateSlotPrefix + slotNumber + MissionCandidateDiscardButtonSuffix,
+                    "폐기",
+                    new Vector2(1f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(-14f, 12f),
+                    new Vector2(166f, 40f));
+
+                slotTexts.Add(text);
+                mulliganButtons.Add(mulliganButton);
+                discardButtons.Add(discardButton);
+            }
+
+            var view = uiRoot.GetComponent<MissionCandidateView>();
+            if (view == null)
+            {
+                view = uiRoot.gameObject.AddComponent<MissionCandidateView>();
+            }
+
+            view.Bind(panel, slotTexts, mulliganButtons, discardButtons);
             return view;
         }
 

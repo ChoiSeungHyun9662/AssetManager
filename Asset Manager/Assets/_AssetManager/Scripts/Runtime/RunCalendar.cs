@@ -73,16 +73,16 @@ namespace AssetManager
         {
             return new RunCalendarDefinition(new[]
             {
-                new RunCalendarQuarter(1, 1, 4),
-                new RunCalendarQuarter(1, 2, 4),
-                new RunCalendarQuarter(1, 3, 4),
-                new RunCalendarQuarter(2, 1, 4),
-                new RunCalendarQuarter(2, 2, 4),
-                new RunCalendarQuarter(2, 3, 4),
-                new RunCalendarQuarter(3, 1, 5),
-                new RunCalendarQuarter(3, 2, 5),
-                new RunCalendarQuarter(3, 3, 5),
-                new RunCalendarQuarter(3, 4, 5)
+                new RunCalendarQuarter(1, 1, 8),
+                new RunCalendarQuarter(1, 2, 8),
+                new RunCalendarQuarter(1, 3, 8),
+                new RunCalendarQuarter(2, 1, 8),
+                new RunCalendarQuarter(2, 2, 8),
+                new RunCalendarQuarter(2, 3, 8),
+                new RunCalendarQuarter(3, 1, 10),
+                new RunCalendarQuarter(3, 2, 10),
+                new RunCalendarQuarter(3, 3, 10),
+                new RunCalendarQuarter(3, 4, 10)
             });
         }
     }

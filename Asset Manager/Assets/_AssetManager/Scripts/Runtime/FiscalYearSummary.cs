@@ -23,8 +23,9 @@ namespace AssetManager
 
             return new FiscalYearSummaryResult(
                 run.Calendar.FiscalYear,
-                run.OwnedAssets.CurrentValue,
+                run.OwnedAssets.CurrentValue + run.Performance.TotalMissionRevenue,
                 run.Performance.CurrentFiscalYearRevenue,
+                run.Performance.CurrentFiscalYearMissionRevenue,
                 quarterRevenue,
                 run.OwnedAssets.Count,
                 run.RentArrears.CurrentArrears,
@@ -38,6 +39,7 @@ namespace AssetManager
             int fiscalYear,
             int currentValue,
             int fiscalYearEarnedCash,
+            int fiscalYearMissionRevenue,
             IEnumerable<QuarterPerformanceRecord> quarterEarnedCash,
             int ownedAssetCount,
             int currentRedemptionPressure,
@@ -46,6 +48,7 @@ namespace AssetManager
             FiscalYear = fiscalYear;
             CurrentValue = currentValue;
             FiscalYearEarnedCash = fiscalYearEarnedCash;
+            FiscalYearMissionRevenue = fiscalYearMissionRevenue;
             QuarterEarnedCash = new List<QuarterPerformanceRecord>(quarterEarnedCash).AsReadOnly();
             OwnedAssetCount = ownedAssetCount;
             CurrentRedemptionPressure = currentRedemptionPressure;
@@ -57,6 +60,7 @@ namespace AssetManager
         public int CurrentManagementValue => CurrentValue;
         public int FiscalYearRevenue => FiscalYearEarnedCash;
         public int FiscalYearEarnedCash { get; }
+        public int FiscalYearMissionRevenue { get; }
         public IReadOnlyList<QuarterPerformanceRecord> QuarterRevenue => QuarterEarnedCash;
         public IReadOnlyList<QuarterPerformanceRecord> QuarterEarnedCash { get; }
         public int OwnedAssetCount { get; }

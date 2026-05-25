@@ -61,7 +61,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
 
             if (nextPhase == BusinessDayPhase.AwaitingAction)
             {
@@ -90,7 +92,10 @@ namespace AssetManager
                 run.Performance.CurrentFiscalYearRevenue,
                 run.Performance.TotalRevenue,
                 run.Performance.FundingCash,
-                run.Performance.CompletedQuarterRevenue);
+                run.Performance.CompletedQuarterRevenue,
+                0,
+                run.Performance.CurrentFiscalYearMissionRevenue,
+                run.Performance.TotalMissionRevenue);
 
             if (run.Calendar.FiscalYear == 3 && run.Calendar.Quarter == 4)
             {
@@ -115,7 +120,9 @@ namespace AssetManager
                     run.LiquidityAction,
                     run.QuarterEndResult,
                     run.FailureReason,
-                    run.InvestmentPhilosophyMastery);
+                    run.InvestmentPhilosophyMastery,
+                    run.DealRewards,
+                    run.Missions);
             }
 
             var nextQuarter = run.Calendar.Quarter + 1;
@@ -140,7 +147,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
 
             return nextPhase == BusinessDayPhase.AwaitingAction
                 ? MarketTape.Refresh(nextRun)
@@ -167,7 +176,10 @@ namespace AssetManager
                 0,
                 run.Performance.TotalRevenue,
                 run.Performance.FundingCash,
-                run.Performance.CompletedQuarterRevenue);
+                run.Performance.CompletedQuarterRevenue,
+                0,
+                0,
+                run.Performance.TotalMissionRevenue);
 
             var nextRun = new RunSessionState(
                 run.State,
@@ -185,7 +197,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
 
             return MarketTape.Refresh(nextRun);
         }

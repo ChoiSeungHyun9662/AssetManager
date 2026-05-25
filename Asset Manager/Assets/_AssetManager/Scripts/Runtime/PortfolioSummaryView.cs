@@ -17,16 +17,28 @@ namespace AssetManager
         [SerializeField]
         private Text ownedCardsText;
 
+        [SerializeField]
+        private GameObject saleDropZone;
+
+        [SerializeField]
+        private Text saleDropZoneText;
+
+        [SerializeField]
+        private GameObject ownedStockDragDetailPanel;
+
+        [SerializeField]
+        private Text ownedStockDragDetailText;
+
         private readonly List<GameObject> ownedStockCards = new List<GameObject>();
         private readonly List<Button> cardButtons = new List<Button>();
         private readonly List<Text> cardTexts = new List<Text>();
         private readonly List<Button> sellButtons = new List<Button>();
         private readonly List<int> displayedStockSlotIndexes = new List<int>();
-        private readonly List<bool> cardButtonHoverStates = new List<bool>();
-        private readonly List<bool> sellButtonHoverStates = new List<bool>();
-        private readonly List<bool> sellButtonCanShowStates = new List<bool>();
         private Action<int> onStockSaleSelected;
-        private Coroutine deferredVisibilityUpdate;
+        private int draggedDisplayIndex = -1;
+        private int draggedStockSlotIndex = -1;
+        private AssetCardRuntimeData draggedCard;
+        private bool isDraggingOwnedStock;
 
         public GameObject Panel => panel;
         public Text SummaryText => summaryText;
@@ -40,11 +52,19 @@ namespace AssetManager
             IEnumerable<GameObject> ownedStockCardContainers,
             IEnumerable<Button> ownedStockCardButtons,
             IEnumerable<Text> ownedStockCardTexts,
-            IEnumerable<Button> ownedStockSellButtons)
+            IEnumerable<Button> ownedStockSellButtons,
+            GameObject stockSaleDropZone,
+            Text stockSaleDropZoneText,
+            GameObject stockDragDetailPanel,
+            Text stockDragDetailText)
         {
             panel = summaryPanel;
             summaryText = summary;
             ownedCardsText = ownedCards;
+            saleDropZone = stockSaleDropZone;
+            saleDropZoneText = stockSaleDropZoneText;
+            ownedStockDragDetailPanel = stockDragDetailPanel;
+            ownedStockDragDetailText = stockDragDetailText;
             ReplaceObjects(ownedStockCards, ownedStockCardContainers);
             ReplaceObjects(cardButtons, ownedStockCardButtons);
             ReplaceObjects(cardTexts, ownedStockCardTexts);
@@ -58,9 +78,7 @@ namespace AssetManager
 
         public void ClearSaleSelection()
         {
-            StopDeferredVisibilityUpdate();
-            ClearHoverStates();
-            UpdateSellButtonVisibility();
+            CancelOwnedStockDrag();
         }
 
         public void Show(RunSessionState run)
@@ -76,6 +94,13 @@ namespace AssetManager
                 summaryText,
                 $"포트폴리오 | 보유 자산 {run.OwnedAssets.Count} | 현재 운용가치 {run.OwnedAssets.CurrentValue} | 분기 수익 {run.Performance.CurrentQuarterRevenue}");
             SetText(ownedCardsText, string.Empty);
+            SetActive(saleDropZone, true);
+            if (!isDraggingOwnedStock)
+            {
+                SetText(saleDropZoneText, "$");
+                SetActive(ownedStockDragDetailPanel, false);
+            }
+
             ShowCards(run);
         }
 
@@ -83,7 +108,6 @@ namespace AssetManager
         {
             var visibleStockSlotIndexes = CollectVisibleStockSlotIndexes(run.OwnedAssets);
             displayedStockSlotIndexes.Clear();
-            EnsureHoverStateCount(ownedStockCards.Count);
 
             for (var displayIndex = 0; displayIndex < ownedStockCards.Count; displayIndex++)
             {
@@ -95,9 +119,6 @@ namespace AssetManager
                 {
                     displayedStockSlotIndexes.Add(-1);
                     SetCardText(displayIndex, string.Empty);
-                    SetSellButtonCanShow(displayIndex, false);
-                    SetHoverState(displayIndex, true, false, false);
-                    SetHoverState(displayIndex, false, false, false);
                     SetSellButtonActive(displayIndex, false);
                     continue;
                 }
@@ -106,9 +127,10 @@ namespace AssetManager
                 displayedStockSlotIndexes.Add(stockSlotIndex);
                 var card = run.OwnedAssets.StockSlots[stockSlotIndex];
                 SetCardText(displayIndex, FormatCard(card));
+                SetOwnedStockCardVisible(displayIndex, !(isDraggingOwnedStock && displayIndex == draggedDisplayIndex));
                 StyleCardButton(displayIndex, card);
-                WireCardButton(displayIndex, run, card);
-                WireSellButton(displayIndex, stockSlotIndex, run, card);
+                WireCardButton(displayIndex, stockSlotIndex, run, card);
+                WireSellButton(displayIndex);
             }
         }
 
@@ -139,7 +161,7 @@ namespace AssetManager
                 : new Color(0.12f, 0.18f, 0.17f, 0.98f);
         }
 
-        private void WireCardButton(int displayIndex, RunSessionState run, AssetCardRuntimeData card)
+        private void WireCardButton(int displayIndex, int stockSlotIndex, RunSessionState run, AssetCardRuntimeData card)
         {
             if (displayIndex >= cardButtons.Count || cardButtons[displayIndex] == null)
             {
@@ -149,10 +171,10 @@ namespace AssetManager
             var button = cardButtons[displayIndex];
             button.onClick.RemoveAllListeners();
             button.interactable = CanShowSellButton(run, card);
-            ConfigureHoverTrigger(button.gameObject, displayIndex, true);
+            ConfigureOwnedStockDragTrigger(button.gameObject, displayIndex, stockSlotIndex, run, card);
         }
 
-        private void WireSellButton(int displayIndex, int stockSlotIndex, RunSessionState run, AssetCardRuntimeData card)
+        private void WireSellButton(int displayIndex)
         {
             if (displayIndex >= sellButtons.Count || sellButtons[displayIndex] == null)
             {
@@ -161,74 +183,124 @@ namespace AssetManager
 
             var button = sellButtons[displayIndex];
             button.onClick.RemoveAllListeners();
-            SetButtonText(button, "매도 +" + GetSaleCash(run, card) + "$");
-            SetSellButtonCanShow(displayIndex, CanShowSellButton(run, card));
-            SetSellButtonActive(displayIndex, ShouldShowSellButton(displayIndex));
-            button.interactable = sellButtonCanShowStates[displayIndex];
-            ConfigureHoverTrigger(button.gameObject, displayIndex, false);
-            if (button.interactable)
-            {
-                button.onClick.AddListener(() =>
-                {
-                    StopDeferredVisibilityUpdate();
-                    SetHoverState(displayIndex, true, false, false);
-                    SetHoverState(displayIndex, false, false, false);
-                    UpdateSellButtonVisibility();
-                    onStockSaleSelected?.Invoke(stockSlotIndex);
-                });
-            }
+            SetButtonText(button, string.Empty);
+            SetSellButtonActive(displayIndex, false);
+            button.interactable = false;
         }
 
-        private void SetHoverState(int displayIndex, bool isCardButton, bool isHovered, bool deferVisibilityUpdate)
+        private void ConfigureOwnedStockDragTrigger(
+            GameObject target,
+            int displayIndex,
+            int stockSlotIndex,
+            RunSessionState run,
+            AssetCardRuntimeData card)
         {
-            EnsureHoverStateCount(displayIndex + 1);
-            if (isCardButton)
+            var trigger = target.GetComponent<EventTrigger>();
+            if (trigger == null)
             {
-                cardButtonHoverStates[displayIndex] = isHovered;
-            }
-            else
-            {
-                sellButtonHoverStates[displayIndex] = isHovered;
+                trigger = target.AddComponent<EventTrigger>();
             }
 
-            if (deferVisibilityUpdate)
+            trigger.triggers.Clear();
+            AddPointerTrigger(trigger, EventTriggerType.PointerDown, _ =>
             {
-                ScheduleDeferredVisibilityUpdate();
+                draggedDisplayIndex = displayIndex;
+                draggedStockSlotIndex = stockSlotIndex;
+                draggedCard = card;
+                isDraggingOwnedStock = false;
+            });
+            AddPointerTrigger(trigger, EventTriggerType.Drag, eventData =>
+            {
+                if (draggedStockSlotIndex != stockSlotIndex || draggedCard == null)
+                {
+                    return;
+                }
+
+                isDraggingOwnedStock = true;
+                SetOwnedStockCardVisible(displayIndex, false);
+                ShowOwnedStockDragDetail(eventData.position, card);
+                SetText(saleDropZoneText, "+" + GetSaleCash(run, card));
+            });
+            AddPointerTrigger(trigger, EventTriggerType.PointerUp, eventData =>
+            {
+                if (draggedStockSlotIndex != stockSlotIndex || draggedCard == null)
+                {
+                    CancelOwnedStockDrag();
+                    return;
+                }
+
+                var shouldSell = isDraggingOwnedStock && IsInsideSaleDropZone(eventData.position);
+                CancelOwnedStockDrag();
+                if (shouldSell)
+                {
+                    onStockSaleSelected?.Invoke(stockSlotIndex);
+                }
+            });
+        }
+
+        private void ShowOwnedStockDragDetail(Vector2 screenPosition, AssetCardRuntimeData card)
+        {
+            SetText(ownedStockDragDetailText, FormatOwnedStockDragCard(card));
+            SetActive(ownedStockDragDetailPanel, true);
+
+            var rectTransform = ownedStockDragDetailPanel != null
+                ? ownedStockDragDetailPanel.GetComponent<RectTransform>()
+                : null;
+            if (rectTransform == null)
+            {
                 return;
             }
 
-            StopDeferredVisibilityUpdate();
-            UpdateSellButtonVisibility();
+            rectTransform.pivot = new Vector2(0f, 0f);
+            rectTransform.position = screenPosition;
         }
 
-        private void UpdateSellButtonVisibility()
+        private static string FormatOwnedStockDragCard(AssetCardRuntimeData card)
         {
-            for (var i = 0; i < sellButtons.Count; i++)
+            var foilLabel = card.IsFoil ? " FOIL" : string.Empty;
+            return card.Card.DisplayName + foilLabel
+                + "\n" + card.Card.Rarity
+                + "\nValue " + card.Value
+                + "\nDividend " + card.Income;
+        }
+
+        private bool IsInsideSaleDropZone(Vector2 screenPosition)
+        {
+            var rectTransform = saleDropZone != null ? saleDropZone.GetComponent<RectTransform>() : null;
+            return rectTransform != null
+                && RectTransformUtility.RectangleContainsScreenPoint(rectTransform, screenPosition);
+        }
+
+        private void CancelOwnedStockDrag()
+        {
+            if (draggedDisplayIndex >= 0)
             {
-                if (i >= ownedStockCards.Count || ownedStockCards[i] == null || !ownedStockCards[i].activeSelf)
-                {
-                    SetSellButtonActive(i, false);
-                    continue;
-                }
-
-                var button = i < sellButtons.Count ? sellButtons[i] : null;
-                if (button == null)
-                {
-                    continue;
-                }
-
-                var stockSlotIndex = i < displayedStockSlotIndexes.Count
-                    ? displayedStockSlotIndexes[i]
-                    : -1;
-                SetSellButtonActive(i, stockSlotIndex >= 0 && ShouldShowSellButton(i));
+                SetOwnedStockCardVisible(draggedDisplayIndex, true);
             }
+
+            draggedDisplayIndex = -1;
+            draggedStockSlotIndex = -1;
+            draggedCard = null;
+            isDraggingOwnedStock = false;
+            SetActive(ownedStockDragDetailPanel, false);
+            SetText(saleDropZoneText, "$");
         }
 
-        private bool ShouldShowSellButton(int displayIndex)
+        private void SetOwnedStockCardVisible(int displayIndex, bool isVisible)
         {
-            return GetHoverState(sellButtonCanShowStates, displayIndex)
-                && (GetHoverState(cardButtonHoverStates, displayIndex)
-                    || GetHoverState(sellButtonHoverStates, displayIndex));
+            if (displayIndex >= ownedStockCards.Count || ownedStockCards[displayIndex] == null)
+            {
+                return;
+            }
+
+            var canvasGroup = ownedStockCards[displayIndex].GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = ownedStockCards[displayIndex].AddComponent<CanvasGroup>();
+            }
+
+            canvasGroup.alpha = isVisible ? 1f : 0f;
+            canvasGroup.blocksRaycasts = isVisible;
         }
 
         private static bool CanShowSellButton(RunSessionState run, AssetCardRuntimeData card)
@@ -239,90 +311,23 @@ namespace AssetManager
                 && card.State == AssetCardRuntimeState.Owned;
         }
 
-        private void SetSellButtonCanShow(int displayIndex, bool canShow)
-        {
-            EnsureHoverStateCount(displayIndex + 1);
-            sellButtonCanShowStates[displayIndex] = canShow;
-        }
-
-        private void ClearHoverStates()
-        {
-            for (var i = 0; i < cardButtonHoverStates.Count; i++)
-            {
-                cardButtonHoverStates[i] = false;
-            }
-
-            for (var i = 0; i < sellButtonHoverStates.Count; i++)
-            {
-                sellButtonHoverStates[i] = false;
-            }
-        }
-
-        private void EnsureHoverStateCount(int count)
-        {
-            EnsureBoolListCount(cardButtonHoverStates, count);
-            EnsureBoolListCount(sellButtonHoverStates, count);
-            EnsureBoolListCount(sellButtonCanShowStates, count);
-        }
-
-        private static void EnsureBoolListCount(List<bool> values, int count)
-        {
-            while (values.Count < count)
-            {
-                values.Add(false);
-            }
-        }
-
-        private static bool GetHoverState(IReadOnlyList<bool> values, int index)
-        {
-            return index >= 0 && index < values.Count && values[index];
-        }
-
-        private void ConfigureHoverTrigger(GameObject target, int displayIndex, bool isCardButton)
-        {
-            var trigger = target.GetComponent<EventTrigger>();
-            if (trigger == null)
-            {
-                trigger = target.AddComponent<EventTrigger>();
-            }
-
-            trigger.triggers.Clear();
-            AddHoverTrigger(trigger, EventTriggerType.PointerEnter, () => SetHoverState(displayIndex, isCardButton, true, false));
-            AddHoverTrigger(trigger, EventTriggerType.PointerExit, () => SetHoverState(displayIndex, isCardButton, false, true));
-        }
-
-        private static void AddHoverTrigger(EventTrigger trigger, EventTriggerType eventType, Action action)
+        private static void AddPointerTrigger(
+            EventTrigger trigger,
+            EventTriggerType eventType,
+            Action<PointerEventData> action)
         {
             var entry = new EventTrigger.Entry
             {
                 eventID = eventType
             };
-            entry.callback.AddListener(_ => action());
+            entry.callback.AddListener(eventData =>
+            {
+                if (eventData is PointerEventData pointerEventData)
+                {
+                    action(pointerEventData);
+                }
+            });
             trigger.triggers.Add(entry);
-        }
-
-        private void ScheduleDeferredVisibilityUpdate()
-        {
-            if (deferredVisibilityUpdate == null && gameObject.activeInHierarchy)
-            {
-                deferredVisibilityUpdate = StartCoroutine(UpdateSellButtonVisibilityNextFrame());
-            }
-        }
-
-        private System.Collections.IEnumerator UpdateSellButtonVisibilityNextFrame()
-        {
-            yield return null;
-            deferredVisibilityUpdate = null;
-            UpdateSellButtonVisibility();
-        }
-
-        private void StopDeferredVisibilityUpdate()
-        {
-            if (deferredVisibilityUpdate != null)
-            {
-                StopCoroutine(deferredVisibilityUpdate);
-                deferredVisibilityUpdate = null;
-            }
         }
 
         private void SetSellButtonActive(int displayIndex, bool isActive)

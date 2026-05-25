@@ -46,7 +46,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
 
             return new StockSaleActionResult(
                 ResourceLedger.AddRevenue(soldRun, saleCash),

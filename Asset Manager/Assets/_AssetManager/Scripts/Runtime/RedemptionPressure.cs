@@ -54,7 +54,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
         }
 
         private static RunSessionState FailRun(RunSessionState run)
@@ -75,7 +77,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
         }
     }
 

@@ -1,10 +1,14 @@
+using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace AssetManager
 {
     public sealed class ResourceHud : MonoBehaviour
     {
+        public const string DealGuideText = "드래그하여 투자 철학에 놓으면, 이 칩을 소모하여 해당 투자 철학 마스터리를 1 획득합니다.";
+
         [SerializeField]
         private GameObject panel;
 
@@ -64,7 +68,20 @@ namespace AssetManager
         [SerializeField]
         private Image dealImage;
 
+        [SerializeField]
+        private GameObject dealGuidePanel;
+
+        [SerializeField]
+        private Text dealGuideText;
+
+        [SerializeField]
+        private Image dealDragImage;
+
         private bool warnedMissingSprites;
+        private int currentDealCount;
+        private bool isDraggingDeal;
+        private Func<bool> canStartDealDrag;
+        private Action<ResourceType> onDealDropped;
 
         public Text ResourceText => resourceText;
         public Text MessageText => messageText;
@@ -82,7 +99,10 @@ namespace AssetManager
             Image researchSpriteImage,
             Image creditSpriteImage,
             Image commoditySpriteImage,
-            Image dealSpriteImage)
+            Image dealSpriteImage,
+            GameObject dealGuidePanelObject,
+            Text dealGuideLabel,
+            Image dealDragSpriteImage)
         {
             panel = hudPanel;
             resourceText = resources;
@@ -97,6 +117,15 @@ namespace AssetManager
             creditImage = creditSpriteImage;
             commodityImage = commoditySpriteImage;
             dealImage = dealSpriteImage;
+            dealGuidePanel = dealGuidePanelObject;
+            dealGuideText = dealGuideLabel;
+            dealDragImage = dealDragSpriteImage;
+        }
+
+        public void SetDealDragHandlers(Func<bool> canStartDrag, Action<ResourceType> dropped)
+        {
+            canStartDealDrag = canStartDrag;
+            onDealDropped = dropped;
         }
 
         public void Show(RunSessionState run, string message)
@@ -119,12 +148,192 @@ namespace AssetManager
             SetText(commodityText, FormatPhilosophy(resources.Patience, run.InvestmentPhilosophyMastery.Patience));
             SetText(dealText, string.Empty);
             DisableImage(cashImage);
+            currentDealCount = resources.Deal;
             ApplyChipStack(researchImage, researchChipSprite, resources.Research);
             ApplyChipStack(creditImage, creditChipSprite, resources.Credit);
             ApplyChipStack(commodityImage, commodityChipSprite, resources.Commodity);
             ApplyChipStack(dealImage, dealChipSprite, resources.Deal);
+            ConfigureDealChipInteraction();
             WarnMissingSpritesOnce();
             SetText(messageText, message ?? string.Empty);
+        }
+
+        private void ConfigureDealChipInteraction()
+        {
+            SetActive(dealGuidePanel, false);
+            SetActive(dealDragImage != null ? dealDragImage.gameObject : null, false);
+            if (dealGuideText != null)
+            {
+                dealGuideText.text = DealGuideText;
+            }
+
+            if (dealImage == null)
+            {
+                return;
+            }
+
+            dealImage.raycastTarget = true;
+            var trigger = dealImage.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = dealImage.gameObject.AddComponent<EventTrigger>();
+            }
+
+            trigger.triggers.Clear();
+            AddTrigger(trigger, EventTriggerType.PointerEnter, eventData =>
+            {
+                if (CanStartDealDrag())
+                {
+                    ShowDealGuide(((PointerEventData)eventData).position);
+                }
+            });
+            AddTrigger(trigger, EventTriggerType.PointerExit, _ =>
+            {
+                if (!isDraggingDeal)
+                {
+                    HideDealGuide();
+                }
+            });
+            AddTrigger(trigger, EventTriggerType.PointerDown, eventData => BeginDealDrag((PointerEventData)eventData));
+            AddTrigger(trigger, EventTriggerType.Drag, eventData => DragDeal((PointerEventData)eventData));
+            AddTrigger(trigger, EventTriggerType.PointerUp, eventData => EndDealDrag((PointerEventData)eventData));
+        }
+
+        private static void AddTrigger(
+            EventTrigger trigger,
+            EventTriggerType eventType,
+            Action<BaseEventData> action)
+        {
+            var entry = new EventTrigger.Entry { eventID = eventType };
+            entry.callback.AddListener(eventData => action(eventData));
+            trigger.triggers.Add(entry);
+        }
+
+        private bool CanStartDealDrag()
+        {
+            return currentDealCount > 0
+                && dealChipSprite != null
+                && (canStartDealDrag == null || canStartDealDrag());
+        }
+
+        private void BeginDealDrag(PointerEventData eventData)
+        {
+            if (!CanStartDealDrag())
+            {
+                return;
+            }
+
+            isDraggingDeal = true;
+            if (dealImage != null)
+            {
+                dealImage.enabled = false;
+            }
+
+            if (dealDragImage != null)
+            {
+                dealDragImage.sprite = dealChipSprite;
+                dealDragImage.enabled = true;
+                dealDragImage.gameObject.SetActive(true);
+                dealDragImage.transform.SetAsLastSibling();
+            }
+
+            MoveDealDragVisuals(eventData.position);
+        }
+
+        private void DragDeal(PointerEventData eventData)
+        {
+            if (!isDraggingDeal)
+            {
+                return;
+            }
+
+            MoveDealDragVisuals(eventData.position);
+        }
+
+        private void EndDealDrag(PointerEventData eventData)
+        {
+            if (!isDraggingDeal)
+            {
+                return;
+            }
+
+            isDraggingDeal = false;
+            var hasDropTarget = TryGetPhilosophyDropTarget(eventData.position, out var resourceType);
+            HideDealGuide();
+            SetActive(dealDragImage != null ? dealDragImage.gameObject : null, false);
+            if (dealImage != null)
+            {
+                dealImage.enabled = currentDealCount > 0 && dealChipSprite != null;
+            }
+
+            if (hasDropTarget)
+            {
+                onDealDropped?.Invoke(resourceType);
+            }
+        }
+
+        private void MoveDealDragVisuals(Vector2 screenPosition)
+        {
+            if (dealDragImage != null)
+            {
+                dealDragImage.GetComponent<RectTransform>().position = screenPosition;
+            }
+
+            ShowDealGuide(screenPosition);
+        }
+
+        private void ShowDealGuide(Vector2 screenPosition)
+        {
+            if (dealGuidePanel == null)
+            {
+                return;
+            }
+
+            dealGuidePanel.SetActive(true);
+            var rectTransform = dealGuidePanel.GetComponent<RectTransform>();
+            rectTransform.pivot = new Vector2(1f, 0f);
+            rectTransform.position = screenPosition;
+        }
+
+        private void HideDealGuide()
+        {
+            SetActive(dealGuidePanel, false);
+        }
+
+        private bool TryGetPhilosophyDropTarget(Vector2 screenPosition, out ResourceType resourceType)
+        {
+            if (ContainsScreenPoint(researchText, screenPosition) || ContainsScreenPoint(researchImage, screenPosition))
+            {
+                resourceType = ResourceType.Reading;
+                return true;
+            }
+
+            if (ContainsScreenPoint(creditText, screenPosition) || ContainsScreenPoint(creditImage, screenPosition))
+            {
+                resourceType = ResourceType.Meditation;
+                return true;
+            }
+
+            if (ContainsScreenPoint(commodityText, screenPosition) || ContainsScreenPoint(commodityImage, screenPosition))
+            {
+                resourceType = ResourceType.Patience;
+                return true;
+            }
+
+            resourceType = ResourceType.Cash;
+            return false;
+        }
+
+        private static bool ContainsScreenPoint(Component component, Vector2 screenPosition)
+        {
+            if (component == null)
+            {
+                return false;
+            }
+
+            var rectTransform = component.GetComponent<RectTransform>();
+            return rectTransform != null
+                && RectTransformUtility.RectangleContainsScreenPoint(rectTransform, screenPosition);
         }
 
         private void WarnMissingSpritesOnce()

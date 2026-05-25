@@ -36,6 +36,15 @@ namespace AssetManager
         Region
     }
 
+    public enum MissionTemplate
+    {
+        FastEntry,
+        Concentration,
+        Foil,
+        HighValue,
+        TwoTagStable
+    }
+
     public enum PurchaseSource
     {
         MarketTape,
@@ -130,6 +139,73 @@ namespace AssetManager
         public string Id => id;
         public string DisplayName => displayName;
         public TagType TagType => tagType;
+    }
+
+    [Serializable]
+    public sealed class MissionDefinitionData
+    {
+        [SerializeField]
+        private string id = string.Empty;
+
+        [SerializeField]
+        private string displayName = string.Empty;
+
+        [SerializeField]
+        private MissionTemplate template;
+
+        [SerializeField]
+        private List<TagData> targetTags = new List<TagData>();
+
+        [SerializeField]
+        private string clearConditionDescription = string.Empty;
+
+        [SerializeField]
+        private string settlementFormulaDescription = string.Empty;
+
+        [SerializeField]
+        private string difficultyDisplay = string.Empty;
+
+        [SerializeField]
+        private int clearTargetCount;
+
+        [SerializeField]
+        private int settlementRewardPerCard;
+
+        public MissionDefinitionData()
+        {
+        }
+
+        public MissionDefinitionData(
+            string id,
+            string displayName,
+            MissionTemplate template,
+            IEnumerable<TagData> targetTags,
+            string clearConditionDescription,
+            string settlementFormulaDescription,
+            string difficultyDisplay,
+            int clearTargetCount,
+            int settlementRewardPerCard)
+        {
+            this.id = id;
+            this.displayName = displayName;
+            this.template = template;
+            this.targetTags = new List<TagData>(targetTags);
+            this.clearConditionDescription = clearConditionDescription;
+            this.settlementFormulaDescription = settlementFormulaDescription;
+            this.difficultyDisplay = difficultyDisplay;
+            this.clearTargetCount = clearTargetCount;
+            this.settlementRewardPerCard = settlementRewardPerCard;
+        }
+
+        public string Id => id;
+        public string DisplayName => displayName;
+        public MissionTemplate Template => template;
+        public IReadOnlyList<TagData> TargetTags => targetTags;
+        public string ClearConditionDescription => clearConditionDescription;
+        public string SettlementFormulaDescription => settlementFormulaDescription;
+        public string DifficultyDisplay => difficultyDisplay;
+        public int ClearTargetCount => clearTargetCount;
+        public int SettlementRewardPerCard => settlementRewardPerCard;
     }
 
     [Serializable]
@@ -601,11 +677,35 @@ namespace AssetManager
             int totalEarnedCash,
             int fundingCash,
             IEnumerable<QuarterPerformanceRecord> completedQuarterEarnedCash)
+            : this(
+                currentQuarterEarnedCash,
+                currentFiscalYearEarnedCash,
+                totalEarnedCash,
+                fundingCash,
+                completedQuarterEarnedCash,
+                0,
+                0,
+                0)
+        {
+        }
+
+        public RunPerformanceState(
+            int currentQuarterEarnedCash,
+            int currentFiscalYearEarnedCash,
+            int totalEarnedCash,
+            int fundingCash,
+            IEnumerable<QuarterPerformanceRecord> completedQuarterEarnedCash,
+            int currentQuarterMissionRevenue,
+            int currentFiscalYearMissionRevenue,
+            int totalMissionRevenue)
         {
             CurrentQuarterEarnedCash = currentQuarterEarnedCash;
             CurrentFiscalYearEarnedCash = currentFiscalYearEarnedCash;
             TotalEarnedCash = totalEarnedCash;
             FundingCash = fundingCash;
+            CurrentQuarterMissionRevenue = currentQuarterMissionRevenue;
+            CurrentFiscalYearMissionRevenue = currentFiscalYearMissionRevenue;
+            TotalMissionRevenue = totalMissionRevenue;
             CompletedQuarterEarnedCash = new List<QuarterPerformanceRecord>(
                 completedQuarterEarnedCash ?? Array.Empty<QuarterPerformanceRecord>()).AsReadOnly();
         }
@@ -619,6 +719,10 @@ namespace AssetManager
         public int Revenue => TotalRevenue;
         public int EarnedCash => TotalEarnedCash;
         public int FundingCash { get; }
+        public int CurrentQuarterMissionRevenue { get; }
+        public int CurrentFiscalYearMissionRevenue { get; }
+        public int TotalMissionRevenue { get; }
+        public int CurrentQuarterEvaluationValue => CurrentQuarterEarnedCash + CurrentQuarterMissionRevenue;
         public IReadOnlyList<QuarterPerformanceRecord> CompletedQuarterRevenue => CompletedQuarterEarnedCash;
         public IReadOnlyList<QuarterPerformanceRecord> CompletedQuarterEarnedCash { get; }
     }
@@ -786,6 +890,82 @@ namespace AssetManager
                     return 0;
             }
         }
+    }
+
+    public sealed class DealRewardState
+    {
+        public static readonly DealRewardState Empty = new DealRewardState(false, false, false, false);
+
+        public DealRewardState(
+            bool grantedThreeStockSlots,
+            bool grantedFiveStockSlots,
+            bool grantedEightStockSlots,
+            bool grantedFirstFoil)
+        {
+            GrantedThreeStockSlots = grantedThreeStockSlots;
+            GrantedFiveStockSlots = grantedFiveStockSlots;
+            GrantedEightStockSlots = grantedEightStockSlots;
+            GrantedFirstFoil = grantedFirstFoil;
+        }
+
+        public bool GrantedThreeStockSlots { get; }
+        public bool GrantedFiveStockSlots { get; }
+        public bool GrantedEightStockSlots { get; }
+        public bool GrantedFirstFoil { get; }
+
+        public bool HasGrantedStockSlotThreshold(int threshold)
+        {
+            switch (threshold)
+            {
+                case 3:
+                    return GrantedThreeStockSlots;
+                case 5:
+                    return GrantedFiveStockSlots;
+                case 8:
+                    return GrantedEightStockSlots;
+                default:
+                    return true;
+            }
+        }
+    }
+
+    public sealed class MissionCandidateSlotState
+    {
+        public MissionCandidateSlotState(MissionDefinitionData candidate, bool hasSpentMulligan)
+        {
+            Candidate = candidate;
+            HasSpentMulligan = hasSpentMulligan;
+        }
+
+        public MissionDefinitionData Candidate { get; }
+        public bool HasSpentMulligan { get; }
+        public bool IsEmpty => Candidate == null;
+    }
+
+    public sealed class MissionRunState
+    {
+        public static readonly MissionRunState Empty = new MissionRunState(Array.Empty<MissionCandidateSlotState>(), 0);
+
+        public MissionRunState(IEnumerable<MissionCandidateSlotState> candidateSlots, int nextMissionDrawIndex)
+            : this(candidateSlots, nextMissionDrawIndex, null)
+        {
+        }
+
+        public MissionRunState(
+            IEnumerable<MissionCandidateSlotState> candidateSlots,
+            int nextMissionDrawIndex,
+            MissionDefinitionData confirmedMission)
+        {
+            CandidateSlots = new List<MissionCandidateSlotState>(
+                candidateSlots ?? Array.Empty<MissionCandidateSlotState>()).AsReadOnly();
+            NextMissionDrawIndex = nextMissionDrawIndex;
+            ConfirmedMission = confirmedMission;
+        }
+
+        public IReadOnlyList<MissionCandidateSlotState> CandidateSlots { get; }
+        public int NextMissionDrawIndex { get; }
+        public MissionDefinitionData ConfirmedMission { get; }
+        public bool HasConfirmedMission => ConfirmedMission != null;
     }
 
     public sealed class ReservationState
@@ -979,6 +1159,27 @@ namespace AssetManager
             double achievementRate,
             int redemptionPressureIncrease,
             int currentRedemptionPressure)
+            : this(
+                settlementIncome,
+                quarterEarnedCash,
+                targetEarnedCash,
+                achievementRate,
+                redemptionPressureIncrease,
+                currentRedemptionPressure,
+                settlementIncome,
+                quarterEarnedCash + settlementIncome)
+        {
+        }
+
+        public QuarterEndResult(
+            int settlementIncome,
+            int quarterEarnedCash,
+            int targetEarnedCash,
+            double achievementRate,
+            int redemptionPressureIncrease,
+            int currentRedemptionPressure,
+            int missionRevenue,
+            int quarterEvaluationValue)
         {
             SettlementIncome = settlementIncome;
             QuarterEarnedCash = quarterEarnedCash;
@@ -986,12 +1187,17 @@ namespace AssetManager
             AchievementRate = achievementRate;
             RedemptionPressureIncrease = redemptionPressureIncrease;
             CurrentRedemptionPressure = currentRedemptionPressure;
+            MissionRevenue = missionRevenue;
+            QuarterEvaluationValue = quarterEvaluationValue;
         }
 
         public int SettlementIncome { get; }
         public int SettlementRevenue => SettlementIncome;
         public int QuarterEarnedCash { get; }
         public int QuarterRevenue => QuarterEarnedCash;
+        public int CashFlow => QuarterEarnedCash;
+        public int MissionRevenue { get; }
+        public int QuarterEvaluationValue { get; }
         public int TargetEarnedCash { get; }
         public int QuarterRevenueTarget => TargetEarnedCash;
         public double AchievementRate { get; }
@@ -1019,13 +1225,17 @@ namespace AssetManager
             LiquidityActionState liquidityAction = null,
             QuarterEndResult quarterEndResult = null,
             string failureReason = "",
-            InvestmentPhilosophyMasteryState investmentPhilosophyMastery = null)
+            InvestmentPhilosophyMasteryState investmentPhilosophyMastery = null,
+            DealRewardState dealRewards = null,
+            MissionRunState missions = null)
         {
             State = state;
             StaticData = staticData;
             Calendar = calendar;
             Resources = resources;
             InvestmentPhilosophyMastery = investmentPhilosophyMastery ?? InvestmentPhilosophyMasteryState.Empty;
+            DealRewards = dealRewards ?? DealRewardState.Empty;
+            Missions = missions ?? MissionRunState.Empty;
             Performance = performance;
             AssetCards = new List<AssetCardRuntimeData>(assetCards).AsReadOnly();
             MarketTape = marketTape;
@@ -1044,6 +1254,8 @@ namespace AssetManager
         public RunCalendarState Calendar { get; }
         public ResourceState Resources { get; }
         public InvestmentPhilosophyMasteryState InvestmentPhilosophyMastery { get; }
+        public DealRewardState DealRewards { get; }
+        public MissionRunState Missions { get; }
         public RunPerformanceState Performance { get; }
         public IReadOnlyList<AssetCardRuntimeData> AssetCards { get; }
         public MarketTapeState MarketTape { get; }

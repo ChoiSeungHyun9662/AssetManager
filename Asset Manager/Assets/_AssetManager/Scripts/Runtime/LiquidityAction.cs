@@ -215,7 +215,9 @@ namespace AssetManager
                 liquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
         }
     }
 

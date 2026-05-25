@@ -204,8 +204,9 @@ namespace AssetManager
                     reservation);
             }
 
+            var confirmedRun = WithConfirmedPurchase(run, payment, assetCards, marketTape, reservation, ownedAssets);
             return new PurchasePaymentResult(
-                WithConfirmedPurchase(run, payment, assetCards, marketTape, reservation, ownedAssets),
+                DealRewardAction.ApplyPurchaseRewards(confirmedRun, createsFoil).Run,
                 true,
                 string.Empty);
         }
@@ -418,7 +419,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
         }
 
         private static IReadOnlyList<AssetCardRuntimeData> MarkCardOwned(
@@ -727,7 +730,10 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
+            committedRun = MissionConfirmationAction.Evaluate(committedRun).Run;
 
             if (!run.CardDetail.IsOpenedDuringExtraBuy && ExtraBuyAction.CanGrantFrom(run.CardDetail.SelectedCard.Card))
             {

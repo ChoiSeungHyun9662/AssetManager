@@ -27,7 +27,10 @@ namespace AssetManager
                     run.Performance.CurrentFiscalYearRevenue,
                     run.Performance.TotalRevenue,
                     run.Performance.FundingCash + amount,
-                    run.Performance.CompletedQuarterRevenue));
+                    run.Performance.CompletedQuarterRevenue,
+                    run.Performance.CurrentQuarterMissionRevenue,
+                    run.Performance.CurrentFiscalYearMissionRevenue,
+                    run.Performance.TotalMissionRevenue));
         }
 
         public static RunSessionState AddRevenue(RunSessionState run, int amount)
@@ -54,7 +57,10 @@ namespace AssetManager
                     performance.CurrentFiscalYearRevenue + amount,
                     performance.TotalRevenue + amount,
                     performance.FundingCash,
-                    performance.CompletedQuarterRevenue));
+                    performance.CompletedQuarterRevenue,
+                    performance.CurrentQuarterMissionRevenue,
+                    performance.CurrentFiscalYearMissionRevenue,
+                    performance.TotalMissionRevenue));
         }
 
         public static RunSessionState AddEarnedCash(RunSessionState run, int amount)
@@ -285,7 +291,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                run.InvestmentPhilosophyMastery);
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                run.Missions);
         }
 
         private static RunSessionState WithMastery(
@@ -308,7 +316,9 @@ namespace AssetManager
                 run.LiquidityAction,
                 run.QuarterEndResult,
                 run.FailureReason,
-                mastery);
+                mastery,
+                run.DealRewards,
+                run.Missions);
         }
     }
 

@@ -243,6 +243,53 @@ namespace AssetManager.Tests
         }
 
         [Test]
+        public void ConfirmPurchaseImmediatelyConfirmsFirstClearedMission()
+        {
+            var tag = StockTagCatalog.Technology;
+            var mission = new MissionDefinitionData(
+                "fast-tech-test",
+                "Fast Tech Test",
+                MissionTemplate.FastEntry,
+                new[] { tag },
+                "Hold 3 Technology stocks.",
+                "Technology stock count x +1 mission revenue.",
+                "Easy",
+                3,
+                1);
+            var purchasedCard = new AssetCardData(
+                "third-tech-stock",
+                "Third Tech Stock",
+                "Mission confirmation stock.",
+                AssetRarity.Common,
+                0,
+                new ProfessionalResourceCost[0],
+                1,
+                0,
+                new[] { tag });
+            var runtimeCard = new AssetCardRuntimeData(
+                purchasedCard,
+                AssetCardRuntimeState.Available,
+                PurchaseSource.MarketTape);
+            var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
+            run = WithOwnedAssets(run, new[]
+            {
+                CreateOwnedTaggedStock("owned-tech-1", tag),
+                CreateOwnedTaggedStock("owned-tech-2", tag)
+            });
+            run = WithCurrentMarketCard(run, runtimeCard, 0);
+            run = WithMissions(run, mission);
+            run = MarketAreaFlow.OpenMarketCardDetail(run, runtimeCard);
+
+            var result = PurchasePayment.ConfirmPurchase(run);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.Run.Missions.ConfirmedMission, Is.Not.Null);
+            Assert.That(result.Run.Missions.ConfirmedMission.Id, Is.EqualTo("fast-tech-test"));
+            Assert.That(result.Run.Missions.CandidateSlots[1].IsEmpty, Is.True);
+            Assert.That(result.Run.Missions.CandidateSlots[2].IsEmpty, Is.True);
+        }
+
+        [Test]
         public void InflationCashShortageBlocksPurchaseAndLeavesResourcesCardMarketAndBusinessDayUnchanged()
         {
             var run = RunBootstrapper.CreateNewRun(RunStaticDataSet.CreateMvpDefaults());
@@ -1380,6 +1427,51 @@ namespace AssetManager.Tests
                 run.RedemptionPressure,
                 run.CardDetail,
                 run.LiquidityAction);
+        }
+
+        private static RunSessionState WithMissions(RunSessionState run, MissionDefinitionData mission)
+        {
+            var slots = new[]
+            {
+                new MissionCandidateSlotState(mission, false),
+                new MissionCandidateSlotState(null, false),
+                new MissionCandidateSlotState(null, false)
+            };
+
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                new MissionRunState(slots, 3));
+        }
+
+        private static AssetCardRuntimeData CreateOwnedTaggedStock(string id, TagData tag)
+        {
+            var card = new AssetCardData(
+                id,
+                id,
+                "Owned tagged stock.",
+                AssetRarity.Common,
+                0,
+                new ProfessionalResourceCost[0],
+                1,
+                0,
+                new[] { tag });
+            return new AssetCardRuntimeData(card, AssetCardRuntimeState.Owned, PurchaseSource.MarketTape);
         }
 
         private static System.Collections.Generic.IReadOnlyList<AssetCardRuntimeData> CreateOwnedCards(int count)

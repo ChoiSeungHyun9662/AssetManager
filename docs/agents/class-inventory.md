@@ -195,12 +195,35 @@ Current runtime flow:
 - Starter stock data now assigns exactly one allowed v3 tag to every stock. Tags are presentation and later scoring/mission classification only; they do not add stock-specific effect text.
 - `RunCalendar` and the default quarter rows now use 8 business days for playable FY1/FY2 quarters and 10 business days for playable FY3 quarters while keeping FY1/FY2 4Q vacation routing and FY3 4Q final-settlement routing.
 
+## v3 Issue 02 Notes
+
+- `RunStaticDataSet` now carries the first 25-card mission pool: 5 fast-entry, 5 concentration, 5 foil, 5 high-value, and 5 two-tag stable mission definitions.
+- `RunBootstrapper` creates three mission candidate slots at run start independently of the market tape.
+- `MissionCandidateAction` owns pre-confirmation slot controls: each visible candidate can mulligan once, and a spent slot can be discarded into a persistent empty slot without refill.
+- `MissionCandidateView` renders the three visible candidates plus per-slot mulligan/discard buttons. Mission confirmation, clear evaluation, and mission settlement are intentionally deferred.
+
+## v3 Issue 03 Notes
+
+- `MissionRunState` now stores the confirmed mission separately from candidate slots; confirmation keeps the winning candidate visible in its slot and discards the other slots.
+- `MissionConfirmationAction` evaluates clear conditions against owned portfolio stocks only, supports fast-entry, concentration, foil, high-value, and two-tag stable templates, resolves simultaneous clears by leftmost slot, and refuses to replace an already confirmed mission.
+- `PurchasePayment` evaluates mission confirmation after successful stock ownership changes and before business-day consumption, so a mission can become confirmed immediately during the current quarter.
+- `MissionCandidateView` switches from the three candidate-slot presentation to one confirmed-mission display once a run has a confirmed mission.
+
+## v3 Issue 04 Notes
+
+- `MissionSettlement` now calculates 분기말 미션 수익 for the confirmed mission from the current owned portfolio. Count formulas use target-tag owned card count, foil formulas add target-tag foil count, high-value formulas use target-tag effective value totals, and formulas with no target tags score all owned cards.
+- `RunPerformanceState` now stores 미션 수익 separately from cash-flow revenue at current-quarter, current-fiscal-year, and total scopes.
+- `QuarterSettlement` no longer converts portfolio value into cash flow at 분기 마감. 현금 흐름 is the existing dividend/sale revenue counter, 미션 수익 is added separately, and 목표 달성률/월세 밀림 use `현금 흐름 + 미션 수익`.
+- `QuarterEndResult` now exposes cash flow, mission revenue, and the combined quarter evaluation value for UI display.
+- `FiscalYearSummary` and `FinalSettlement` include accumulated 미션 수익 in displayed/evaluated value while keeping cash revenue separate.
+- `RunProgressControls` displays quarter-end 현금 흐름, a separate `미션 수익 +N` line, and the combined 판정 합계.
+
 ## Shell And Editor Setup
 
 | Type | File | Purpose |
 | --- | --- | --- |
 | `ProjectShellRoots` | `Runtime/ProjectShell.cs` | Small return value for the ensured Game Root and UI Canvas. |
-| `ProjectShell` | `Runtime/ProjectShell.cs` | Central scene/UI factory for MVP shell objects, names, paths, Canvas settings, placeholder panels, status HUD, market tape UI, hover card presentation, portfolio slot board UI, legacy Payment Pot controls, and temporary controls; applies default layout only to UI objects it creates in the current bootstrap pass, keeps Market Tape zone panels under `Market Area Market Panel`, and removes legacy Reservation Panel plus 중앙 은행/GainLiquidity UI from the new play path. |
+| `ProjectShell` | `Runtime/ProjectShell.cs` | Central scene/UI factory for MVP shell objects, names, paths, Canvas settings, placeholder panels, status HUD, mission candidate UI, market tape UI, hover card presentation, portfolio slot board UI, legacy Payment Pot controls, and temporary controls; applies default layout only to UI objects it creates in the current bootstrap pass, keeps Market Tape zone panels under `Market Area Market Panel`, and removes legacy Reservation Panel plus 중앙 은행/GainLiquidity UI from the new play path. |
 | `ProjectShell.PlaceholderPanel` | `Runtime/ProjectShell.cs` | Private helper return value for placeholder panel GameObject/Text pairs. |
 | `BootstrapSceneLoader` | `Runtime/BootstrapSceneLoader.cs` | Play-mode component that moves from Bootstrap scene to MainGame scene. |
 | `AssetManagerProjectSetup` | `Editor/AssetManagerProjectSetup.cs` | Unity editor menu commands for creating/verifying scenes, build scene entries, static data asset, and required shell objects. |
@@ -211,10 +234,11 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `RunStaticDataSet` | `Runtime/RunStaticDataSet.cs` | ScriptableObject container for seed stock cards, 분기 data, quarter inflation lookup, final ratings, market/resource/redemption configs, and default run data. |
+| `RunStaticDataSet` | `Runtime/RunStaticDataSet.cs` | ScriptableObject container for seed stock cards, the initial mission pool, 분기 data, quarter inflation lookup, final ratings, market/resource/redemption configs, and default run data. |
 | `StockTagCatalog` | `Runtime/StockTagCatalog.cs` | Public catalog and validation surface for the five allowed v3 stock tags and the exactly-one-tag stock rule. |
 | `ProfessionalResourceCost` | `Runtime/RunModels.cs` | One 전문 자원 cost requirement for a 자산 카드. |
 | `TagData` | `Runtime/RunModels.cs` | Serialized 태그 identity, display name, and tag type. |
+| `MissionDefinitionData` | `Runtime/RunModels.cs` | Static 미션 definition for candidate display and later mission rules: thesis-style name, template, target tags, clear-condition description, settlement-formula description, display-only difficulty, and simple authored numeric fields. |
 | `AssetCardData` | `Runtime/RunModels.cs` | Static market card definition: stock costs, 희귀도, value/dividend, authored foil value/dividend, min/max deck copy counts, tags, optional extra-buy grant, and extra-buy purchase eligibility, or consumable resource provided-resource data. The type name and `ManagementValue` accessor remain from the MVP asset-card implementation for compatibility. |
 | `QuarterData` | `Runtime/RunModels.cs` | Static 분기 row used by bootstrap, 분기 마감 target lookup, and table-driven inflation cash-cost modifiers. `RunCalendar` still owns playable schedule routing. |
 | `FinalRatingData` | `Runtime/RunModels.cs` | Final rating threshold row for later 최종 정산, keyed by minimum final value with the old management-value field/accessor kept for compatibility. |
@@ -230,8 +254,10 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | --- | --- | --- |
 | `ResourceState` | `Runtime/RunModels.cs` | Current 현금, 독서, 명상, 인내, 딜, plus investment philosophy total lookup. Old Research/Credit/Commodity property names remain as aliases. |
 | `InvestmentPhilosophyMasteryState` | `Runtime/RunModels.cs` | Run-scoped 독서/명상/인내 mastery values used to discount purchase philosophy costs; values are capped per type by `ResourceLedger`. |
+| `MissionCandidateSlotState` | `Runtime/RunModels.cs` | One pre-confirmation 미션 후보 slot: optional candidate mission plus whether its one mulligan has been spent. |
+| `MissionRunState` | `Runtime/RunModels.cs` | Run-scoped 미션 state: exactly three candidate slots at bootstrap, the next deterministic mission-pool draw index for mulligans, and the one confirmed mission once clear conditions resolve. |
 | `RunCalendarState` | `Runtime/RunModels.cs` | Current 회계년도, 분기, and remaining 영업일. |
-| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 수익 counters, tracked 조달 현금, and completed 분기 수익 records for 4Q 휴가 summaries; Revenue is the canonical public surface and `EarnedCash` remains as compatibility aliases. |
+| `RunPerformanceState` | `Runtime/RunModels.cs` | Current 분기, 회계년도, and total 현금 흐름 counters, separate current/fiscal/total 미션 수익 counters, tracked 조달 현금, and completed 분기 수익 records for 4Q 휴가 summaries; Revenue is the cash-flow public surface and `EarnedCash` remains as compatibility aliases. |
 | `QuarterPerformanceRecord` | `Runtime/RunModels.cs` | Completed 회계년도/분기 수익 row recorded at 분기 마감 for later 회계년도 summary display, with Revenue as the canonical accessor. |
 | `AssetCardRuntimeData` | `Runtime/RunModels.cs` | Runtime wrapper for one physical market card instance and whether it is available, reserved, owned, or removed; owned cards can carry purchase source, acquired order, foil state, and effective value/income derived from base or foil card data. |
 | `MarketTapeSlotState` | `Runtime/RunModels.cs` | One 1x8 market tape slot: optional visible market card plus whether the slot is reservation-locked. |
@@ -240,7 +266,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `OwnedAssetState` | `Runtime/RunModels.cs` | Current 보유 자산 list plus Owned-only 보유 자산 수, 현재 가치, 영업일 시작 운용 수익 totals using foil-aware runtime values, and the 8-stock-slot portfolio capacity helpers. |
 | `BusinessDayState` | `Runtime/RunModels.cs` | Current phase and 시장 영역 state. |
 | `LiquidityActionState` | `Runtime/RunModels.cs` | Current 자원 확보 selected basic resources and whether the first resource has committed the action. |
-| `QuarterEndResult` | `Runtime/RunModels.cs` | Snapshot of a completed 분기 마감: 정산 수익, 분기 수익, 분기 목표, 목표 달성률, and 월세 밀림 impact. Legacy property names remain as aliases. |
+| `QuarterEndResult` | `Runtime/RunModels.cs` | Snapshot of a completed 분기 마감: 현금 흐름, 미션 수익, combined 분기 평가 value, 분기 목표, 목표 달성률, and 월세 밀림 impact. Legacy settlement/revenue property names remain as aliases. |
 | `CardDetailDisplayData` | `Runtime/CardDetailState.cs` | Snapshot of selected 자산 카드 fields shown in 카드 상세보기, exposing value as the canonical score field. |
 | `PaymentSlotState` | `Runtime/CardDetailState.cs` | One 비용 슬롯 in 카드 상세보기: required 전문 자원 and optional placed 전문 자원 or 딜. |
 | `PurchaseCostToken` | `Runtime/CardDetailState.cs` | Display/validation token for one purchase cost amount, including whether the current run lacks that amount. |
@@ -248,7 +274,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `PurchasePaymentState` | `Runtime/CardDetailState.cs` | Pending 자산 매수 payment in 카드 상세보기: card id, base cash cost, mastery-discounted 비용 슬롯 list, current quarter inflation modifier, and final cash cost. |
 | `CardDetailState` | `Runtime/CardDetailState.cs` | Transient 카드 상세보기 state: selected card, 매수 출처, display data, pending payment, extra-buy flag, preview flag, and Buy/Reserve visibility conditions. |
 | `RedemptionPressureState` | `Runtime/RunModels.cs` | Current and maximum 월세 밀림, with rent-arrears aliases over the compatibility pressure property names. |
-| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including resources, investment philosophy mastery, transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, rent arrears state, and failure reason. Most transitions create a new instance. |
+| `RunSessionState` | `Runtime/RunModels.cs` | Top-level 런 snapshot passed through rules and UI, including resources, investment philosophy mastery, mission candidate/confirmed state, transient 카드 상세보기, 자원 확보 state, latest QuarterEndResult, rent arrears state, and failure reason. Most transitions create a new instance. |
 
 | `DealRewardState` | `Runtime/RunModels.cs` | Run-scoped one-time Deal reward flags for portfolio occupied stock-slot thresholds 3/5/8 and first foil completion. |
 
@@ -260,6 +286,7 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `CardDomain` | Market card domain: Stock for portfolio cards, ConsumableResource for immediate cash or investment-philosophy supply cards. |
 | `AssetRarity` | 자산 카드 희귀도. |
 | `TagType` | Current tag grouping categories. |
+| `MissionTemplate` | Initial 미션 pool template categories: fast-entry, concentration, foil, high-value, and two-tag stable. |
 | `PurchaseSource` | Whether 자산 매수 came from market tape or reservation. |
 | `AssetCardRuntimeState` | Available, reserved, owned, or removed card state. |
 | `MarketAreaState` | Legacy area enum. New stock-overhaul play keeps the market path in `Market`; `CardDetail` and `GainLiquidity` remain only for compatibility with older rule/UI code. |
@@ -284,14 +311,19 @@ These classes are mostly serialized configuration or immutable runtime snapshots
 | `DealRewardActionResult` | `Runtime/DealRewardAction.cs` | Return data for Deal reward evaluation, including the updated run and number of Deals granted. |
 | `DealMasteryAction` | `Runtime/DealMasteryAction.cs` | Public rule service for dropping one Deal on an investment philosophy lane to consume the Deal and add one mastery, with max-mastery failure feedback. |
 | `DealMasteryActionResult` | `Runtime/DealMasteryAction.cs` | Return data for Deal-to-mastery attempts, including success and short feedback message. |
+| `MissionCandidateAction` | `Runtime/MissionCandidateAction.cs` | Public rule service for creating the initial three 미션 후보 slots, mulliganing each slot once, and discarding spent slots into persistent empty slots. |
+| `MissionCandidateActionResult` | `Runtime/MissionCandidateAction.cs` | Return data for mission candidate slot actions, including updated run, success flag, and short feedback message. |
+| `MissionConfirmationAction` | `Runtime/MissionConfirmationAction.cs` | Public rule service for confirming the first cleared mission from current owned portfolio stocks, with template-specific clear checks, leftmost simultaneous-clear priority, automatic non-winning slot discard, and no second confirmation. |
+| `MissionConfirmationActionResult` | `Runtime/MissionConfirmationAction.cs` | Return data for mission confirmation evaluation, including updated run state and whether a new confirmation occurred. |
+| `MissionSettlement` | `Runtime/MissionSettlement.cs` | Public pure rule service for calculating a confirmed mission's 분기말 미션 수익 from current owned portfolio stocks, including target-tag count, target-tag foil count, target-tag value total, and all-owned-card formulas. |
 | `StockSaleAction` | `Runtime/StockSaleAction.cs` | Public rule service for selling owned stock slots, leaving an empty portfolio slot, removing the sold runtime stock from the run, and adding sale cash as 수익 without consuming a 영업일. |
 | `StockSaleActionResult` | `Runtime/StockSaleAction.cs` | Return data for stock sale attempts, including the updated run, success flag, and short feedback message. |
-| `QuarterSettlement` | `Runtime/QuarterSettlement.cs` | Public rule service for 분기 마감 정산, 정산 수익 application, 목표 달성률, 월세 밀림 increase, and QuarterEndResult creation. |
-| `QuarterSettlementResult` | `Runtime/QuarterSettlement.cs` | Return data for 분기 마감, including the updated run, stored QuarterEndResult fields, and stock-overhaul revenue/rent-arrears aliases. |
-| `FiscalYearSummary` | `Runtime/FiscalYearSummary.cs` | Public rule service for 4Q 휴가 summary data: 현재 가치, 올해 수익, completed 분기별 수익, 보유 주식 수, and 월세 밀림. |
-| `FiscalYearSummaryResult` | `Runtime/FiscalYearSummary.cs` | Return data displayed by the 4Q 휴가 panel, with stock-overhaul value/revenue/rent-arrears aliases over compatibility names. |
-| `FinalSettlement` | `Runtime/FinalSettlement.cs` | Public rule service for 최종 정산: computes 최종 가치 from 보유 주식 only, selects the highest reachable 최종 평가, and picks a 최종 코멘트 by 월세 밀림 단계. |
-| `FinalSettlementResult` | `Runtime/FinalSettlement.cs` | Return data displayed by the 최종 정산 panel, with final value, owned stock count, rent arrears, and final comment aliases over compatibility names. |
+| `QuarterSettlement` | `Runtime/QuarterSettlement.cs` | Public rule service for 분기 마감: calculates confirmed-mission revenue, records it separately from 현금 흐름, evaluates targets with cash flow plus mission revenue, applies 월세 밀림, and stores QuarterEndResult. |
+| `QuarterSettlementResult` | `Runtime/QuarterSettlement.cs` | Return data for 분기 마감, including the updated run, stored QuarterEndResult fields, cash-flow/mission/evaluation values, and rent-arrears aliases. |
+| `FiscalYearSummary` | `Runtime/FiscalYearSummary.cs` | Public rule service for 4Q 휴가 summary data: current value including accumulated mission revenue, 올해 현금 흐름, 올해 미션 수익, completed 분기별 수익, 보유 주식 수, and 월세 밀림. |
+| `FiscalYearSummaryResult` | `Runtime/FiscalYearSummary.cs` | Return data displayed by the 4Q 휴가 panel, with stock-overhaul value/revenue/mission/rent-arrears aliases over compatibility names. |
+| `FinalSettlement` | `Runtime/FinalSettlement.cs` | Public rule service for 최종 정산: computes 최종 가치 from 보유 주식 plus accumulated mission revenue, selects the highest reachable 최종 평가, and picks a 최종 코멘트 by 월세 밀림 단계. |
+| `FinalSettlementResult` | `Runtime/FinalSettlement.cs` | Return data displayed by the 최종 정산 panel, with final value, total mission revenue, owned stock count, rent arrears, and final comment aliases over compatibility names. |
 | `RentArrears` | `Runtime/RedemptionPressure.cs` | Public rule service for adding 월세 밀림 and immediately converting the run to 파산 at the configured max. |
 | `RentArrearsResult` | `Runtime/RedemptionPressure.cs` | Return data for 월세 밀림 changes, including the updated run, increase amount, and bankruptcy flag. |
 | `RedemptionPressure` | `Runtime/RedemptionPressure.cs` | Compatibility wrapper over RentArrears for older pressure-named callers. |
@@ -324,12 +356,13 @@ Important distinction:
 
 | Type | File | Purpose |
 | --- | --- | --- |
-| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus market/reserved card selection, market-card release intents, card-local reservation toggles, and Deal HUD drops to rule services while keeping the visible market state active, opens and guards the purchase confirmation modal for valid stock-card click purchase intent, routes valid consumable-resource clicks and portfolio-area releases to immediate purchase, treats non-portfolio drag releases as no-ops, refreshes visible UI, and leaves the old GainLiquidity entry disconnected from the new play flow. |
+| `MainGameShellBootstrap` | `Runtime/MainGameShellBootstrap.cs` | Runtime orchestrator: owns `CurrentRun`, wires buttons plus mission candidate controls, market/reserved card selection, market-card release intents, card-local reservation toggles, and Deal HUD drops to rule services while keeping the visible market state active, opens and guards the purchase confirmation modal for valid stock-card click purchase intent, routes valid consumable-resource clicks and portfolio-area releases to immediate purchase, treats non-portfolio drag releases as no-ops, refreshes visible UI, and leaves the old GainLiquidity entry disconnected from the new play flow. |
 | `RunStatusFormatter` | `Runtime/RunStatusFormatter.cs` | Formats the top HUD time/progress/rent-arrears text from `RunSessionState` without player resource counts. |
 | `RunStatusHud` | `Runtime/RunStatusHud.cs` | MonoBehaviour wrapper that displays formatted 런 status. |
 | `ResourceHud` | `Runtime/ResourceHud.cs` | Displays the bottom chip tray: cash as `<value>$`, investment philosophy holdings as large integers, optional small mastery `+N`, philosophy chip stacks, Deal chip stack, manual Sprite slots, current short resource message, runtime chip stack instances anchored to the configured base images, and Deal hover/drag/drop presentation for mastery conversion. |
 | `PortfolioSummaryView` | `Runtime/PortfolioSummaryView.cs` | Displays the 포트폴리오 summary plus an `OwnedAssetState.StockSlots`-derived compressed owned-stock-card row; empty slots are skipped, occupied cards show stock name, rarity, effective value, dividend, and foil state, and owned stocks sell through a drag/drop flow using a persistent red `$` sale zone and original `StockSlots` index. |
 | `RunProgressControls` | `Runtime/RunProgressControls.cs` | Shows/hides 다음 영업일, 계속, 분기 마감, 4Q 휴가, 파산, and 최종 정산 UI; displays current 분기 수익, 현재 가치, 보유 주식, 월세 밀림, final value, and final comment summaries. |
+| `MissionCandidateView` | `Runtime/MissionCandidateView.cs` | Displays the three 미션 후보 slots with name, target tags, clear condition, settlement formula, display-only difficulty, and slot-level mulligan/discard button state. |
 | `MarketTapeView` | `Runtime/MarketTapeView.cs` | Renders the pointer-draggable 1x8 market tape, classifies click vs drag by pointer movement threshold, positions card-number-based hover enlargement, creates stock-only card-local 예약/해제 buttons, lowers reserved cards for interaction, and records card-local purchase-failure shake requests. |
 | `MarketCardFormatter` | `Runtime/MarketCardFormatter.cs` | Shared formatter for compact market-card detail text used by market buttons, hover card presentation, and purchase confirmation. |
 | `LiquidityActionView` | `Runtime/LiquidityActionView.cs` | Legacy GainLiquidity view for 중앙 은행 resource-object choices; no longer created or wired by the new play flow. |
@@ -350,6 +383,7 @@ Important distinction:
 | 시장 영역 and 카드 상세보기 | `MarketAreaFlowTests`, `MainGameShellBootstrapTests` |
 | 자원 원장 and 보유 자원 UI | `ResourceLedgerTests`, `MainGameShellBootstrapTests` |
 | 딜 rewards and mastery drag | `DealRewardActionTests`, `DealMasteryActionTests`, `PurchasePaymentTests`, `ReservationActionTests`, `MainGameShellBootstrapTests` |
+| 미션 후보/확정/정산 흐름 | `MissionCandidateActionTests`, `MissionConfirmationActionTests`, `MissionSettlementTests`, `PurchasePaymentTests`, `QuarterSettlementTests`, `MainGameShellBootstrapTests` |
 | 자산 매수 and 비용 슬롯 결제 | `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 | 보유 자산 income and 포트폴리오 UI | `OwnedAssetStateTests`, `BusinessDayFlowTests`, `PurchasePaymentTests`, `MainGameShellBootstrapTests` |
 | 소모형 자원 카드 and retired GainLiquidity path | `PurchasePaymentTests`, `MainGameShellBootstrapTests`, `MvpSmokeScenarioTests` |

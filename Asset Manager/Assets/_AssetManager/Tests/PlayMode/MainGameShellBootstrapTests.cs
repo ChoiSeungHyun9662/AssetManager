@@ -82,6 +82,134 @@ namespace AssetManager.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainGameShellBootstrapShowsMissionCandidatesAndSlotButtonState()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapMissionCandidateTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Missions.CandidateSlots, Has.Count.EqualTo(3));
+            for (var i = 1; i <= 3; i++)
+            {
+                var text = FindUiObject(ProjectShell.MissionCandidateSlotPrefix + i + ProjectShell.MissionCandidateTextSuffix)
+                    .GetComponent<Text>();
+                Assert.That(text.text, Does.Contain(bootstrap.CurrentRun.Missions.CandidateSlots[i - 1].Candidate.DisplayName));
+                Assert.That(text.text, Does.Contain("Tags:"));
+                Assert.That(text.text, Does.Contain("Clear:"));
+                Assert.That(text.text, Does.Contain("Formula:"));
+                Assert.That(text.text, Does.Contain("Difficulty:"));
+
+                Assert.That(
+                    FindUiObject(ProjectShell.MissionCandidateSlotPrefix + i + ProjectShell.MissionCandidateMulliganButtonSuffix)
+                        .GetComponent<Button>().interactable,
+                    Is.True);
+                Assert.That(
+                    FindUiObject(ProjectShell.MissionCandidateSlotPrefix + i + ProjectShell.MissionCandidateDiscardButtonSuffix)
+                        .GetComponent<Button>().interactable,
+                    Is.False);
+            }
+
+            var originalCandidate = bootstrap.CurrentRun.Missions.CandidateSlots[0].Candidate.Id;
+            FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateMulliganButtonSuffix)
+                .GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Missions.CandidateSlots[0].Candidate.Id, Is.Not.EqualTo(originalCandidate));
+            Assert.That(
+                FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateMulliganButtonSuffix)
+                    .GetComponent<Button>().interactable,
+                Is.False);
+            Assert.That(
+                FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateDiscardButtonSuffix)
+                    .GetComponent<Button>().interactable,
+                Is.True);
+
+            FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateDiscardButtonSuffix)
+                .GetComponent<Button>().onClick.Invoke();
+
+            yield return null;
+
+            Assert.That(bootstrap.CurrentRun.Missions.CandidateSlots[0].IsEmpty, Is.True);
+            Assert.That(
+                FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateTextSuffix)
+                    .GetComponent<Text>().text,
+                Is.EqualTo("빈 미션 슬롯"));
+            Assert.That(
+                FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateMulliganButtonSuffix)
+                    .GetComponent<Button>().interactable,
+                Is.False);
+            Assert.That(
+                FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateDiscardButtonSuffix)
+                    .GetComponent<Button>().interactable,
+                Is.False);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapShowsOnlyConfirmedMissionAfterConfirmation()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapConfirmedMissionTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var confirmedMission = bootstrap.CurrentRun.Missions.CandidateSlots[0].Candidate;
+            var confirmedSlots = new[]
+            {
+                new MissionCandidateSlotState(confirmedMission, false),
+                new MissionCandidateSlotState(null, true),
+                new MissionCandidateSlotState(null, true)
+            };
+            var confirmedRun = WithMissions(
+                bootstrap.CurrentRun,
+                new MissionRunState(confirmedSlots, bootstrap.CurrentRun.Missions.NextMissionDrawIndex, confirmedMission));
+            SetCurrentRun(bootstrap, confirmedRun);
+            RefreshRunUi(bootstrap);
+
+            yield return null;
+
+            var firstSlotText = FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateTextSuffix)
+                .GetComponent<Text>();
+            Assert.That(firstSlotText.text, Does.Contain("Confirmed Mission"));
+            Assert.That(firstSlotText.text, Does.Contain(confirmedMission.DisplayName));
+            Assert.That(
+                FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "2").activeSelf,
+                Is.False);
+            Assert.That(
+                FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "3").activeSelf,
+                Is.False);
+            Assert.That(
+                FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateMulliganButtonSuffix)
+                    .GetComponent<Button>().interactable,
+                Is.False);
+            Assert.That(
+                FindUiObject(ProjectShell.MissionCandidateSlotPrefix + "1" + ProjectShell.MissionCandidateDiscardButtonSuffix)
+                    .GetComponent<Button>().interactable,
+                Is.False);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator MainGameShellBootstrapHidesOwnedStockCardsOnNewRun()
         {
             var scene = SceneManager.CreateScene("MainGameShellBootstrapPortfolioBoardTests");
@@ -2545,10 +2673,53 @@ namespace AssetManager.Tests
             Assert.That(panel.activeSelf, Is.True);
 
             var text = GameObject.Find(ProjectShell.QuarterSettlementPlaceholderTextName).GetComponent<Text>().text;
-            Assert.That(text, Does.Contain("현재 분기 수익"));
+            Assert.That(text, Does.Contain("현금 흐름"));
+            Assert.That(text, Does.Contain("미션 수익 +0"));
             Assert.That(text, Does.Contain("분기 목표"));
             Assert.That(text, Does.Contain("목표 달성률"));
             Assert.That(text, Does.Contain("월세 밀림 +3"));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator MainGameShellBootstrapShowsQuarterSettlementMissionRevenueLine()
+        {
+            var scene = SceneManager.CreateScene("MainGameShellBootstrapQuarterMissionRevenueTests");
+            SceneManager.SetActiveScene(scene);
+
+            var shell = new GameObject("Main Game Shell");
+            shell.SetActive(false);
+
+            var bootstrap = shell.AddComponent<MainGameShellBootstrap>();
+            bootstrap.StaticData = RunStaticDataSet.CreateMvpDefaults();
+
+            shell.SetActive(true);
+
+            yield return null;
+
+            var tag = StockTagCatalog.Technology;
+            var mission = CreateMission("mission", MissionTemplate.FastEntry, new[] { tag }, rewardPerCard: 1);
+            var run = WithCalendar(bootstrap.CurrentRun, new RunCalendarState(1, 1, 1));
+            run = WithOwnedAssets(run, new OwnedAssetState(new[]
+            {
+                CreateRuntimeStock("target-1", tag, value: 3),
+                CreateRuntimeStock("target-2", tag, value: 4)
+            }));
+            run = WithMissions(run, new MissionRunState(
+                new[] { new MissionCandidateSlotState(mission, false) },
+                1,
+                mission));
+            SetCurrentRun(bootstrap, run);
+            RefreshRunUi(bootstrap);
+
+            bootstrap.AdvanceToNextBusinessDay();
+
+            yield return null;
+
+            var text = GameObject.Find(ProjectShell.QuarterSettlementPlaceholderTextName).GetComponent<Text>().text;
+            Assert.That(text, Does.Contain("미션 수익 +2"));
+            Assert.That(text, Does.Contain("판정 합계 2"));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -2924,6 +3095,29 @@ namespace AssetManager.Tests
                 run.LiquidityAction);
         }
 
+        private static RunSessionState WithMissions(RunSessionState run, MissionRunState missions)
+        {
+            return new RunSessionState(
+                run.State,
+                run.StaticData,
+                run.Calendar,
+                run.Resources,
+                run.Performance,
+                run.AssetCards,
+                run.MarketTape,
+                run.Reservation,
+                run.OwnedAssets,
+                run.BusinessDay,
+                run.RedemptionPressure,
+                run.CardDetail,
+                run.LiquidityAction,
+                run.QuarterEndResult,
+                run.FailureReason,
+                run.InvestmentPhilosophyMastery,
+                run.DealRewards,
+                missions);
+        }
+
         private static RunSessionState WithBusinessDay(RunSessionState run, BusinessDayState businessDay)
         {
             return new RunSessionState(
@@ -3015,6 +3209,44 @@ namespace AssetManager.Tests
             }
 
             return cards;
+        }
+
+        private static MissionDefinitionData CreateMission(
+            string id,
+            MissionTemplate template,
+            System.Collections.Generic.IEnumerable<TagData> tags,
+            int rewardPerCard)
+        {
+            return new MissionDefinitionData(
+                id,
+                id,
+                template,
+                tags,
+                "clear",
+                "formula",
+                "Test",
+                1,
+                rewardPerCard);
+        }
+
+        private static AssetCardRuntimeData CreateRuntimeStock(
+            string id,
+            TagData tag,
+            int value,
+            bool foil = false)
+        {
+            var card = new AssetCardData(
+                id,
+                id,
+                "test stock",
+                AssetRarity.Common,
+                0,
+                new ProfessionalResourceCost[0],
+                value,
+                0,
+                new[] { tag },
+                foilValue: value);
+            return new AssetCardRuntimeData(card, AssetCardRuntimeState.Owned, PurchaseSource.MarketTape, null, foil, id + "#runtime");
         }
 
         private static void SetCurrentRun(MainGameShellBootstrap bootstrap, RunSessionState run)
